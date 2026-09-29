@@ -21,6 +21,8 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 - Resultados con datos reales (posición, piloto, tiempo total y mejor vuelta), que se muestran solos al terminar la carrera.
 - `Tiempo` para formatear tiempos de carrera y una paleta de colores para distinguir hasta 5 autos.
 
+- Documentación del proceso de desarrollo en `docs/proceso/`: una página por etapa (objetivo, qué se hizo, decisiones, problemas y su resolución, verificación, commits y capturas) y una línea de tiempo, más un PDF que las reúne (`docs/proceso/proceso-de-desarrollo.pdf`) y el script que lo regenera (`generar_pdf.py`).
+
 ### Corregido
 
 - Los checkpoints del circuito provisorio van de muro a muro (pista más pasto de escape) y no solo sobre la pista: un auto que se sale al pasto igual los cruza y sus vueltas cuentan, con la desventaja de ir más lento.
