@@ -56,9 +56,9 @@ O en PowerShell:
 
 ## Estado actual
 
-Etapa 4 completada, todavía sin red. Hay menú y pantallas navegables con estética de Fórmula 1, un auto con física arcade sobre un circuito provisorio y las reglas de una carrera completa (cuenta regresiva, vueltas por checkpoints, posiciones, choques y resultados). Se puede probar con 2 jugadores en el mismo teclado desde "Prueba local" (J1 con WASD y J2 con flechas).
+Etapa 6 completada: se puede crear una partida en red, unirse por IP y esperar en un lobby en vivo (elegir auto, marcar listo, iniciar); la carrera todavía no se sincroniza entre las computadoras. Hay menú y pantallas navegables con estética de Fórmula 1, un auto con física arcade sobre un circuito provisorio y las reglas de una carrera completa (cuenta regresiva, vueltas por checkpoints, posiciones, choques y resultados). Se puede probar con 2 jugadores en el mismo teclado desde "Prueba local" (J1 con WASD y J2 con flechas).
 
-El protocolo de red ya está diseñado en [docs/PROTOCOLO.md](docs/PROTOCOLO.md). Lo que falta: implementarlo (TCP y UDP), el circuito definitivo en Tiled y los sprites. El detalle de cada etapa está en [docs/proceso](docs/proceso/README.md).
+El protocolo de red ya está diseñado en [docs/PROTOCOLO.md](docs/PROTOCOLO.md). Lo que falta: la parte UDP (carrera sincronizada entre las computadoras), el circuito definitivo en Tiled y los sprites. El detalle de cada etapa está en [docs/proceso](docs/proceso/README.md).
 
 ## Licencia
 
