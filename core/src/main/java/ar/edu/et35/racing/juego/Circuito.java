@@ -18,6 +18,7 @@ public class Circuito {
     private final List<Rectangle> checkpoints; // el índice es el orden; el 0 es la meta
     private final List<Vector2> posicionesLargada; // el índice 0 es la posición 1
     private final float anguloLargada; // grados: 0 = derecha, 90 = arriba
+    private final Vector2[] sentidos;
 
     public Circuito(float tamTile, Superficie[][] superficies, List<Rectangle> checkpoints,
                     List<Vector2> posicionesLargada, float anguloLargada) {
@@ -28,6 +29,23 @@ public class Circuito {
         this.checkpoints = List.copyOf(checkpoints);
         this.posicionesLargada = List.copyOf(posicionesLargada);
         this.anguloLargada = anguloLargada;
+        this.sentidos = calcularSentidos(this.checkpoints);
+    }
+
+    /** Sentido de la pista en cada checkpoint: apunta desde su centro hacia el centro del siguiente. */
+    private static Vector2[] calcularSentidos(List<Rectangle> checkpoints) {
+        Vector2[] sentidos = new Vector2[checkpoints.size()];
+        for (int i = 0; i < sentidos.length; i++) {
+            Vector2 actual = checkpoints.get(i).getCenter(new Vector2());
+            Vector2 siguiente = checkpoints.get((i + 1) % sentidos.length).getCenter(new Vector2());
+            sentidos[i] = siguiente.sub(actual).nor();
+        }
+        return sentidos;
+    }
+
+    /** Vector unitario con el sentido en que se recorre la pista al cruzar ese checkpoint. No modificarlo. */
+    public Vector2 sentidoCheckpoint(int indice) {
+        return sentidos[indice];
     }
 
     public float ancho() {
