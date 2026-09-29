@@ -19,7 +19,7 @@ Los commits usan los prefijos `Feat:`, `Fix:`, `Docs:` y `Refactor:`, como pide 
 
 ## Línea de tiempo
 
-Todo el trabajo documentado acá se hizo el 28/09/2026, entre las 21:16 y las 23:45 (hora local, según los commits).
+Las etapas 0 a 4 se hicieron el 28/09/2026, entre las 21:16 y las 23:45 (hora local, según los commits). Esta documentación del proceso se armó a continuación, y la etapa 5 el 29/09/2026.
 
 | Etapa | Qué quedó funcionando | Pull request |
 |---|---|---|
@@ -28,15 +28,18 @@ Todo el trabajo documentado acá se hizo el 28/09/2026, entre las 21:16 y las 23
 | [2. Esqueleto y pantallas](02-esqueleto-pantallas.md) | Menú, unirse, lobby, carrera y resultados navegables, con estética de Fórmula 1 | [#2](https://github.com/joakinkong/35-Racing/pull/2) |
 | [3. Auto y circuito](03-auto-y-circuito.md) | Un auto manejable en un circuito, con física arcade, cámara y HUD | [#3](https://github.com/joakinkong/35-Racing/pull/3) |
 | [4. Reglas de carrera](04-reglas-de-carrera.md) | Carrera completa para 2 jugadores en el mismo teclado: cuenta regresiva, vueltas, posiciones, choques y resultados | [#4](https://github.com/joakinkong/35-Racing/pull/4) y [#5](https://github.com/joakinkong/35-Racing/pull/5) |
+| Documentación del proceso | Esta documentación por etapas y su versión en PDF | [#6](https://github.com/joakinkong/35-Racing/pull/6) |
+| [5. Protocolo de red](05-protocolo-de-red.md) | Especificación completa de la comunicación en red en [docs/PROTOCOLO.md](../PROTOCOLO.md) (diseño, todavía sin código) | Pendiente |
 
-Estado del repositorio al escribir este documento: `develop` y `main` tienen todo hasta la etapa 4. El código del juego (`core`) son 29 archivos Java y unas 1.800 líneas, en 17 commits.
+Estado del repositorio al cerrar la etapa 5: `develop` y `main` tienen todo hasta la etapa 4 y esta documentación; la etapa 5 está en la rama `docs/protocolo-red`. El código del juego (`core`) son 29 archivos Java y unas 1.800 líneas; la etapa 5 no cambió código.
 
 ## Lo que sigue
 
-- **Etapa 5:** diseño del protocolo de red (TCP para el lobby y los eventos, UDP para las entradas y el estado de los autos), en un documento `docs/PROTOCOLO.md`, sin código todavía.
-- **Etapas 6 a 8:** conexión y lobby por TCP, carrera sincronizada por UDP, desconexiones y pruebas en varias computadoras.
+- **Antes de seguir:** que los cinco integrantes lean [docs/PROTOCOLO.md](../PROTOCOLO.md), porque es lo que tienen que poder explicar.
+- **Etapa 6:** conexión y lobby por TCP, y la primera prueba en las computadoras del colegio.
+- **Etapas 7 y 8:** carrera sincronizada por UDP, desconexiones y pruebas en varias computadoras.
 - **Pendiente de arte:** el circuito definitivo en Tiled y los sprites. Hoy el circuito y los autos son provisorios (ver [etapa 3](03-auto-y-circuito.md)).
 
 ## Participación del equipo
 
-Hasta la etapa 4 todos los commits salieron de la cuenta de Joaquín Barreira. El resto del grupo tiene invitación como colaborador del repositorio, y las tareas de arte (circuito y sprites) están asignadas al resto del equipo según la guía. Cuando haya commits de los demás integrantes, se van a reflejar en el historial y en esta documentación.
+Hasta la etapa 5 todos los commits salieron de la cuenta de Joaquín Barreira. El resto del grupo tiene invitación como colaborador del repositorio, y las tareas de arte (circuito y sprites) están asignadas al resto del equipo según la guía. Cuando haya commits de los demás integrantes, se van a reflejar en el historial y en esta documentación.
