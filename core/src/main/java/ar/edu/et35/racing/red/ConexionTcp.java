@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
@@ -53,6 +54,11 @@ public class ConexionTcp {
         } catch (IOException e) {
             // Ya estaba cerrado o no se pudo: no hay nada más que hacer.
         }
+    }
+
+    /** IP del otro lado; el cliente la usa para mandarle los paquetes UDP al servidor. */
+    public InetAddress direccionIp() {
+        return socket.getInetAddress();
     }
 
     public boolean esLocal() {

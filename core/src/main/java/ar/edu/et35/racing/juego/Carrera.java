@@ -77,6 +77,9 @@ public class Carrera {
     private void avanzar(Map<Integer, EntradaAuto> entradas, float dt) {
         tiempoCarrera += dt;
         for (Participante p : participantes.values()) {
+            if (p.desconectado()) {
+                continue; // su auto salió de la pista: no se simula
+            }
             // Un auto que ya terminó deja de recibir entradas y se va frenando solo.
             EntradaAuto entrada = p.terminado() ? SIN_ENTRADA : entradas.getOrDefault(p.id(), SIN_ENTRADA);
             p.auto().actualizar(entrada, circuito, dt);
@@ -112,7 +115,12 @@ public class Carrera {
      * moverse a uno, el otro absorbe lo que falta) y se reparten la velocidad a lo largo de la línea que los une.
      */
     private void resolverChoques() {
-        List<Participante> lista = new ArrayList<>(participantes.values());
+        List<Participante> lista = new ArrayList<>();
+        for (Participante p : participantes.values()) {
+            if (!p.desconectado()) {
+                lista.add(p);
+            }
+        }
         float distanciaMinima = 2f * ParametrosAuto.RADIO_COLISION;
         for (int i = 0; i < lista.size(); i++) {
             for (int j = i + 1; j < lista.size(); j++) {
@@ -156,13 +164,18 @@ public class Carrera {
         vb.y += impulso * ny;
     }
 
-    /** Cuando el primero termina empieza el cierre; la carrera acaba con todos terminados o al vencer el cierre. */
+    /**
+     * Cuando el primero termina empieza el cierre; la carrera acaba cuando terminaron todos los que siguen
+     * conectados o al vencer el cierre.
+     */
     private void actualizarFin(float dt) {
         boolean alguno = false;
         boolean todos = true;
         for (Participante p : participantes.values()) {
             alguno |= p.terminado();
-            todos &= p.terminado();
+            if (!p.desconectado()) {
+                todos &= p.terminado();
+            }
         }
         if (alguno && !cierreActivo) {
             cierreActivo = true;
@@ -175,7 +188,10 @@ public class Carrera {
         }
     }
 
-    /** Participantes ordenados por posición: primero los que terminaron (por tiempo), después por avance. */
+    /**
+     * Participantes ordenados por posición: primero los que terminaron (por tiempo), después los que siguen en
+     * carrera (por avance) y al final los que abandonaron sin terminar.
+     */
     public List<Participante> clasificacion() {
         List<Participante> lista = new ArrayList<>(participantes.values());
         lista.sort(this::comparar);
@@ -183,6 +199,11 @@ public class Carrera {
     }
 
     private int comparar(Participante a, Participante b) {
+        boolean abandonoA = a.desconectado() && !a.terminado();
+        boolean abandonoB = b.desconectado() && !b.terminado();
+        if (abandonoA != abandonoB) {
+            return abandonoA ? 1 : -1;
+        }
         if (a.terminado() != b.terminado()) {
             return a.terminado() ? -1 : 1;
         }
@@ -217,9 +238,42 @@ public class Carrera {
         List<Participante> orden = clasificacion();
         for (int i = 0; i < orden.size(); i++) {
             Participante p = orden.get(i);
-            lista.add(new ResultadoJugador(i + 1, p.nombre(), p.tiempoTotal(), p.mejorVuelta()));
+            lista.add(new ResultadoJugador(i + 1, p.id(), p.nombre(), p.tiempoTotal(), p.mejorVuelta()));
         }
         return lista;
+    }
+
+    /**
+     * El jugador se fue (por ejemplo, se cortó su conexión): su auto sale de la pista, no choca, no cuenta para
+     * "todos terminaron" y queda al final de la clasificación si no había terminado.
+     */
+    public void marcarDesconectado(int id) {
+        Participante p = participantes.get(id);
+        if (p != null) {
+            p.marcarDesconectado();
+        }
+    }
+
+    /** Segundos de carrera; durante la cuenta regresiva es negativo (-2,4 = faltan 2,4 s para largar). */
+    public float relojCarrera() {
+        return estado == EstadoCarrera.CUENTA_REGRESIVA ? -Math.max(0f, cuentaRestante) : tiempoCarrera;
+    }
+
+    /**
+     * Foto de la carrera para dibujarla o mandarla por red. Las posiciones se interpolan entre el tick anterior y
+     * el actual (alfa entre 0 y 1); el servidor usa alfa = 1.
+     */
+    public FotoCarrera foto(float alfa) {
+        List<FotoAuto> autos = new ArrayList<>();
+        List<Participante> orden = clasificacion();
+        for (int i = 0; i < orden.size(); i++) {
+            Participante p = orden.get(i);
+            Auto a = p.auto();
+            autos.add(new FotoAuto(p.id(), a.xInterpolada(alfa), a.yInterpolada(alfa), a.anguloInterpolado(alfa),
+                a.velocidad().x, a.velocidad().y, p.vueltas(), i + 1, p.terminado(), p.desconectado(),
+                p.terminado() ? p.tiempoTotal() : p.tiempoVuelta(), p.mejorVuelta()));
+        }
+        return new FotoCarrera(estado, relojCarrera(), cierreActivo ? cierreRestante() : Float.NaN, autos);
     }
 
     public Participante participante(int id) {

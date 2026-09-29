@@ -38,6 +38,13 @@ public class Recursos implements Disposable {
         crearEstilos();
     }
 
+    /** Ruta del mapa de Tiled de un circuito, a partir de su nombre (el que viaja en CUENTA_REGRESIVA). */
+    public static String rutaCircuito(String nombre) {
+        // Solo minúsculas, números y guion bajo: un nombre raro que llegue por la red no puede apuntar a otro archivo.
+        String seguro = nombre != null && nombre.matches("[a-z0-9_]+") ? nombre : Config.CIRCUITO;
+        return "circuitos/" + seguro + ".tmx";
+    }
+
     /** Carga un mapa de Tiled (y su tileset) y espera a que termine. Hay que liberarlo con {@link #liberar}. */
     public TiledMap cargarMapa(String ruta) {
         assets.load(ruta, TiledMap.class);

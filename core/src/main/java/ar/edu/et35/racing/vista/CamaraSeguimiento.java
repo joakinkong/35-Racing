@@ -1,6 +1,5 @@
 package ar.edu.et35.racing.vista;
 
-import ar.edu.et35.racing.juego.Auto;
 import ar.edu.et35.racing.juego.Circuito;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.MathUtils;
@@ -22,18 +21,20 @@ public class CamaraSeguimiento {
     private float centroY;
 
     /** @param zoom 1 = escala normal; 2 = se ve el doble de mundo. */
-    public CamaraSeguimiento(OrthographicCamera camara, Circuito circuito, Auto auto, float zoom) {
+    /** Arranca centrada en (x, y), por ejemplo el lugar de largada del auto. */
+    public CamaraSeguimiento(OrthographicCamera camara, Circuito circuito, float x, float y, float zoom) {
         this.camara = camara;
         this.circuito = circuito;
-        this.centroX = auto.x();
-        this.centroY = auto.y();
+        this.centroX = x;
+        this.centroY = y;
         camara.zoom = zoom;
         aplicar();
     }
 
-    public void actualizar(Auto auto, float alfa, float delta) {
-        float objetivoX = auto.xInterpolada(alfa) + auto.velocidad().x * ADELANTO;
-        float objetivoY = auto.yInterpolada(alfa) + auto.velocidad().y * ADELANTO;
+    /** Sigue un auto que está en (x, y) y se mueve a (vx, vy) px/s: se adelanta un poco hacia donde va. */
+    public void actualizar(float x, float y, float vx, float vy, float delta) {
+        float objetivoX = x + vx * ADELANTO;
+        float objetivoY = y + vy * ADELANTO;
         float k = 1f - (float) Math.exp(-SUAVIZADO * delta);
         centroX += (objetivoX - centroX) * k;
         centroY += (objetivoY - centroY) * k;
