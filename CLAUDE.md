@@ -37,6 +37,7 @@ Proyecto final de Programación sobre Redes (grupo de 5). Juego de carreras 2D e
 - En el código de red, explicá brevemente el porqué de cada decisión: el grupo tiene que poder defenderlo.
 - Al terminar, decí cómo probarlo en Eclipse (con varias instancias si hay red de por medio).
 - No hagas commits ni push: los hace cada integrante.
+- Al cerrar cada etapa, documentá el proceso: agregá `docs/proceso/NN-nombre.md` (objetivo, qué se hizo, decisiones, problemas y cómo se resolvieron, verificación, commits y PR) y actualizá la línea de tiempo de `docs/proceso/README.md`. Declará el uso de IA y no le atribuyas trabajo a quien no lo hizo.
 
 ## Comandos
 - Correr: Eclipse → módulo lwjgl3 → Lwjgl3Launcher → Run As → Java Application (o `gradlew lwjgl3:run`; en PowerShell, `.\gradlew`).
