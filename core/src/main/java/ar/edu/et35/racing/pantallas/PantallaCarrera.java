@@ -1,7 +1,6 @@
 package ar.edu.et35.racing.pantallas;
 
 import ar.edu.et35.racing.Main;
-import ar.edu.et35.racing.juego.Auto;
 import ar.edu.et35.racing.juego.CargadorCircuito;
 import ar.edu.et35.racing.juego.Carrera;
 import ar.edu.et35.racing.juego.Circuito;
@@ -44,8 +43,6 @@ public class PantallaCarrera extends PantallaBase {
     private static final Color FONDO_HUD = new Color(0f, 0f, 0f, 0.55f);
     private static final float ANCHO_FRANJA_COLOR = 4f;
     private static final float ANCHO_DIVISOR = 2f;
-    /** Se vuelve a una sola pantalla recién cuando el zoom necesario baja de esta fracción del máximo (evita parpadeos). */
-    private static final float HISTERESIS_UNION = 0.8f;
 
     /** Teclas de un esquema de control. */
     private record Controles(int acelerar, int frenar, int izquierda, int derecha) {
@@ -61,14 +58,12 @@ public class PantallaCarrera extends PantallaBase {
     private final List<Controles[]> controlesLocales = new ArrayList<>();
     private final Map<Integer, EntradaAuto> entradas = new HashMap<>();
 
-    private final OrthographicCamera camaraMundo = new OrthographicCamera();
-    private final FitViewport viewportMundo = new FitViewport(Config.ANCHO_VIRTUAL, Config.ALTO_VIRTUAL, camaraMundo);
-    private final CamaraSeguimiento seguimiento;
-    // Pantalla dividida (solo con 2 jugadores): una cámara por mitad, cada una sigue a su jugador.
-    private final List<OrthographicCamera> camarasDivididas = new ArrayList<>();
-    private final List<CamaraSeguimiento> seguimientosDivididos = new ArrayList<>();
+    // Solo se usa para saber dónde queda la zona de juego (con las barras del FitViewport) dentro de la ventana.
+    private final FitViewport viewportMundo = new FitViewport(Config.ANCHO_VIRTUAL, Config.ALTO_VIRTUAL);
+    // Una cámara por jugador local, siempre con el mismo zoom. Con 2 jugadores la pantalla queda dividida en dos mitades.
+    private final List<OrthographicCamera> camaras = new ArrayList<>();
+    private final List<CamaraSeguimiento> seguimientos = new ArrayList<>();
     private final Image divisor = new Image(recursos.color(Paleta.BLANCO));
-    private boolean dividido;
     private final VistaCircuito vistaCircuito;
     private final VistaAuto vistaAuto = new VistaAuto();
 
@@ -97,16 +92,10 @@ public class PantallaCarrera extends PantallaBase {
             entradas.put(i, new EntradaAuto());
         }
 
-        seguimiento = new CamaraSeguimiento(camaraMundo, circuito, autosLocales());
-        if (jugadoresLocales > 1) {
-            for (Participante jugador : locales) {
-                OrthographicCamera camara = new OrthographicCamera(Config.ANCHO_VIRTUAL / 2f, Config.ALTO_VIRTUAL);
-                camarasDivididas.add(camara);
-                CamaraSeguimiento seguimientoJugador = new CamaraSeguimiento(camara, circuito, List.of(jugador.auto()));
-                // Mismo zoom que tenía la cámara compartida al dividirse, para que el corte no cambie la escala.
-                seguimientoJugador.fijarZoom(CamaraSeguimiento.ZOOM_MAX);
-                seguimientosDivididos.add(seguimientoJugador);
-            }
+        for (Participante jugador : locales) {
+            OrthographicCamera camara = new OrthographicCamera(Config.ANCHO_VIRTUAL / (float) jugadoresLocales, Config.ALTO_VIRTUAL);
+            camaras.add(camara);
+            seguimientos.add(new CamaraSeguimiento(camara, circuito, jugador.auto(), Config.ZOOM_CAMARA));
         }
         vistaCircuito = new VistaCircuito(mapa, recursos.batch);
         armarInterfaz();
@@ -138,27 +127,8 @@ public class PantallaCarrera extends PantallaBase {
 
         divisor.setBounds(Config.ANCHO_VIRTUAL / 2f - ANCHO_DIVISOR / 2f, 0f, ANCHO_DIVISOR, Config.ALTO_VIRTUAL);
         divisor.setTouchable(Touchable.disabled);
-        divisor.setVisible(false);
+        divisor.setVisible(locales.size() > 1);
         escena.addActor(divisor);
-    }
-
-    private List<Auto> autosLocales() {
-        List<Auto> autos = new ArrayList<>();
-        for (Participante p : ordenLocalesPorPosicion()) {
-            autos.add(p.auto());
-        }
-        return autos;
-    }
-
-    /** Los jugadores locales del primero al último en carrera. */
-    private List<Participante> ordenLocalesPorPosicion() {
-        List<Participante> orden = new ArrayList<>();
-        for (Participante p : carrera.clasificacion()) {
-            if (locales.contains(p)) {
-                orden.add(p);
-            }
-        }
-        return orden;
     }
 
     @Override
@@ -171,47 +141,25 @@ public class PantallaCarrera extends PantallaBase {
         }
         float alfa = acumulador / PASO;
 
-        List<Auto> autos = autosLocales();
-        seguimiento.actualizar(autos, alfa, delta);
-        for (int i = 0; i < seguimientosDivididos.size(); i++) {
-            seguimientosDivididos.get(i).actualizar(List.of(locales.get(i).auto()), alfa, delta);
+        for (int i = 0; i < camaras.size(); i++) {
+            seguimientos.get(i).actualizar(locales.get(i).auto(), alfa, delta);
         }
-        actualizarModoDividido(autos, alfa);
 
+        // La zona de juego se reparte en tantas franjas verticales como jugadores locales.
         viewportMundo.apply();
-        if (!dividido) {
-            dibujarMundo(camaraMundo, alfa);
-        } else {
-            // Cada jugador ve su propio auto en una mitad de la zona de juego (con las barras del FitViewport).
-            int x = viewportMundo.getScreenX();
-            int y = viewportMundo.getScreenY();
-            int ancho = viewportMundo.getScreenWidth();
-            int alto = viewportMundo.getScreenHeight();
-            int mitad = ancho / 2;
-            HdpiUtils.glViewport(x, y, mitad, alto);
-            dibujarMundo(camarasDivididas.get(0), alfa);
-            HdpiUtils.glViewport(x + mitad, y, ancho - mitad, alto);
-            dibujarMundo(camarasDivididas.get(1), alfa);
+        int x = viewportMundo.getScreenX();
+        int y = viewportMundo.getScreenY();
+        int ancho = viewportMundo.getScreenWidth();
+        int alto = viewportMundo.getScreenHeight();
+        int n = camaras.size();
+        for (int i = 0; i < n; i++) {
+            int desde = ancho * i / n;
+            int hasta = ancho * (i + 1) / n;
+            HdpiUtils.glViewport(x + desde, y, hasta - desde, alto);
+            dibujarMundo(camaras.get(i), alfa);
         }
-        divisor.setVisible(dividido);
 
         actualizarInterfaz(delta);
-    }
-
-    /**
-     * Pasa a pantalla dividida cuando los autos locales no entran juntos ni con el zoom máximo, y vuelve a una
-     * sola pantalla cuando se acercan lo suficiente.
-     */
-    private void actualizarModoDividido(List<Auto> autos, float alfa) {
-        if (camarasDivididas.isEmpty()) {
-            return;
-        }
-        float necesario = CamaraSeguimiento.zoomNecesario(autos, alfa);
-        if (!dividido && necesario > CamaraSeguimiento.ZOOM_MAX) {
-            dividido = true;
-        } else if (dividido && necesario < CamaraSeguimiento.ZOOM_MAX * HISTERESIS_UNION) {
-            dividido = false;
-        }
     }
 
     private void dibujarMundo(OrthographicCamera camara, float alfa) {

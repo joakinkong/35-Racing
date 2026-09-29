@@ -17,14 +17,14 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 - Vista de la carrera: `VistaCircuito`, `VistaAuto` (monoplaza dibujado con formas) y `CamaraSeguimiento`.
 - `Carrera` con un auto manejable (flechas o WASD): simulación a paso fijo con acumulador, dibujo interpolado y HUD con la velocidad.
 - Reglas de carrera en `juego` (sin dependencias gráficas, para que las simule el servidor): `Carrera` con estados `CUENTA_REGRESIVA`, `EN_CURSO` y `TERMINADA`, de 1 a 5 autos por id, cuenta regresiva de 3 s con los autos quietos, vueltas validadas por checkpoints en orden (no suma ir marcha atrás ni en contramano), tiempo por vuelta, mejor vuelta y tiempo total, posiciones por vueltas, checkpoint y distancia, cierre de 30 s después de que el primero termina y choques entre autos que se separan y se reparten la velocidad. Se suman `Participante`, `EstadoCarrera` y `ResultadoJugador`.
-- Prueba local para 2 jugadores en el mismo teclado (J1 con WASD, J2 con flechas) con cámara que encuadra a los dos y HUD por jugador (vuelta, posición, tiempo actual y mejor vuelta), cartel de cuenta regresiva y "¡YA!".
+- Prueba local para 2 jugadores en el mismo teclado (J1 con WASD, J2 con flechas) con pantalla dividida (una cámara por jugador, siempre en zoom 2x) y HUD por jugador (vuelta, posición, tiempo actual y mejor vuelta), cartel de cuenta regresiva y "¡YA!".
 - Resultados con datos reales (posición, piloto, tiempo total y mejor vuelta), que se muestran solos al terminar la carrera.
 - `Tiempo` para formatear tiempos de carrera y una paleta de colores para distinguir hasta 5 autos.
 
 ### Corregido
 
 - Los checkpoints del circuito provisorio van de muro a muro (pista más pasto de escape) y no solo sobre la pista: un auto que se sale al pasto igual los cruza y sus vueltas cuentan, con la desventaja de ir más lento.
-- En la prueba local, cuando los dos autos se separan más de lo que entra con el zoom máximo, la pantalla se divide y cada jugador ve su propio auto. Antes la cámara seguía siempre al que iba primero y el otro quedaba fuera de pantalla. Cada mitad usa el mismo zoom (2x) que tenía la cámara compartida al máximo, para que el corte no cambie la escala del mundo.
+- En la prueba local, cada jugador tiene su propia cámara con zoom fijo de 2x y la pantalla queda siempre dividida en dos mitades. Antes había una cámara compartida que seguía al que iba primero cuando se separaban, y el otro quedaba fuera de pantalla.
 
 ### Cambiado
 

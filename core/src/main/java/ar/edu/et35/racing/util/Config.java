@@ -29,4 +29,6 @@ public final class Config {
     public static final int ALTO_VIRTUAL = 360;
     public static final int VENTANA_ANCHO = 1280;
     public static final int VENTANA_ALTO = 720;
+    /** Zoom de la cámara de cada jugador: 2 = se ve el doble de mundo que con la resolución virtual. */
+    public static final float ZOOM_CAMARA = 2f;
 }
