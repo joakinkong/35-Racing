@@ -103,7 +103,7 @@ public class Lobby extends PantallaBase {
                     mensajeError.setText(mensaje.campo(1));
                     break;
                 case Protocolo.CUENTA_REGRESIVA:
-                    empezarCarrera();
+                    empezarCarrera(mensaje);
                     return;
                 case Protocolo.CERRADA:
                     salir("La partida se cerró: " + mensaje.campo(0));
@@ -120,10 +120,10 @@ public class Lobby extends PantallaBase {
         }
     }
 
-    /** Por ahora cada uno corre su propia carrera local; en la etapa siguiente se sincroniza por UDP. */
-    private void empezarCarrera() {
+    /** CUENTA_REGRESIVA trae el circuito y las vueltas; la carrera la simula el servidor y acá solo se dibuja. */
+    private void empezarCarrera(Mensaje mensaje) {
         navego = true;
-        juego.irA(new PantallaCarrera(juego, cliente.nombre(), cliente.miAuto()));
+        juego.irA(new PantallaCarrera(juego, mensaje.campo(0), mensaje.entero(1, Config.VUELTAS)));
     }
 
     private void salir(String aviso) {

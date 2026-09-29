@@ -1,6 +1,5 @@
 package ar.edu.et35.racing.vista;
 
-import ar.edu.et35.racing.juego.Auto;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -17,12 +16,11 @@ public class VistaAuto implements Disposable {
 
     private final ShapeRenderer formas = new ShapeRenderer();
 
-    /** Dibuja el auto interpolado entre el tick anterior y el actual (alfa entre 0 y 1). */
-    public void dibujar(Auto auto, float alfa, Color color, OrthographicCamera camara) {
-        float x = auto.xInterpolada(alfa);
-        float y = auto.yInterpolada(alfa);
-        float grados = auto.anguloInterpolado(alfa);
-
+    /**
+     * Dibuja un auto en esa posición y ángulo (grados). Recibe datos simples y no un {@code Auto}, porque en red el
+     * cliente no tiene la física del auto: solo lo que le manda el servidor.
+     */
+    public void dibujar(float x, float y, float grados, Color color, OrthographicCamera camara) {
         formas.setProjectionMatrix(camara.combined);
         formas.begin(ShapeType.Filled);
         // Ruedas
