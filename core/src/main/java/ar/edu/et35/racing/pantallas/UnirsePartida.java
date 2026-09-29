@@ -1,12 +1,15 @@
 package ar.edu.et35.racing.pantallas;
 
 import ar.edu.et35.racing.Main;
+import ar.edu.et35.racing.juego.CargadorCircuito;
+import ar.edu.et35.racing.juego.Circuito;
 import ar.edu.et35.racing.red.Protocolo;
 import ar.edu.et35.racing.red.Protocolo.Mensaje;
 import ar.edu.et35.racing.red.SesionRed;
 import ar.edu.et35.racing.red.cliente.ClientePartida;
 import ar.edu.et35.racing.red.servidor.ServidorPartida;
 import ar.edu.et35.racing.util.Config;
+import ar.edu.et35.racing.util.Recursos;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
@@ -78,14 +81,21 @@ public class UnirsePartida extends PantallaBase {
         }
     }
 
-    /** El host levanta su servidor y se conecta a él por 127.0.0.1, como un cliente más. */
+    /**
+     * El host levanta su servidor y se conecta a él por 127.0.0.1, como un cliente más. El circuito se carga acá, en
+     * el hilo de render, porque cargar el mapa de Tiled crea texturas y eso no se puede hacer desde el hilo del
+     * servidor; al servidor le llega solo el Circuito (datos puros), y el mapa se libera enseguida.
+     */
     private void crearPartida(String nombre) {
+        String ruta = Recursos.rutaCircuito(Config.CIRCUITO);
+        Circuito circuito = CargadorCircuito.cargar(recursos.cargarMapa(ruta), Config.MAX_JUGADORES);
+        recursos.liberar(ruta);
         ServidorPartida servidor;
         try {
-            servidor = ServidorPartida.crear(Config.PUERTO_TCP);
+            servidor = ServidorPartida.crear(Config.PUERTO_TCP, Config.PUERTO_UDP, circuito);
         } catch (IOException e) {
-            mostrarError("No se pudo crear la partida: el puerto " + Config.PUERTO_TCP
-                + " está ocupado. ¿Ya hay una partida creada en esta PC?");
+            mostrarError("No se pudo crear la partida: los puertos " + Config.PUERTO_TCP + " y " + Config.PUERTO_UDP
+                + " están ocupados. ¿Ya hay una partida creada en esta PC?");
             return;
         }
         ClientePartida cliente = new ClientePartida(nombre);

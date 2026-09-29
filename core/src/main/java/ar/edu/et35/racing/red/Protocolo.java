@@ -1,6 +1,8 @@
 package ar.edu.et35.racing.red;
 
+import ar.edu.et35.racing.juego.ResultadoJugador;
 import ar.edu.et35.racing.util.Config;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -92,6 +94,43 @@ public final class Protocolo {
     public static boolean nombreValido(String nombre) {
         return nombre != null && !nombre.isBlank() && nombre.equals(nombre.strip())
             && nombre.length() <= Config.LARGO_MAXIMO_NOMBRE && NOMBRE.matcher(nombre).matches();
+    }
+
+    /**
+     * Arma el mensaje RESULTADOS: {@code RESULTADOS;cantidad;posicion;id;nombre;totalMs;mejorVueltaMs...}. Los
+     * tiempos van en milisegundos enteros (nunca con decimales, que en una PC en español se escriben con coma), y
+     * -1 si no terminó o no completó ninguna vuelta.
+     */
+    public static String armarResultados(List<ResultadoJugador> resultados) {
+        StringBuilder linea = new StringBuilder(armar(RESULTADOS, resultados.size()));
+        for (ResultadoJugador r : resultados) {
+            linea.append(';').append(r.posicion()).append(';').append(r.id()).append(';').append(r.nombre())
+                .append(';').append(aMilisegundos(r.tiempoTotal())).append(';').append(aMilisegundos(r.mejorVuelta()));
+        }
+        return linea.toString();
+    }
+
+    /** Lee un mensaje RESULTADOS; los tiempos vuelven a segundos (NaN donde venía -1). */
+    public static List<ResultadoJugador> leerResultados(Mensaje mensaje) {
+        int cantidad = Math.min(mensaje.entero(0, 0), Config.MAX_JUGADORES);
+        List<ResultadoJugador> lista = new ArrayList<>();
+        for (int i = 0; i < cantidad; i++) {
+            int base = 1 + i * 5;
+            if (base + 4 >= mensaje.campos().size()) {
+                break;
+            }
+            lista.add(new ResultadoJugador(mensaje.entero(base, i + 1), mensaje.entero(base + 1, -1),
+                mensaje.campo(base + 2), aSegundos(mensaje.entero(base + 3, -1)), aSegundos(mensaje.entero(base + 4, -1))));
+        }
+        return lista;
+    }
+
+    private static int aMilisegundos(float segundos) {
+        return Float.isNaN(segundos) ? -1 : Math.round(segundos * 1000f);
+    }
+
+    private static float aSegundos(int milisegundos) {
+        return milisegundos < 0 ? Float.NaN : milisegundos / 1000f;
     }
 
     /** El texto del ERROR va en un solo campo: no puede llevar ";" ni saltos de línea. */
