@@ -116,10 +116,13 @@ public class Recursos implements Disposable {
         skin.add("titulo", new LabelStyle(titulo, Paleta.BLANCO));
         skin.add("gris", new LabelStyle(normal, Paleta.GRIS_CLARO));
         skin.add("rojo", new LabelStyle(normal, Paleta.ROJO));
+        skin.add("verde", new LabelStyle(normal, Paleta.VERDE));
 
         TextButtonStyle boton = new TextButtonStyle(color(Paleta.GRIS), color(Paleta.ROJO_OSCURO), null, normal);
         boton.over = color(Paleta.ROJO);
         boton.fontColor = Paleta.BLANCO;
+        boton.disabled = color(Paleta.GRIS_OSCURO);
+        boton.disabledFontColor = Paleta.GRIS_CLARO;
         skin.add("default", boton);
 
         Drawable cursor = color(Paleta.BLANCO);

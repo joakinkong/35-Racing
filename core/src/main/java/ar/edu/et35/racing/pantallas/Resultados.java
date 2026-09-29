@@ -2,6 +2,7 @@ package ar.edu.et35.racing.pantallas;
 
 import ar.edu.et35.racing.Main;
 import ar.edu.et35.racing.juego.ResultadoJugador;
+import ar.edu.et35.racing.red.SesionRed;
 import ar.edu.et35.racing.util.Paleta;
 import ar.edu.et35.racing.util.Tiempo;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
@@ -45,6 +46,21 @@ public class Resultados extends PantallaBase {
             tabla.add(new Label(textos[i], skin, i == 0 ? estiloPosicion : estilo)).width(ANCHOS[i]).height(ALTO_FILA).left();
         }
         tabla.row();
+    }
+
+    /**
+     * Mientras se ven los resultados, la partida en red (si la hay) sigue abierta: se manda el PING y se vacían los
+     * mensajes, para que el servidor no dé por caído a este jugador. Se cierra al volver al menú.
+     */
+    @Override
+    protected void actualizar(float delta) {
+        SesionRed sesion = juego.sesion();
+        if (sesion != null) {
+            sesion.cliente().actualizar();
+            while (sesion.cliente().sondear() != null) {
+                // Todavía no hay nada que mostrar de la red en esta pantalla.
+            }
+        }
     }
 
     @Override

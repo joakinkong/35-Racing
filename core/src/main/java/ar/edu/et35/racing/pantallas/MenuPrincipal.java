@@ -15,16 +15,27 @@ public class MenuPrincipal extends PantallaBase {
     private static final float ALTO_BOTON = 30f;
 
     public MenuPrincipal(Main juego) {
+        this(juego, null);
+    }
+
+    /** @param aviso texto para mostrar bajo los botones (por ejemplo, por qué se cortó una partida), o null */
+    public MenuPrincipal(Main juego, String aviso) {
         super(juego);
+        // En el menú nunca hay una partida en red abierta: si veníamos de una, se cierra acá.
+        juego.cerrarSesion();
 
         contenido.add(new Label("35 RACING", skin, "titulo")).row();
         contenido.add(new Label("F1 ARCADE  ·  RED LOCAL", skin, "gris")).padBottom(8).row();
         contenido.add(luces()).padBottom(12).row();
 
-        agregarBoton("CREAR PARTIDA", () -> juego.irA(new Lobby(juego)));
-        agregarBoton("UNIRSE A UNA PARTIDA", () -> juego.irA(new UnirsePartida(juego)));
+        agregarBoton("CREAR PARTIDA", () -> juego.irA(new UnirsePartida(juego, true)));
+        agregarBoton("UNIRSE A UNA PARTIDA", () -> juego.irA(new UnirsePartida(juego, false)));
         agregarBoton("PRUEBA LOCAL", () -> juego.irA(new PantallaCarrera(juego, 2)));
         agregarBoton("SALIR", Gdx.app::exit);
+
+        if (aviso != null) {
+            contenido.add(new Label(aviso, skin, "rojo")).padTop(6);
+        }
     }
 
     private void agregarBoton(String texto, Runnable accion) {
