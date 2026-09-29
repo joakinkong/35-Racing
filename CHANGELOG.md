@@ -8,10 +8,12 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ### Agregado
 
+- Robustez de red: si dejan de llegar estados UDP en plena carrera, aviso "Conexión inestable..." a 1 s y vuelta al menú a `Config.TIMEOUT_RED` (5 s), con un mensaje que apunta al firewall si nunca llegó ninguno; el servidor avisa en su consola si un jugador no manda entradas UDP; una falla inesperada en la simulación del servidor cierra la partida para todos con el motivo.
+- Cierre de ventana a prueba de fallas en cualquier pantalla (sockets, hilos y puertos liberados) y tope de espera al conectar.
 - Carrera sincronizada por UDP según `docs/PROTOCOLO.md`: el servidor simula la `Carrera` a 60 ticks por segundo con la última entrada de cada jugador y manda el `ESTADO` de todos los autos 30 veces por segundo; los clientes mandan su `ENTRADA` 60 veces por segundo y dibujan lo que llega, interpolado 100 ms en el pasado. Paquetes binarios en `PaquetesUdp`, descarte por secuencia y por token, `Interpolador` y `CarreraEnRed`.
 - Resultados por TCP y revancha: el host vuelve al lobby con los mismos jugadores o cierra la partida para todos. Si un jugador abandona en carrera, su auto sale de la pista y los demás ven un aviso.
 - `FotoCarrera`, `FotoAuto` y `FuenteCarrera`: la pantalla de carrera dibuja fotos de una `SimulacionLocal` (prueba local, sin red) o de la carrera en red.
-- Pérdida de paquetes simulada (`Config.PERDIDA_UDP_SIMULADA`) y, con `DEBUG_RED`, la tecla F8 para cambiarla en vivo entre 0 %, 20 % y 50 %.
+- Pérdida de paquetes simulada (`Config.PERDIDA_UDP_SIMULADA`) y, con `DEBUG_RED`, la tecla F8 para cambiarla en vivo entre 0 %, 20 %, 50 % y 100 % (corte total).
 - Conexión y lobby por TCP según `docs/PROTOCOLO.md`: paquete `red` con `ServidorPartida` (hilo de aceptación, un lector por cliente y un hilo de lógica que es el único que toca el estado), `ClientePartida` (conexión en segundo plano, cola thread-safe de mensajes y `PING` cada 2 s), `Protocolo`, `ConexionTcp`, `EstadoLobby`, `SesionRed` y `DireccionesLocales`.
 - "Crear partida" (pide el nombre y levanta el servidor), "Unirse" (nombre e IP, con mensajes de error claros) y lobby en vivo con elección de auto sin repetir, "listo", botón de iniciar solo para el host y las IPs de la red del host. Al iniciar, cada jugador corre su propia carrera local con su nombre y color.
 - Log en consola de cada mensaje de red (`Config.DEBUG_RED`) y constantes de red en `Config`.
