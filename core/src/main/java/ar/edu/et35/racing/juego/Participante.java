@@ -18,6 +18,7 @@ public class Participante {
     private float mejorVuelta = Float.NaN;
     private float tiempoTotal = Float.NaN;
     private boolean terminado;
+    private boolean desconectado;
 
     Participante(int id, String nombre, Auto auto, int cantidadCheckpoints) {
         this.id = id;
@@ -93,5 +94,14 @@ public class Participante {
 
     public boolean terminado() {
         return terminado;
+    }
+
+    void marcarDesconectado() {
+        desconectado = true;
+    }
+
+    /** El jugador se fue de la partida; su auto ya no está en la pista. */
+    public boolean desconectado() {
+        return desconectado;
     }
 }

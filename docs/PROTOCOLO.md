@@ -110,7 +110,7 @@ Reglas para que ambos lados se entiendan igual:
 | `CERRADA;<motivo>` | texto para mostrar | A todos, cuando el host cierra la partida |
 | `PONG;<marca>` | la misma marca del `PING` | Respuesta a cada `PING` |
 
-Al unirse, el servidor le asigna al jugador el **primer auto libre**, así nadie queda sin auto; `ELEGIR_AUTO` lo cambia si el pedido está libre. El orden en la grilla de largada es el orden de llegada al lobby.
+Al unirse, el servidor le asigna al jugador el **primer auto libre**, así nadie queda sin auto; `ELEGIR_AUTO` lo cambia si el pedido está libre. El orden en la grilla de largada es el orden de llegada al lobby. **El host es el primer jugador que se une**: es el que crea la partida y su cliente se conecta a su propio servidor enseguida. Una conexión que no manda `UNIRSE` (ni nada) queda sin datos, y a los 6 s el servidor la cierra por timeout.
 
 Ejemplo de `LOBBY` con dos jugadores, donde el host (id 0) eligió el auto 0 y está listo, y el otro eligió el auto 3 y no está listo:
 
@@ -131,7 +131,7 @@ LOBBY;0;2;0;Joaquin;0;1;1;Mateo;3;0
 | `NO_PERMITIDO` | `INICIAR` o `REVANCHA` de alguien que no es el host, o en un estado en que no corresponde | No |
 | `FALTAN_JUGADORES` | `INICIAR` con menos de 2 jugadores o con alguno que no está listo | No |
 
-Cuando el error cierra la conexión, el servidor manda el `ERROR` y después cierra el socket, para que el cliente pueda mostrar el motivo.
+Cuando el error cierra la conexión, el servidor manda el `ERROR` y después cierra el socket, para que el cliente pueda mostrar el motivo. Los errores se comprueban en este orden: `VERSION_DISTINTA`, `CARRERA_EN_CURSO`, `PARTIDA_LLENA`, `NOMBRE_INVALIDO` y `NOMBRE_REPETIDO`. Para `INICIAR`, el host también tiene que estar listo: "todos listos" incluye a todos los jugadores.
 
 ---
 
@@ -269,6 +269,8 @@ Casi toda la demora es el retraso de interpolación, no la red. En un juego de c
 2. Si la dirección se siente "pesada", pasar a **60 Hz y 50 ms** cambiando dos constantes: la demora típica baja a **unos 77 ms** (peor caso, 104 ms) y el tráfico sigue siendo mínimo (sección 5).
 3. Solo si todavía no alcanza, agregar predicción del auto propio (simularlo también en el cliente con sus propias entradas y corregirlo con lo que dice el servidor). El modelo lo permite porque `Auto.actualizar` es determinístico, pero suma complejidad, y por eso queda como último recurso.
 
+**Medido en la etapa 7** (servidor y clientes reales en una PC, 30 Hz y 100 ms): desde que un cliente aprieta el acelerador hasta el primer movimiento de ese auto en otra pantalla pasan **unos 97 ms** (entre 90 y 104 en 6 mediciones), menos que los 135 estimados. La diferencia es que el movimiento empieza a verse apenas el momento a dibujar pasa el último estado en que el auto estaba quieto, sin esperar a llegar al primer estado en movimiento. Como referencia, sin red la física sola tarda 100 ms en correr 1 px un auto parado. Por eso se mantuvieron los valores iniciales.
+
 ---
 
 ## 7. Hilos
@@ -333,7 +335,7 @@ El hilo de simulación escribe en los sockets TCP directamente, con un método `
 | El **firewall bloquea UDP** (y TCP anda) | En la carrera no llega ningún `ESTADO` a los 3 s de la `CUENTA_REGRESIVA`, o el servidor no recibe ninguna `ENTRADA` de un jugador | Cliente: "No llegan datos por UDP: revisá el firewall de la PC del host (puerto 7778)". Servidor: lo registra en consola. Es el riesgo "red del colegio" de la propuesta, y así se diagnostica en vez de ver autos quietos sin explicación |
 | El puerto 7777 o 7778 ya está ocupado | `BindException` al crear el servidor | "Crear partida" muestra el error; no se crea un servidor a medias |
 
-**Prueba de pérdida de paquetes** (lo prometió la propuesta): una constante `Config.PERDIDA_UDP_SIMULADA` (entre 0 y 1, en 0 por defecto) hace que los receptores UDP descarten al azar esa fracción de los paquetes. Con 0,2 (1 de cada 5) el juego tiene que seguir siendo jugable.
+**Prueba de pérdida de paquetes** (lo prometió la propuesta): una constante `Config.PERDIDA_UDP_SIMULADA` (entre 0 y 1, en 0 por defecto) hace que los receptores UDP descarten al azar esa fracción de los paquetes. Con 0,2 (1 de cada 5) el juego tiene que seguir siendo jugable. Además, con `Config.DEBUG_RED` activo, la tecla **F8** en plena carrera la cambia entre 0 %, 20 % y 50 % y el HUD lo indica, para mostrarlo en vivo sin recompilar. Afecta a los receptores de esa PC.
 
 ---
 
@@ -426,14 +428,16 @@ Las que ya existen (`MAX_JUGADORES`, `VUELTAS`, `TICKS_POR_SEGUNDO`, `PUERTO_TCP
 
 ## Cambios al modelo actual para la etapa 7
 
-Revisando el código actual contra este protocolo, estas son las cosas que complican la red y conviene cambiar:
+Revisando el código actual contra este protocolo, estas son las cosas que complican la red y conviene cambiar. **Todas quedaron hechas en la etapa 7**; la 5 se resolvió de otra manera (ver la nota).
 
 1. **La pantalla de carrera simula y dibuja a la vez.** Hoy `PantallaCarrera` crea la `Carrera`, lee el teclado, simula y dibuja. En red, el cliente solo dibuja lo que manda el servidor. Hay que separar el dibujo de la simulación: que la pantalla dibuje a partir de "estados" (posición, ángulo, vueltas, tiempos de cada auto), vengan de una `Carrera` local (prueba local) o de los `ESTADO` recibidos (red).
 2. **`VistaAuto` y `CamaraSeguimiento` reciben un `Auto`.** Necesitan un `Auto` con física, que el cliente en red no tiene. Deberían recibir datos simples: `x`, `y`, ángulo y, para la cámara, la velocidad estimada.
 3. **Cargar el circuito no se puede hacer desde el hilo del servidor.** `CargadorCircuito` parte de un `TiledMap`, y cargarlo crea las texturas del tileset, lo que solo se puede hacer en el hilo de render de LibGDX. Propuesta: el host carga el `Circuito` en el hilo de render al crear la partida y se lo pasa al servidor en el constructor (antes de arrancar sus hilos, así los hilos lo ven completo). El servidor solo lo lee y nunca lo modifica.
 4. **Desconexiones:** `Carrera` necesita `marcarDesconectado(id)`: el auto no recibe más entradas, no participa de los choques, va al final de la clasificación y no cuenta para la condición "todos terminaron".
-5. **El color sale del id del jugador, no del auto elegido.** Hoy `Paleta.COLORES_AUTOS[p.id()]`. Con red, el id lo asigna el servidor por orden de llegada y el color es el auto elegido en el lobby, así que `Participante` necesita guardar el número de auto (`agregarAuto(id, nombre, auto)`).
+5. **El color sale del id del jugador, no del auto elegido.** Hoy `Paleta.COLORES_AUTOS[p.id()]`. Con red, el id lo asigna el servidor por orden de llegada y el color es el auto elegido en el lobby. *Cómo se resolvió (distinto de lo propuesto, con acuerdo del grupo):* el modelo no guarda colores; la pantalla le pregunta a su fuente de datos el color de cada id, y en red la fuente lo busca en el lobby con que se largó la carrera (id → auto elegido). Así `Carrera` y `Participante` no necesitan saber de colores.
 6. **Reloj de la carrera:** `Carrera` expone la cuenta regresiva como entero (`segundosCuentaRegresiva()`). Para la cabecera del `ESTADO` hace falta el reloj con decimales, negativo durante la cuenta (por ejemplo, `relojCarrera()`).
-7. **Tiempos para TCP:** `ResultadoJugador` usa segundos en `float` con `NaN`. Para el mensaje `RESULTADOS` se convierten a milisegundos enteros, con `-1` en lugar de `NaN` (sección 3).
+7. **Tiempos para TCP:** `ResultadoJugador` usa segundos en `float` con `NaN`. Para el mensaje `RESULTADOS` se convierten a milisegundos enteros, con `-1` en lugar de `NaN` (sección 3). `ResultadoJugador` además suma el id del jugador, que el mensaje necesita.
+
+**Cómo quedó el cambio 1 en el código:** la pantalla de carrera dibuja una `FotoCarrera` (la carrera en un instante: estado, reloj, cierre y, por auto, lo mismo que viaja en el `ESTADO`) que le pide a una `FuenteCarrera`. Hay dos fuentes: `SimulacionLocal` (la prueba local, que simula en la PC) y `CarreraEnRed` (que manda `ENTRADA` y pasa los `ESTADO` por el `Interpolador`). El servidor usa la misma `FotoCarrera` para armar el `ESTADO`, y el cliente la vuelve a armar al leerlo.
 
 Lo que ya sirve tal como está: `Carrera.actualizar(Map<Integer, EntradaAuto>, dt)` recibe las entradas por id y no lee el teclado, que es exactamente lo que necesita el servidor; y `EntradaAuto` ya es un estado de botones, igual que el paquete `ENTRADA`.

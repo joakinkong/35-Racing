@@ -8,6 +8,13 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ### Agregado
 
+- Carrera sincronizada por UDP según `docs/PROTOCOLO.md`: el servidor simula la `Carrera` a 60 ticks por segundo con la última entrada de cada jugador y manda el `ESTADO` de todos los autos 30 veces por segundo; los clientes mandan su `ENTRADA` 60 veces por segundo y dibujan lo que llega, interpolado 100 ms en el pasado. Paquetes binarios en `PaquetesUdp`, descarte por secuencia y por token, `Interpolador` y `CarreraEnRed`.
+- Resultados por TCP y revancha: el host vuelve al lobby con los mismos jugadores o cierra la partida para todos. Si un jugador abandona en carrera, su auto sale de la pista y los demás ven un aviso.
+- `FotoCarrera`, `FotoAuto` y `FuenteCarrera`: la pantalla de carrera dibuja fotos de una `SimulacionLocal` (prueba local, sin red) o de la carrera en red.
+- Pérdida de paquetes simulada (`Config.PERDIDA_UDP_SIMULADA`) y, con `DEBUG_RED`, la tecla F8 para cambiarla en vivo entre 0 %, 20 % y 50 %.
+- Conexión y lobby por TCP según `docs/PROTOCOLO.md`: paquete `red` con `ServidorPartida` (hilo de aceptación, un lector por cliente y un hilo de lógica que es el único que toca el estado), `ClientePartida` (conexión en segundo plano, cola thread-safe de mensajes y `PING` cada 2 s), `Protocolo`, `ConexionTcp`, `EstadoLobby`, `SesionRed` y `DireccionesLocales`.
+- "Crear partida" (pide el nombre y levanta el servidor), "Unirse" (nombre e IP, con mensajes de error claros) y lobby en vivo con elección de auto sin repetir, "listo", botón de iniciar solo para el host y las IPs de la red del host. Al iniciar, cada jugador corre su propia carrera local con su nombre y color.
+- Log en consola de cada mensaje de red (`Config.DEBUG_RED`) y constantes de red en `Config`.
 - Diseño del protocolo de red en `docs/PROTOCOLO.md`: arquitectura con servidor autoritativo en el host, máquina de estados de la partida, mensajes TCP de texto con sus errores, paquetes UDP binarios `ENTRADA` (11 bytes) y `ESTADO` (132 bytes con 5 autos) con números de secuencia, frecuencias y ancho de banda, interpolación en el cliente, hilos, manejo de fallas y diagramas. Todavía sin código.
 - Esqueleto del juego con estética Fórmula 1 (fondo carbono, rojo de largada, bandera de cuadros y pianos): `Main` extiende `Game` y hay cinco pantallas navegables (`MenuPrincipal`, `UnirsePartida`, `Lobby`, `Carrera`, `Resultados`), con ESC para volver.
 - `Config` con las constantes globales, `Paleta` con los colores y `Recursos` que centraliza el `AssetManager`, el `SpriteBatch` y el `Skin` armado por código.
@@ -31,6 +38,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ### Cambiado
 
+- `VistaAuto` y `CamaraSeguimiento` reciben posición, ángulo y velocidad en lugar de un `Auto`; `ResultadoJugador` suma el id del jugador; el servidor recibe el `Circuito` ya cargado.
 - La pantalla `Carrera` pasa a llamarse `PantallaCarrera`, para no chocar con el modelo `juego.Carrera`. "Prueba local" abre 2 jugadores y "Iniciar" en el Lobby, 1 jugador (hasta que haya red).
 
 ## [0.1.0] - 2026-09-28

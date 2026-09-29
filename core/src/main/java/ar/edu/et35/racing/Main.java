@@ -1,6 +1,7 @@
 package ar.edu.et35.racing;
 
 import ar.edu.et35.racing.pantallas.MenuPrincipal;
+import ar.edu.et35.racing.red.SesionRed;
 import ar.edu.et35.racing.util.Recursos;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
@@ -9,6 +10,7 @@ import com.badlogic.gdx.Screen;
 /** Punto de entrada compartido por todas las plataformas. Maneja la pantalla activa. */
 public class Main extends Game {
     private Recursos recursos;
+    private SesionRed sesion;
 
     @Override
     public void create() {
@@ -18,6 +20,24 @@ public class Main extends Game {
 
     public Recursos recursos() {
         return recursos;
+    }
+
+    /** La partida en red que hay abierta (cliente y, si esta PC es el host, servidor), o null si no hay ninguna. */
+    public SesionRed sesion() {
+        return sesion;
+    }
+
+    public void setSesion(SesionRed nueva) {
+        cerrarSesion();
+        sesion = nueva;
+    }
+
+    /** Cierra la partida en red si hay una abierta: avisa que se va, cierra sockets y detiene los hilos de red. */
+    public void cerrarSesion() {
+        if (sesion != null) {
+            sesion.cerrar();
+            sesion = null;
+        }
     }
 
     /**
@@ -38,6 +58,7 @@ public class Main extends Game {
     public void dispose() {
         Screen actual = getScreen();
         super.dispose();
+        cerrarSesion();
         if (actual != null) {
             actual.dispose();
         }

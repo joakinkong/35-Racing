@@ -38,6 +38,13 @@ public class Recursos implements Disposable {
         crearEstilos();
     }
 
+    /** Ruta del mapa de Tiled de un circuito, a partir de su nombre (el que viaja en CUENTA_REGRESIVA). */
+    public static String rutaCircuito(String nombre) {
+        // Solo minúsculas, números y guion bajo: un nombre raro que llegue por la red no puede apuntar a otro archivo.
+        String seguro = nombre != null && nombre.matches("[a-z0-9_]+") ? nombre : Config.CIRCUITO;
+        return "circuitos/" + seguro + ".tmx";
+    }
+
     /** Carga un mapa de Tiled (y su tileset) y espera a que termine. Hay que liberarlo con {@link #liberar}. */
     public TiledMap cargarMapa(String ruta) {
         assets.load(ruta, TiledMap.class);
@@ -116,10 +123,13 @@ public class Recursos implements Disposable {
         skin.add("titulo", new LabelStyle(titulo, Paleta.BLANCO));
         skin.add("gris", new LabelStyle(normal, Paleta.GRIS_CLARO));
         skin.add("rojo", new LabelStyle(normal, Paleta.ROJO));
+        skin.add("verde", new LabelStyle(normal, Paleta.VERDE));
 
         TextButtonStyle boton = new TextButtonStyle(color(Paleta.GRIS), color(Paleta.ROJO_OSCURO), null, normal);
         boton.over = color(Paleta.ROJO);
         boton.fontColor = Paleta.BLANCO;
+        boton.disabled = color(Paleta.GRIS_OSCURO);
+        boton.disabledFontColor = Paleta.GRIS_CLARO;
         skin.add("default", boton);
 
         Drawable cursor = color(Paleta.BLANCO);
