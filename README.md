@@ -49,6 +49,7 @@ O en PowerShell:
 ## Documentación
 
 - [Propuesta del Proyecto](https://github.com/joakinkong/35-Racing/wiki/Propuesta-del-Proyecto-%E2%80%90-35-Racing): descripción, alcance, arquitectura y tácticas de trabajo.
+- [Protocolo de red](docs/PROTOCOLO.md): cómo se comunican las computadoras durante una partida (TCP, UDP, mensajes, hilos y fallas).
 - [Cómo fuimos trabajando](docs/proceso/README.md): documentación del proceso de desarrollo, etapa por etapa, con decisiones, problemas, pruebas y capturas. También está reunida en un [PDF](docs/proceso/proceso-de-desarrollo.pdf).
 - [CLAUDE.md](CLAUDE.md): contexto del proyecto, stack, arquitectura y convenciones de código.
 - [CHANGELOG.md](CHANGELOG.md): historial de cambios y versiones.
@@ -57,7 +58,7 @@ O en PowerShell:
 
 Etapa 4 completada, todavía sin red. Hay menú y pantallas navegables con estética de Fórmula 1, un auto con física arcade sobre un circuito provisorio y las reglas de una carrera completa (cuenta regresiva, vueltas por checkpoints, posiciones, choques y resultados). Se puede probar con 2 jugadores en el mismo teclado desde "Prueba local" (J1 con WASD y J2 con flechas).
 
-Lo que falta: el protocolo y la comunicación en red (TCP y UDP), el circuito definitivo en Tiled y los sprites. El detalle de cada etapa está en [docs/proceso](docs/proceso/README.md).
+El protocolo de red ya está diseñado en [docs/PROTOCOLO.md](docs/PROTOCOLO.md). Lo que falta: implementarlo (TCP y UDP), el circuito definitivo en Tiled y los sprites. El detalle de cada etapa está en [docs/proceso](docs/proceso/README.md).
 
 ## Licencia
 
