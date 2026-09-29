@@ -30,9 +30,12 @@ public class SesionRed {
 
     /** Cierra el cliente y, si esta PC es el host, el servidor (que le avisa al resto que se terminó la partida). */
     public void cerrar() {
-        cliente.cerrar();
-        if (servidor != null) {
-            servidor.cerrar();
+        try {
+            cliente.cerrar();
+        } finally {
+            if (servidor != null) {
+                servidor.cerrar();
+            }
         }
     }
 }

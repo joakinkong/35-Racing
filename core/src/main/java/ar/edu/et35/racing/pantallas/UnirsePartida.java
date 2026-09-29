@@ -31,6 +31,8 @@ public class UnirsePartida extends PantallaBase {
 
     /** La partida que se está creando o a la que nos estamos conectando; null si no hay ningún intento en curso. */
     private SesionRed pendiente;
+    /** Segundos del intento en curso: cubre casos en que resolver un nombre tarda más que el timeout de conexión. */
+    private float esperando;
 
     public UnirsePartida(Main juego, boolean crear) {
         super(juego);
@@ -116,6 +118,7 @@ public class UnirsePartida extends PantallaBase {
 
     private void esperarRespuesta(SesionRed sesion, String texto) {
         pendiente = sesion;
+        esperando = 0f;
         botonAccion.setDisabled(true);
         estado.setStyle(skin.get("gris", Label.LabelStyle.class));
         estado.setText(texto);
@@ -138,6 +141,11 @@ public class UnirsePartida extends PantallaBase {
     @Override
     protected void actualizar(float delta) {
         if (pendiente == null) {
+            return;
+        }
+        esperando += delta;
+        if (esperando > Config.TIMEOUT_CONEXION_MS / 1000f + 2f) {
+            cancelarIntento("No se pudo conectar (sin respuesta). Revisá la IP y que el anfitrión haya creado la partida");
             return;
         }
         ClientePartida cliente = pendiente.cliente();

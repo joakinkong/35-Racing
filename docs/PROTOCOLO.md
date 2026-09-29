@@ -335,7 +335,7 @@ El hilo de simulación escribe en los sockets TCP directamente, con un método `
 | El **firewall bloquea UDP** (y TCP anda) | En la carrera no llega ningún `ESTADO` a los 3 s de la `CUENTA_REGRESIVA`, o el servidor no recibe ninguna `ENTRADA` de un jugador | Cliente: "No llegan datos por UDP: revisá el firewall de la PC del host (puerto 7778)". Servidor: lo registra en consola. Es el riesgo "red del colegio" de la propuesta, y así se diagnostica en vez de ver autos quietos sin explicación |
 | El puerto 7777 o 7778 ya está ocupado | `BindException` al crear el servidor | "Crear partida" muestra el error; no se crea un servidor a medias |
 
-**Prueba de pérdida de paquetes** (lo prometió la propuesta): una constante `Config.PERDIDA_UDP_SIMULADA` (entre 0 y 1, en 0 por defecto) hace que los receptores UDP descarten al azar esa fracción de los paquetes. Con 0,2 (1 de cada 5) el juego tiene que seguir siendo jugable. Además, con `Config.DEBUG_RED` activo, la tecla **F8** en plena carrera la cambia entre 0 %, 20 % y 50 % y el HUD lo indica, para mostrarlo en vivo sin recompilar. Afecta a los receptores de esa PC.
+**Prueba de pérdida de paquetes** (lo prometió la propuesta): una constante `Config.PERDIDA_UDP_SIMULADA` (entre 0 y 1, en 0 por defecto) hace que los receptores UDP descarten al azar esa fracción de los paquetes. Con 0,2 (1 de cada 5) el juego tiene que seguir siendo jugable. Además, con `Config.DEBUG_RED` activo, la tecla **F8** en plena carrera la cambia entre 0 %, 20 %, 50 % y 100 % (corte total, que dispara el aviso y la vuelta al menú de la sección 8) y el HUD lo indica, para mostrarlo en vivo sin recompilar. Afecta a los receptores de esa PC.
 
 ---
 

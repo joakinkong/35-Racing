@@ -19,7 +19,7 @@ Los commits usan los prefijos `Feat:`, `Fix:`, `Docs:` y `Refactor:`, como pide 
 
 ## Línea de tiempo
 
-Las etapas 0 a 4 se hicieron el 28/09/2026, entre las 21:16 y las 23:45 (hora local, según los commits). Esta documentación del proceso se armó a continuación, y las etapas 5 a 7 el 29/09/2026.
+Las etapas 0 a 4 se hicieron el 28/09/2026, entre las 21:16 y las 23:45 (hora local, según los commits). Esta documentación del proceso se armó a continuación, y las etapas 5 a 8 el 29/09/2026.
 
 | Etapa | Qué quedó funcionando | Pull request |
 |---|---|---|
@@ -30,19 +30,19 @@ Las etapas 0 a 4 se hicieron el 28/09/2026, entre las 21:16 y las 23:45 (hora lo
 | [4. Reglas de carrera](04-reglas-de-carrera.md) | Carrera completa para 2 jugadores en el mismo teclado: cuenta regresiva, vueltas, posiciones, choques y resultados | [#4](https://github.com/joakinkong/35-Racing/pull/4) y [#5](https://github.com/joakinkong/35-Racing/pull/5) |
 | Documentación del proceso | Esta documentación por etapas y su versión en PDF | [#6](https://github.com/joakinkong/35-Racing/pull/6) |
 | [5. Protocolo de red](05-protocolo-de-red.md) | Especificación completa de la comunicación en red en [docs/PROTOCOLO.md](../PROTOCOLO.md) (diseño, todavía sin código) | [#7](https://github.com/joakinkong/35-Racing/pull/7) |
-| [6. Conexión y lobby por TCP](06-conexion-y-lobby-tcp.md) | Crear una partida, unirse por IP, lobby en vivo con elección de auto y "listo", e inicio de la carrera (cada uno todavía corre la suya) | Pendiente |
-| [7. Carrera sincronizada por UDP](07-carrera-sincronizada-udp.md) | La carrera se juega en red: el servidor la simula, los clientes mandan sus teclas y dibujan lo que llega; resultados, revancha y tolerancia a pérdida de paquetes | Pendiente |
+| [6. Conexión y lobby por TCP](06-conexion-y-lobby-tcp.md) | Crear una partida, unirse por IP, lobby en vivo con elección de auto y "listo", e inicio de la carrera (cada uno todavía corre la suya) | [#9](https://github.com/joakinkong/35-Racing/pull/9) |
+| [7. Carrera sincronizada por UDP](07-carrera-sincronizada-udp.md) | La carrera se juega en red: el servidor la simula, los clientes mandan sus teclas y dibujan lo que llega; resultados, revancha y tolerancia a pérdida de paquetes | [#9](https://github.com/joakinkong/35-Racing/pull/9) y [#10](https://github.com/joakinkong/35-Racing/pull/10) |
+| [8. Robustez de red](08-robustez-de-red.md) | Aviso y vuelta al menú si dejan de llegar datos UDP, fallas del servidor que cierran la partida con motivo, y cierre de ventana limpio desde cualquier pantalla | Pendiente |
 
-Estado del repositorio al cerrar la etapa 7: `develop` tiene el protocolo (etapa 5) y `main` todo hasta la etapa 4 y esta documentación; la etapa 6 está en la rama `feature/lobby-tcp` y la 7 en `feature/carrera-udp`, que sale de la 6.
+Estado del repositorio al cerrar la etapa 8: `develop` tiene todo hasta la etapa 7 (con la red completa); `main` llega hasta la etapa 4 y esta documentación; la etapa 8 está en la rama `feature/robustez-red`.
 
 ## Lo que sigue
 
 - **Antes de seguir:** que los cinco integrantes lean [docs/PROTOCOLO.md](../PROTOCOLO.md), porque es lo que tienen que poder explicar.
-- **Ahora:** jugar la carrera en red con varias instancias y, cuanto antes, en las computadoras del colegio (TCP 7777 y UDP 7778): si la red bloquea algo, mejor enterarse ahora.
-- **Etapa 8:** robustez de red (avisos cuando dejan de llegar datos, cierre limpio desde cualquier pantalla).
+- **Ahora:** jugar la carrera en red con varias instancias y, cuanto antes, en las computadoras del colegio (TCP 7777 y UDP 7778): si la red bloquea algo, mejor enterarse ahora. La [etapa 8](08-robustez-de-red.md) explica cómo se ve cada falla y cómo reproducirla.
 - **Etapa 9:** pruebas en la LAN real con 2, 3 y 5 PC.
 - **Pendiente de arte:** el circuito definitivo en Tiled y los sprites. Hoy el circuito y los autos son provisorios (ver [etapa 3](03-auto-y-circuito.md)).
 
 ## Participación del equipo
 
-Hasta la etapa 7 todos los commits salieron de la cuenta de Joaquín Barreira. El resto del grupo tiene invitación como colaborador del repositorio, y las tareas de arte (circuito y sprites) están asignadas al resto del equipo según la guía. Cuando haya commits de los demás integrantes, se van a reflejar en el historial y en esta documentación.
+Hasta la etapa 8 todos los commits salieron de la cuenta de Joaquín Barreira. El resto del grupo tiene invitación como colaborador del repositorio, y las tareas de arte (circuito y sprites) están asignadas al resto del equipo según la guía. Cuando haya commits de los demás integrantes, se van a reflejar en el historial y en esta documentación.

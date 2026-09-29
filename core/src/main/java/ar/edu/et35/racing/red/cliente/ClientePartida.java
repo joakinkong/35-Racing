@@ -33,6 +33,8 @@ public class ClientePartida {
     private final ConcurrentLinkedQueue<Mensaje> recibidos = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<PaquetesUdp.Estado> estados = new ConcurrentLinkedQueue<>();
     private volatile ConexionTcp conexion;
+    /** El socket mientras se está conectando: cerrar() lo cierra para cortar el intento sin esperar el timeout. */
+    private volatile Socket conectando;
     private volatile DatagramSocket socketUdp;
     /** A dónde se mandan las ENTRADA; también es el único origen del que se aceptan ESTADO. */
     private volatile InetSocketAddress servidorUdp;
@@ -69,6 +71,7 @@ public class ClientePartida {
         ConexionTcp nueva;
         try {
             Socket socket = new Socket();
+            conectando = socket;
             try {
                 socket.connect(new InetSocketAddress(direccion, puerto), Config.TIMEOUT_CONEXION_MS);
                 nueva = new ConexionTcp(socket);
@@ -83,6 +86,7 @@ public class ClientePartida {
             }
             return;
         }
+        conectando = null;
         conexion = nueva;
         if (cerrando) {
             nueva.cerrar();
@@ -94,6 +98,9 @@ public class ClientePartida {
             leer(nueva);
         } catch (IOException e) {
             avisarPerdida("Se perdió la conexión con el anfitrión");
+        } catch (RuntimeException e) {
+            RegistroRed.log(origen, "Error inesperado en la conexión: " + e);
+            avisarPerdida("Error inesperado en la conexión con el anfitrión");
         } finally {
             nueva.cerrar();
         }
@@ -188,12 +195,16 @@ public class ClientePartida {
             if (PerdidaSimulada.descartar()) {
                 continue;
             }
-            PaquetesUdp.Estado estado = PaquetesUdp.leerEstado(bufer, paquete.getLength());
-            if (estado == null) {
-                udpAjenos++;
-                continue;
+            try {
+                PaquetesUdp.Estado estado = PaquetesUdp.leerEstado(bufer, paquete.getLength());
+                if (estado == null) {
+                    udpAjenos++;
+                    continue;
+                }
+                estados.add(estado);
+            } catch (RuntimeException e) {
+                udpAjenos++; // un paquete raro no debe detener la recepción
             }
-            estados.add(estado);
         }
     }
 
@@ -282,6 +293,14 @@ public class ClientePartida {
             return;
         }
         cerrando = true;
+        Socket enCurso = conectando;
+        if (enCurso != null) {
+            try {
+                enCurso.close(); // el hilo que está en connect() recibe una excepción y termina
+            } catch (IOException e) {
+                // Ya estaba cerrado.
+            }
+        }
         ConexionTcp actual = conexion;
         if (actual != null) {
             try {

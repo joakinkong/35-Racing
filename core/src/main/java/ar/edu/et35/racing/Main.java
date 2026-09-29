@@ -57,10 +57,23 @@ public class Main extends Game {
     @Override
     public void dispose() {
         Screen actual = getScreen();
-        super.dispose();
-        cerrarSesion();
-        if (actual != null) {
-            actual.dispose();
+        // Cada paso va por separado: si uno falla, los demás igual se hacen (sobre todo cerrar sockets e hilos).
+        try {
+            super.dispose();
+        } catch (RuntimeException e) {
+            System.err.println("Error al ocultar la pantalla: " + e);
+        }
+        try {
+            cerrarSesion();
+        } catch (RuntimeException e) {
+            System.err.println("Error al cerrar la partida en red: " + e);
+        }
+        try {
+            if (actual != null) {
+                actual.dispose();
+            }
+        } catch (RuntimeException e) {
+            System.err.println("Error al liberar la pantalla: " + e);
         }
         recursos.dispose();
     }
