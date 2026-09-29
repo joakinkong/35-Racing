@@ -8,6 +8,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ### Agregado
 
+- Diseño del protocolo de red en `docs/PROTOCOLO.md`: arquitectura con servidor autoritativo en el host, máquina de estados de la partida, mensajes TCP de texto con sus errores, paquetes UDP binarios `ENTRADA` (11 bytes) y `ESTADO` (132 bytes con 5 autos) con números de secuencia, frecuencias y ancho de banda, interpolación en el cliente, hilos, manejo de fallas y diagramas. Todavía sin código.
 - Esqueleto del juego con estética Fórmula 1 (fondo carbono, rojo de largada, bandera de cuadros y pianos): `Main` extiende `Game` y hay cinco pantallas navegables (`MenuPrincipal`, `UnirsePartida`, `Lobby`, `Carrera`, `Resultados`), con ESC para volver.
 - `Config` con las constantes globales, `Paleta` con los colores y `Recursos` que centraliza el `AssetManager`, el `SpriteBatch` y el `Skin` armado por código.
 - Resolución virtual de 640x360 con `FitViewport` y filtro Nearest; ventana inicial de 1280x720 redimensionable.
