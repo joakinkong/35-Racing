@@ -32,6 +32,15 @@ public abstract class PantallaBase extends ScreenAdapter {
     protected final Table contenido = new Table();
 
     protected PantallaBase(Main juego) {
+        this(juego, true);
+    }
+
+    /**
+     * Con marco = true la pantalla tiene fondo carbono y la bandera de cuadros arriba y abajo, y se arma
+     * dentro de {@link #contenido}. Con marco = false la raíz queda vacía y transparente (por ejemplo, para
+     * dibujar el mundo de la carrera debajo de la interfaz).
+     */
+    protected PantallaBase(Main juego, boolean marco) {
         this.juego = juego;
         this.recursos = juego.recursos();
         this.skin = recursos.skin;
@@ -39,11 +48,17 @@ public abstract class PantallaBase extends ScreenAdapter {
         this.escena = new Stage(new FitViewport(Config.ANCHO_VIRTUAL, Config.ALTO_VIRTUAL), recursos.batch);
 
         raiz.setFillParent(true);
-        raiz.setBackground(recursos.color(Paleta.CARBONO));
-        raiz.add(franja()).growX().height(ALTO_FRANJA).row();
-        raiz.add(contenido).expand().row();
-        raiz.add(franja()).growX().height(ALTO_FRANJA);
+        if (marco) {
+            raiz.setBackground(recursos.color(Paleta.CARBONO));
+            raiz.add(franja()).growX().height(ALTO_FRANJA).row();
+            raiz.add(contenido).expand().row();
+            raiz.add(franja()).growX().height(ALTO_FRANJA);
+        }
         escena.addActor(raiz);
+    }
+
+    /** Se llama en cada cuadro después de limpiar la pantalla y antes de dibujar la interfaz. */
+    protected void dibujarFondo(float delta) {
     }
 
     /** Pantalla a la que vuelve ESC. Por defecto no hace nada. */
@@ -76,6 +91,8 @@ public abstract class PantallaBase extends ScreenAdapter {
             volver();
         }
         ScreenUtils.clear(Paleta.CARBONO);
+        dibujarFondo(delta);
+        escena.getViewport().apply();
         escena.act(delta);
         escena.draw();
     }

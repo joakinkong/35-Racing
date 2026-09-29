@@ -8,6 +8,8 @@ import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle;
@@ -30,11 +32,21 @@ public class Recursos implements Disposable {
     public final Skin skin = new Skin();
 
     public Recursos() {
-        // Todavía no hay archivos para cargar; cuando los haya se encolan acá antes de finishLoading().
-        assets.finishLoading();
+        assets.setLoader(TiledMap.class, new TmxMapLoader());
         crearTexturas();
         crearFuentes();
         crearEstilos();
+    }
+
+    /** Carga un mapa de Tiled (y su tileset) y espera a que termine. Hay que liberarlo con {@link #liberar}. */
+    public TiledMap cargarMapa(String ruta) {
+        assets.load(ruta, TiledMap.class);
+        assets.finishLoadingAsset(ruta);
+        return assets.get(ruta, TiledMap.class);
+    }
+
+    public void liberar(String ruta) {
+        assets.unload(ruta);
     }
 
     /** Drawable de un color liso. */

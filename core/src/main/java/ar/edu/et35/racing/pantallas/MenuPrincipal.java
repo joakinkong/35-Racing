@@ -23,7 +23,7 @@ public class MenuPrincipal extends PantallaBase {
 
         agregarBoton("CREAR PARTIDA", () -> juego.irA(new Lobby(juego)));
         agregarBoton("UNIRSE A UNA PARTIDA", () -> juego.irA(new UnirsePartida(juego)));
-        agregarBoton("PRUEBA LOCAL", () -> juego.irA(new Carrera(juego)));
+        agregarBoton("PRUEBA LOCAL", () -> juego.irA(new PantallaCarrera(juego, 2)));
         agregarBoton("SALIR", Gdx.app::exit);
     }
 

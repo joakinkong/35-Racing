@@ -16,7 +16,7 @@ public class Lobby extends PantallaBase {
 
         contenido.add(new Label("GRILLA DE LARGADA", skin, "titulo")).padBottom(10).row();
         contenido.add(grilla()).width(ANCHO_PANEL).padBottom(10).row();
-        contenido.add(boton("INICIAR", () -> juego.irA(new Carrera(juego)))).width(160).height(30).row();
+        contenido.add(boton("INICIAR", () -> juego.irA(new PantallaCarrera(juego, 1)))).width(160).height(30).row();
         contenido.add(new Label("ESC para volver", skin, "gris")).padTop(8);
     }
 

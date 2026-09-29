@@ -15,4 +15,13 @@ public final class Paleta {
     public static final Color ROJO = Color.valueOf("E10600FF");
     public static final Color ROJO_OSCURO = Color.valueOf("8E0400FF");
     public static final Color BLANCO = Color.WHITE;
+
+    /** Un color por auto (según su id), para distinguir hasta MAX_JUGADORES autos. */
+    public static final Color[] COLORES_AUTOS = {
+        ROJO,
+        Color.valueOf("3671C6FF"),
+        Color.valueOf("FFC800FF"),
+        Color.valueOf("00D2BEFF"),
+        Color.valueOf("FF8700FF"),
+    };
 }

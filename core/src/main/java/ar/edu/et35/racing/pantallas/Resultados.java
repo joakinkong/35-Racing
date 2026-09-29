@@ -1,47 +1,48 @@
 package ar.edu.et35.racing.pantallas;
 
 import ar.edu.et35.racing.Main;
+import ar.edu.et35.racing.juego.ResultadoJugador;
 import ar.edu.et35.racing.util.Paleta;
+import ar.edu.et35.racing.util.Tiempo;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import java.util.List;
 
-/** Tabla de resultados. Los datos son de ejemplo hasta que haya carrera real. */
+/** Tabla de resultados de la carrera: posición, piloto, tiempo total y mejor vuelta. */
 public class Resultados extends PantallaBase {
     private static final float[] ANCHOS = {40f, 130f, 100f, 110f};
     private static final float ALTO_FILA = 20f;
     private static final String[] ENCABEZADO = {"POS", "PILOTO", "TIEMPO", "MEJOR VUELTA"};
-    private static final String[][] EJEMPLO = {
-        {"1", "Jugador 1", "3:42.118", "1:09.870"},
-        {"2", "Jugador 2", "3:43.322", "1:10.104"},
-        {"3", "Jugador 3", "3:45.907", "1:10.551"},
-        {"4", "Jugador 4", "3:47.030", "1:11.209"},
-        {"5", "Jugador 5", "3:49.615", "1:11.874"},
-    };
 
-    public Resultados(Main juego) {
+    public Resultados(Main juego, List<ResultadoJugador> resultados) {
         super(juego);
 
         contenido.add(new Label("RESULTADOS", skin, "titulo")).padBottom(10).row();
-        contenido.add(tabla()).padBottom(10).row();
+        contenido.add(tabla(resultados)).padBottom(10).row();
         contenido.add(boton("VOLVER AL MENÚ", () -> juego.irA(new MenuPrincipal(juego)))).width(180).height(30);
     }
 
-    private Table tabla() {
+    private Table tabla(List<ResultadoJugador> resultados) {
         Table tabla = new Table();
         tabla.setBackground(recursos.color(Paleta.GRIS_OSCURO));
         tabla.pad(6);
-        agregarFila(tabla, ENCABEZADO, "gris");
-        for (String[] fila : EJEMPLO) {
-            agregarFila(tabla, fila, "default");
+        agregarFila(tabla, ENCABEZADO, "gris", "gris");
+        for (ResultadoJugador resultado : resultados) {
+            String[] fila = {
+                String.valueOf(resultado.posicion()),
+                resultado.nombre(),
+                Tiempo.formato(resultado.tiempoTotal()),
+                Tiempo.formato(resultado.mejorVuelta()),
+            };
+            // El ganador va en rojo.
+            agregarFila(tabla, fila, resultado.posicion() == 1 ? "rojo" : "default", "default");
         }
         return tabla;
     }
 
-    private void agregarFila(Table tabla, String[] textos, String estilo) {
+    private void agregarFila(Table tabla, String[] textos, String estiloPosicion, String estilo) {
         for (int i = 0; i < textos.length; i++) {
-            // La posición del ganador va en rojo.
-            String estiloCelda = (i == 0 && textos[0].equals("1")) ? "rojo" : estilo;
-            tabla.add(new Label(textos[i], skin, estiloCelda)).width(ANCHOS[i]).height(ALTO_FILA).left();
+            tabla.add(new Label(textos[i], skin, i == 0 ? estiloPosicion : estilo)).width(ANCHOS[i]).height(ALTO_FILA).left();
         }
         tabla.row();
     }
