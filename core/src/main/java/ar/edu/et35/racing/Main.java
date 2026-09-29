@@ -1,32 +1,46 @@
 package ar.edu.et35.racing;
 
-import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.utils.ScreenUtils;
+import ar.edu.et35.racing.pantallas.MenuPrincipal;
+import ar.edu.et35.racing.util.Recursos;
+import com.badlogic.gdx.Game;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Screen;
 
-/** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
-public class Main extends ApplicationAdapter {
-    private SpriteBatch batch;
-    private Texture image;
+/** Punto de entrada compartido por todas las plataformas. Maneja la pantalla activa. */
+public class Main extends Game {
+    private Recursos recursos;
 
     @Override
     public void create() {
-        batch = new SpriteBatch();
-        image = new Texture("libgdx.png");
+        recursos = new Recursos();
+        setScreen(new MenuPrincipal(this));
     }
 
-    @Override
-    public void render() {
-        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
-        batch.begin();
-        batch.draw(image, 140, 210);
-        batch.end();
+    public Recursos recursos() {
+        return recursos;
+    }
+
+    /**
+     * Cambia de pantalla y libera la anterior. Se hace en postRunnable porque casi siempre se llama
+     * desde un botón de la pantalla vieja: no hay que destruirla en medio de su propio evento.
+     */
+    public void irA(Screen nueva) {
+        Gdx.app.postRunnable(() -> {
+            Screen vieja = getScreen();
+            setScreen(nueva);
+            if (vieja != null) {
+                vieja.dispose();
+            }
+        });
     }
 
     @Override
     public void dispose() {
-        batch.dispose();
-        image.dispose();
+        Screen actual = getScreen();
+        super.dispose();
+        if (actual != null) {
+            actual.dispose();
+        }
+        recursos.dispose();
     }
 }
