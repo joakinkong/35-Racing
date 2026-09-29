@@ -3,10 +3,14 @@ package ar.edu.et35.racing.pantallas;
 import ar.edu.et35.racing.Main;
 import ar.edu.et35.racing.juego.Auto;
 import ar.edu.et35.racing.juego.CargadorCircuito;
+import ar.edu.et35.racing.juego.Carrera;
 import ar.edu.et35.racing.juego.Circuito;
 import ar.edu.et35.racing.juego.EntradaAuto;
+import ar.edu.et35.racing.juego.EstadoCarrera;
+import ar.edu.et35.racing.juego.Participante;
 import ar.edu.et35.racing.util.Config;
 import ar.edu.et35.racing.util.Paleta;
+import ar.edu.et35.racing.util.Tiempo;
 import ar.edu.et35.racing.vista.CamaraSeguimiento;
 import ar.edu.et35.racing.vista.VistaAuto;
 import ar.edu.et35.racing.vista.VistaCircuito;
@@ -15,88 +19,185 @@ import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
- * Carrera de un jugador en el circuito. La simulación corre a paso fijo (1 / TICKS_POR_SEGUNDO) con un
- * acumulador, y el dibujo va desacoplado: interpola entre el último tick y el siguiente.
+ * Pantalla de la carrera con 1 o 2 jugadores en el mismo teclado. Lee los controles, avanza la {@link Carrera}
+ * a paso fijo (1 / TICKS_POR_SEGUNDO, con acumulador) y dibuja interpolando entre ticks.
  */
-public class Carrera extends PantallaBase {
+public class PantallaCarrera extends PantallaBase {
     private static final String RUTA_CIRCUITO = "circuitos/circuito1.tmx";
     private static final float PASO = 1f / Config.TICKS_POR_SEGUNDO;
     /** Tope de tiempo por cuadro, para que un tirón (por ejemplo al mover la ventana) no dispare cientos de ticks. */
     private static final float MAX_TIEMPO_CUADRO = 0.25f;
-    /** Solo para mostrar en el HUD: convierte px/s del juego a "km/h". */
-    private static final float FACTOR_KMH = 0.9f;
+    private static final int MAX_JUGADORES_LOCALES = 2;
     private static final Color FONDO_HUD = new Color(0f, 0f, 0f, 0.55f);
+    private static final float ANCHO_FRANJA_COLOR = 4f;
+
+    /** Teclas de un esquema de control. */
+    private record Controles(int acelerar, int frenar, int izquierda, int derecha) {
+    }
+
+    private static final Controles WASD = new Controles(Keys.W, Keys.S, Keys.A, Keys.D);
+    private static final Controles FLECHAS = new Controles(Keys.UP, Keys.DOWN, Keys.LEFT, Keys.RIGHT);
 
     private final TiledMap mapa;
     private final Circuito circuito;
-    private final Auto auto;
-    private final EntradaAuto entrada = new EntradaAuto();
+    private final Carrera carrera;
+    private final List<Participante> locales = new ArrayList<>();
+    private final List<Controles[]> controlesLocales = new ArrayList<>();
+    private final Map<Integer, EntradaAuto> entradas = new HashMap<>();
 
     private final OrthographicCamera camaraMundo = new OrthographicCamera();
     private final FitViewport viewportMundo = new FitViewport(Config.ANCHO_VIRTUAL, Config.ALTO_VIRTUAL, camaraMundo);
     private final CamaraSeguimiento seguimiento;
     private final VistaCircuito vistaCircuito;
     private final VistaAuto vistaAuto = new VistaAuto();
-    private final Label etiquetaVelocidad;
+
+    private final List<PanelHud> paneles = new ArrayList<>();
+    private final Label cartel = new Label("", skin, "titulo");
+    private final Label subcartel = new Label("", skin);
 
     private float acumulador;
+    private float tiempoTerminada;
+    private boolean yaFueAResultados;
 
-    public Carrera(Main juego) {
+    /** @param jugadoresLocales 1 (flechas o WASD) o 2 (J1 con WASD y J2 con flechas). */
+    public PantallaCarrera(Main juego, int jugadoresLocales) {
         super(juego, false);
+        if (jugadoresLocales < 1 || jugadoresLocales > MAX_JUGADORES_LOCALES) {
+            throw new IllegalArgumentException("Jugadores locales: de 1 a " + MAX_JUGADORES_LOCALES);
+        }
 
         mapa = recursos.cargarMapa(RUTA_CIRCUITO);
         circuito = CargadorCircuito.cargar(mapa, Config.MAX_JUGADORES);
-        auto = new Auto(circuito.posicionesLargada().get(0).x, circuito.posicionesLargada().get(0).y,
-            circuito.anguloLargada());
-        seguimiento = new CamaraSeguimiento(camaraMundo, circuito, auto);
-        vistaCircuito = new VistaCircuito(mapa, recursos.batch);
+        carrera = new Carrera(circuito, Config.VUELTAS);
+        for (int i = 0; i < jugadoresLocales; i++) {
+            locales.add(carrera.agregarAuto(i, "Jugador " + (i + 1)));
+            controlesLocales.add(jugadoresLocales == 1 ? new Controles[] {WASD, FLECHAS}
+                : new Controles[] {i == 0 ? WASD : FLECHAS});
+            entradas.put(i, new EntradaAuto());
+        }
 
-        etiquetaVelocidad = new Label("", skin);
+        seguimiento = new CamaraSeguimiento(camaraMundo, circuito, autosLocales());
+        vistaCircuito = new VistaCircuito(mapa, recursos.batch);
         armarInterfaz();
     }
 
     private void armarInterfaz() {
-        Table hud = new Table();
-        hud.setBackground(recursos.color(FONDO_HUD));
-        hud.pad(4);
-        hud.add(etiquetaVelocidad).left().expandX();
-        hud.add(new Label("ESC: menú", skin, "gris")).padRight(10);
-        // Botón provisorio para llegar a Resultados hasta que exista la lógica de carrera.
-        hud.add(boton("FINALIZAR", () -> juego.irA(new Resultados(juego)))).width(90).height(20);
-
         raiz.top().pad(6);
-        raiz.add(hud).growX();
+        for (Participante jugador : locales) {
+            PanelHud panel = new PanelHud(jugador);
+            paneles.add(panel);
+            raiz.add(panel.tabla).growX().pad(2);
+        }
+        raiz.row();
+        Table ayuda = new Table();
+        ayuda.setBackground(recursos.color(FONDO_HUD));
+        ayuda.pad(3);
+        ayuda.add(new Label(locales.size() == 1 ? "Flechas o WASD  -  ESC: menú" : "J1: WASD   J2: flechas  -  ESC: menú",
+            skin, "gris"));
+        raiz.add(ayuda).colspan(locales.size()).expand().bottom().left().padBottom(2);
+
+        // Cartel central (cuenta regresiva, ¡YA!, fin). El Table no captura clics: solo lo hacen sus hijos.
+        cartel.setAlignment(Align.center);
+        subcartel.setAlignment(Align.center);
+        Table centro = new Table();
+        centro.setFillParent(true);
+        centro.add(cartel).row();
+        centro.add(subcartel);
+        escena.addActor(centro);
+    }
+
+    private List<Auto> autosLocales() {
+        List<Auto> autos = new ArrayList<>();
+        for (Participante p : ordenLocalesPorPosicion()) {
+            autos.add(p.auto());
+        }
+        return autos;
+    }
+
+    /** Los jugadores locales del primero al último en carrera: la cámara sigue al primero si no entran todos. */
+    private List<Participante> ordenLocalesPorPosicion() {
+        List<Participante> orden = new ArrayList<>();
+        for (Participante p : carrera.clasificacion()) {
+            if (locales.contains(p)) {
+                orden.add(p);
+            }
+        }
+        return orden;
     }
 
     @Override
     protected void dibujarFondo(float delta) {
-        leerEntrada();
+        leerEntradas();
         acumulador += Math.min(delta, MAX_TIEMPO_CUADRO);
         while (acumulador >= PASO) {
-            auto.actualizar(entrada, circuito, PASO);
+            carrera.actualizar(entradas, PASO);
             acumulador -= PASO;
         }
         float alfa = acumulador / PASO;
 
-        seguimiento.actualizar(auto, alfa, delta);
+        seguimiento.actualizar(autosLocales(), alfa, delta);
         viewportMundo.apply();
         vistaCircuito.dibujar(camaraMundo);
-        vistaAuto.dibujar(auto, alfa, Paleta.ROJO, camaraMundo);
+        // Se dibujan de atrás hacia adelante en la clasificación para que el puntero quede arriba.
+        List<Participante> clasificacion = carrera.clasificacion();
+        for (int i = clasificacion.size() - 1; i >= 0; i--) {
+            Participante p = clasificacion.get(i);
+            vistaAuto.dibujar(p.auto(), alfa, Paleta.COLORES_AUTOS[p.id() % Paleta.COLORES_AUTOS.length], camaraMundo);
+        }
 
-        etiquetaVelocidad.setText(Math.round(auto.rapidez() * FACTOR_KMH) + " km/h");
+        actualizarInterfaz(delta);
     }
 
-    private void leerEntrada() {
-        entrada.acelerar = Gdx.input.isKeyPressed(Keys.UP) || Gdx.input.isKeyPressed(Keys.W);
-        entrada.frenar = Gdx.input.isKeyPressed(Keys.DOWN) || Gdx.input.isKeyPressed(Keys.S);
-        int izquierda = Gdx.input.isKeyPressed(Keys.LEFT) || Gdx.input.isKeyPressed(Keys.A) ? 1 : 0;
-        int derecha = Gdx.input.isKeyPressed(Keys.RIGHT) || Gdx.input.isKeyPressed(Keys.D) ? 1 : 0;
-        entrada.giro = izquierda - derecha;
+    private void leerEntradas() {
+        for (int i = 0; i < locales.size(); i++) {
+            EntradaAuto entrada = entradas.get(locales.get(i).id());
+            entrada.acelerar = false;
+            entrada.frenar = false;
+            int izquierda = 0;
+            int derecha = 0;
+            for (Controles teclas : controlesLocales.get(i)) {
+                entrada.acelerar |= Gdx.input.isKeyPressed(teclas.acelerar());
+                entrada.frenar |= Gdx.input.isKeyPressed(teclas.frenar());
+                izquierda |= Gdx.input.isKeyPressed(teclas.izquierda()) ? 1 : 0;
+                derecha |= Gdx.input.isKeyPressed(teclas.derecha()) ? 1 : 0;
+            }
+            entrada.giro = izquierda - derecha;
+        }
+    }
+
+    private void actualizarInterfaz(float delta) {
+        for (PanelHud panel : paneles) {
+            panel.actualizar();
+        }
+
+        EstadoCarrera estado = carrera.estado();
+        subcartel.setText("");
+        if (estado == EstadoCarrera.CUENTA_REGRESIVA) {
+            cartel.setText(String.valueOf(carrera.segundosCuentaRegresiva()));
+        } else if (estado == EstadoCarrera.EN_CURSO) {
+            cartel.setText(carrera.mostrarYa() ? "¡YA!" : "");
+            if (carrera.cierreActivo()) {
+                subcartel.setText("CIERRE EN " + (int) Math.ceil(carrera.cierreRestante()) + " s");
+            }
+        } else {
+            cartel.setText("CARRERA FINALIZADA");
+            tiempoTerminada += delta;
+            if (tiempoTerminada >= Config.SEGUNDOS_FIN_A_RESULTADOS && !yaFueAResultados) {
+                yaFueAResultados = true;
+                juego.irA(new Resultados(juego, carrera.resultados()));
+            }
+        }
     }
 
     @Override
@@ -116,5 +217,34 @@ public class Carrera extends PantallaBase {
         vistaAuto.dispose();
         recursos.liberar(RUTA_CIRCUITO);
         super.dispose();
+    }
+
+    /** Panel del HUD de un jugador: franja con el color de su auto, vuelta, posición, tiempo actual y mejor vuelta. */
+    private class PanelHud {
+        private final Participante jugador;
+        private final Table tabla = new Table();
+        private final Label cabecera = new Label("", skin);
+        private final Label tiempos = new Label("", skin, "gris");
+
+        PanelHud(Participante jugador) {
+            this.jugador = jugador;
+            Color color = Paleta.COLORES_AUTOS[jugador.id() % Paleta.COLORES_AUTOS.length];
+            tabla.setBackground(recursos.color(FONDO_HUD));
+            tabla.pad(4);
+            tabla.add(new Image(recursos.color(color))).width(ANCHO_FRANJA_COLOR).growY().padRight(6);
+            Table textos = new Table();
+            textos.add(cabecera).left().row();
+            textos.add(tiempos).left();
+            tabla.add(textos).left().expandX();
+        }
+
+        void actualizar() {
+            int vuelta = Math.min(jugador.vueltas() + 1, carrera.vueltasTotales());
+            String vueltaTexto = jugador.terminado() ? "FIN" : "VUELTA " + vuelta + "/" + carrera.vueltasTotales();
+            cabecera.setText(jugador.nombre() + "   " + vueltaTexto + "   POS " + carrera.posicionDe(jugador.id()) + "/"
+                + carrera.participantes().size());
+            String actual = jugador.terminado() ? Tiempo.formato(jugador.tiempoTotal()) : Tiempo.formato(jugador.tiempoVuelta());
+            tiempos.setText((jugador.terminado() ? "TOTAL " : "TIEMPO ") + actual + "   MEJOR " + Tiempo.formato(jugador.mejorVuelta()));
+        }
     }
 }

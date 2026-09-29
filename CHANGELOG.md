@@ -16,6 +16,14 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 - Modelo del juego sin dependencias gráficas: `Circuito`, `CargadorCircuito` (TiledMap a Circuito), `Superficie`, `EntradaAuto`, `ParametrosAuto` y `Auto` con física arcade (aceleración, freno, reversa, giro según velocidad, derrape leve, pasto y rebote contra muros).
 - Vista de la carrera: `VistaCircuito`, `VistaAuto` (monoplaza dibujado con formas) y `CamaraSeguimiento`.
 - `Carrera` con un auto manejable (flechas o WASD): simulación a paso fijo con acumulador, dibujo interpolado y HUD con la velocidad.
+- Reglas de carrera en `juego` (sin dependencias gráficas, para que las simule el servidor): `Carrera` con estados `CUENTA_REGRESIVA`, `EN_CURSO` y `TERMINADA`, de 1 a 5 autos por id, cuenta regresiva de 3 s con los autos quietos, vueltas validadas por checkpoints en orden (no suma ir marcha atrás ni en contramano), tiempo por vuelta, mejor vuelta y tiempo total, posiciones por vueltas, checkpoint y distancia, cierre de 30 s después de que el primero termina y choques entre autos que se separan y se reparten la velocidad. Se suman `Participante`, `EstadoCarrera` y `ResultadoJugador`.
+- Prueba local para 2 jugadores en el mismo teclado (J1 con WASD, J2 con flechas) con cámara que encuadra a los dos y HUD por jugador (vuelta, posición, tiempo actual y mejor vuelta), cartel de cuenta regresiva y "¡YA!".
+- Resultados con datos reales (posición, piloto, tiempo total y mejor vuelta), que se muestran solos al terminar la carrera.
+- `Tiempo` para formatear tiempos de carrera y una paleta de colores para distinguir hasta 5 autos.
+
+### Cambiado
+
+- La pantalla `Carrera` pasa a llamarse `PantallaCarrera`, para no chocar con el modelo `juego.Carrera`. "Prueba local" abre 2 jugadores y "Iniciar" en el Lobby, 1 jugador (hasta que haya red).
 ## [0.1.0] - 2026-09-28
 
 ### Agregado
