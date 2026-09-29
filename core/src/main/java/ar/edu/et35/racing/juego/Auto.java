@@ -118,6 +118,19 @@ public class Auto {
         }
     }
 
+    /**
+     * Corre el auto sin cambiar su velocidad (por ejemplo, al separarlo de otro auto). Cada eje se mueve
+     * por separado y no entra en un muro: lo que no se pueda mover, no se mueve.
+     */
+    public void desplazar(float dx, float dy, Circuito circuito) {
+        if (!circuito.chocaConMuro(posicion.x + dx, posicion.y, ParametrosAuto.RADIO_COLISION)) {
+            posicion.x += dx;
+        }
+        if (!circuito.chocaConMuro(posicion.x, posicion.y + dy, ParametrosAuto.RADIO_COLISION)) {
+            posicion.y += dy;
+        }
+    }
+
     private void guardarPrevio() {
         xPrevia = posicion.x;
         yPrevia = posicion.y;
@@ -138,6 +151,12 @@ public class Auto {
 
     public Vector2 velocidad() {
         return velocidad;
+    }
+
+    /** Velocidad en la dirección a la que mira el auto: positiva yendo hacia adelante, negativa en reversa (px/s). */
+    public float velocidadAdelante() {
+        float radianes = angulo * MathUtils.degreesToRadians;
+        return velocidad.x * MathUtils.cos(radianes) + velocidad.y * MathUtils.sin(radianes);
     }
 
     /** Módulo de la velocidad (px/s). */

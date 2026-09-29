@@ -2,15 +2,18 @@ package ar.edu.et35.racing.vista;
 
 import ar.edu.et35.racing.juego.Auto;
 import ar.edu.et35.racing.juego.Circuito;
-import ar.edu.et35.racing.util.Config;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.MathUtils;
 
-/** Cámara que sigue al auto con un leve adelanto hacia donde va, suavizada y sin salirse del mapa. */
+/**
+ * Cámara de un auto: lo sigue con un leve adelanto hacia donde va, con el zoom fijo que se le indique, y sin
+ * salirse del mapa. El tamaño de la vista sale de la cámara, así que sirve para pantalla completa o para una
+ * mitad de pantalla dividida.
+ */
 public class CamaraSeguimiento {
     /** Segundos de velocidad que la cámara se adelanta al auto. */
     private static final float ADELANTO = 0.3f;
-    /** Cuánto más alto, más rápido alcanza a la posición objetivo. */
+    /** Cuánto más alto, más rápido alcanza la posición objetivo. */
     private static final float SUAVIZADO = 6f;
 
     private final OrthographicCamera camara;
@@ -18,11 +21,13 @@ public class CamaraSeguimiento {
     private float centroX;
     private float centroY;
 
-    public CamaraSeguimiento(OrthographicCamera camara, Circuito circuito, Auto auto) {
+    /** @param zoom 1 = escala normal; 2 = se ve el doble de mundo. */
+    public CamaraSeguimiento(OrthographicCamera camara, Circuito circuito, Auto auto, float zoom) {
         this.camara = camara;
         this.circuito = circuito;
         this.centroX = auto.x();
         this.centroY = auto.y();
+        camara.zoom = zoom;
         aplicar();
     }
 
@@ -36,8 +41,8 @@ public class CamaraSeguimiento {
     }
 
     private void aplicar() {
-        float mitadAncho = Config.ANCHO_VIRTUAL / 2f;
-        float mitadAlto = Config.ALTO_VIRTUAL / 2f;
+        float mitadAncho = camara.viewportWidth * camara.zoom / 2f;
+        float mitadAlto = camara.viewportHeight * camara.zoom / 2f;
         float x = MathUtils.clamp(centroX, mitadAncho, circuito.ancho() - mitadAncho);
         float y = MathUtils.clamp(centroY, mitadAlto, circuito.alto() - mitadAlto);
         // Posición entera: con pixel art evita costuras entre tiles al mover la cámara.

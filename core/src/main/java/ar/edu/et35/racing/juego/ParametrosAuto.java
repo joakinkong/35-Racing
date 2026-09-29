@@ -47,4 +47,6 @@ public final class ParametrosAuto {
     public static final float REBOTE = 0.35f;
     /** Fracción de velocidad que se pierde por raspar el muro en el eje paralelo. */
     public static final float PERDIDA_POR_ROCE = 0.15f;
+    /** Fracción de la velocidad relativa que rebota cuando chocan dos autos (0 = se pegan, 1 = rebote perfecto). */
+    public static final float RESTITUCION_CHOQUE = 0.5f;
 }
