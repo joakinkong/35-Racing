@@ -21,6 +21,11 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 - Resultados con datos reales (posición, piloto, tiempo total y mejor vuelta), que se muestran solos al terminar la carrera.
 - `Tiempo` para formatear tiempos de carrera y una paleta de colores para distinguir hasta 5 autos.
 
+### Corregido
+
+- Los checkpoints del circuito provisorio van de muro a muro (pista más pasto de escape) y no solo sobre la pista: un auto que se sale al pasto igual los cruza y sus vueltas cuentan, con la desventaja de ir más lento.
+- En la prueba local, cuando los dos autos se separan más de lo que entra con el zoom máximo, la pantalla se divide y cada jugador ve su propio auto. Antes la cámara seguía siempre al que iba primero y el otro quedaba fuera de pantalla.
+
 ### Cambiado
 
 - La pantalla `Carrera` pasa a llamarse `PantallaCarrera`, para no chocar con el modelo `juego.Carrera`. "Prueba local" abre 2 jugadores y "Iniciar" en el Lobby, 1 jugador (hasta que haya red).

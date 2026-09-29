@@ -9,16 +9,17 @@ import java.util.List;
 
 /**
  * Cámara que encuadra a los autos que se le indican, con un leve adelanto hacia donde van. Con un solo auto
- * lo sigue; con varios apunta al centro del grupo y aleja el zoom hasta {@link #ZOOM_MAX} para que entren.
- * Si se separan más que eso, deja de encuadrar al grupo y sigue solo al primero de la lista.
+ * lo sigue; con varios apunta al centro del grupo y aleja el zoom, hasta {@link #ZOOM_MAX}. Si el grupo no
+ * entra ni con ese zoom, quien la use tiene que pasar a pantalla dividida (ver {@link #zoomNecesario}).
  */
 public class CamaraSeguimiento {
+    /** Alejamiento máximo (2 = se ve el doble de mundo). */
+    public static final float ZOOM_MAX = 2f;
+
     /** Segundos de velocidad que la cámara se adelanta al auto. */
     private static final float ADELANTO = 0.3f;
     /** Cuánto más alto, más rápido alcanza la posición y el zoom objetivo. */
     private static final float SUAVIZADO = 6f;
-    /** Alejamiento máximo (2 = se ve el doble de mundo). */
-    private static final float ZOOM_MAX = 2f;
     /** Espacio libre alrededor de los autos al encuadrarlos (px de mundo). */
     private static final float MARGEN = 90f;
 
@@ -35,31 +36,35 @@ public class CamaraSeguimiento {
         aplicar();
     }
 
-    /** El primer auto de la lista es el que se sigue si el grupo no entra en pantalla. */
-    public void actualizar(List<Auto> autos, float alfa, float delta) {
-        float minX = Float.MAX_VALUE;
-        float minY = Float.MAX_VALUE;
-        float maxX = -Float.MAX_VALUE;
-        float maxY = -Float.MAX_VALUE;
+    /**
+     * Zoom que haría falta para ver a todos los autos a la vez con la vista normal (640x360); 1 = sin alejar.
+     * Si supera {@link #ZOOM_MAX}, el grupo no entra en una sola pantalla.
+     */
+    public static float zoomNecesario(List<Auto> autos, float alfa) {
+        float[] limites = limites(autos, alfa);
+        return Math.max((limites[2] - limites[0] + 2f * MARGEN) / Config.ANCHO_VIRTUAL,
+            (limites[3] - limites[1] + 2f * MARGEN) / Config.ALTO_VIRTUAL);
+    }
+
+    /** Devuelve {minX, minY, maxX, maxY} de los autos, ya con el adelanto. */
+    private static float[] limites(List<Auto> autos, float alfa) {
+        float[] limites = {Float.MAX_VALUE, Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE};
         for (Auto auto : autos) {
             float x = auto.xInterpolada(alfa) + auto.velocidad().x * ADELANTO;
             float y = auto.yInterpolada(alfa) + auto.velocidad().y * ADELANTO;
-            minX = Math.min(minX, x);
-            maxX = Math.max(maxX, x);
-            minY = Math.min(minY, y);
-            maxY = Math.max(maxY, y);
+            limites[0] = Math.min(limites[0], x);
+            limites[1] = Math.min(limites[1], y);
+            limites[2] = Math.max(limites[2], x);
+            limites[3] = Math.max(limites[3], y);
         }
-        float zoomNecesario = Math.max((maxX - minX + 2f * MARGEN) / Config.ANCHO_VIRTUAL,
-            (maxY - minY + 2f * MARGEN) / Config.ALTO_VIRTUAL);
+        return limites;
+    }
 
-        float objetivoX = (minX + maxX) / 2f;
-        float objetivoY = (minY + maxY) / 2f;
-        float objetivoZoom = MathUtils.clamp(zoomNecesario, 1f, ZOOM_MAX);
-        if (zoomNecesario > ZOOM_MAX) {
-            Auto lider = autos.get(0);
-            objetivoX = lider.xInterpolada(alfa) + lider.velocidad().x * ADELANTO;
-            objetivoY = lider.yInterpolada(alfa) + lider.velocidad().y * ADELANTO;
-        }
+    public void actualizar(List<Auto> autos, float alfa, float delta) {
+        float[] limites = limites(autos, alfa);
+        float objetivoX = (limites[0] + limites[2]) / 2f;
+        float objetivoY = (limites[1] + limites[3]) / 2f;
+        float objetivoZoom = MathUtils.clamp(zoomNecesario(autos, alfa), 1f, ZOOM_MAX);
 
         float k = 1f - (float) Math.exp(-SUAVIZADO * delta);
         centroX += (objetivoX - centroX) * k;
@@ -69,8 +74,9 @@ public class CamaraSeguimiento {
     }
 
     private void aplicar() {
-        float mitadAncho = Config.ANCHO_VIRTUAL * camara.zoom / 2f;
-        float mitadAlto = Config.ALTO_VIRTUAL * camara.zoom / 2f;
+        // El tamaño de la vista sale de la cámara: el de cada mitad es distinto en pantalla dividida.
+        float mitadAncho = camara.viewportWidth * camara.zoom / 2f;
+        float mitadAlto = camara.viewportHeight * camara.zoom / 2f;
         float x = MathUtils.clamp(centroX, mitadAncho, circuito.ancho() - mitadAncho);
         float y = MathUtils.clamp(centroY, mitadAlto, circuito.alto() - mitadAlto);
         // Posición entera: con pixel art evita costuras entre tiles al mover la cámara.

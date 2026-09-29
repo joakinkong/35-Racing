@@ -18,7 +18,9 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.glutils.HdpiUtils;
 import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.scenes.scene2d.Touchable;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
@@ -41,6 +43,9 @@ public class PantallaCarrera extends PantallaBase {
     private static final int MAX_JUGADORES_LOCALES = 2;
     private static final Color FONDO_HUD = new Color(0f, 0f, 0f, 0.55f);
     private static final float ANCHO_FRANJA_COLOR = 4f;
+    private static final float ANCHO_DIVISOR = 2f;
+    /** Se vuelve a una sola pantalla recién cuando el zoom necesario baja de esta fracción del máximo (evita parpadeos). */
+    private static final float HISTERESIS_UNION = 0.8f;
 
     /** Teclas de un esquema de control. */
     private record Controles(int acelerar, int frenar, int izquierda, int derecha) {
@@ -59,6 +64,11 @@ public class PantallaCarrera extends PantallaBase {
     private final OrthographicCamera camaraMundo = new OrthographicCamera();
     private final FitViewport viewportMundo = new FitViewport(Config.ANCHO_VIRTUAL, Config.ALTO_VIRTUAL, camaraMundo);
     private final CamaraSeguimiento seguimiento;
+    // Pantalla dividida (solo con 2 jugadores): una cámara por mitad, cada una sigue a su jugador.
+    private final List<OrthographicCamera> camarasDivididas = new ArrayList<>();
+    private final List<CamaraSeguimiento> seguimientosDivididos = new ArrayList<>();
+    private final Image divisor = new Image(recursos.color(Paleta.BLANCO));
+    private boolean dividido;
     private final VistaCircuito vistaCircuito;
     private final VistaAuto vistaAuto = new VistaAuto();
 
@@ -88,6 +98,13 @@ public class PantallaCarrera extends PantallaBase {
         }
 
         seguimiento = new CamaraSeguimiento(camaraMundo, circuito, autosLocales());
+        if (jugadoresLocales > 1) {
+            for (Participante jugador : locales) {
+                OrthographicCamera camara = new OrthographicCamera(Config.ANCHO_VIRTUAL / 2f, Config.ALTO_VIRTUAL);
+                camarasDivididas.add(camara);
+                seguimientosDivididos.add(new CamaraSeguimiento(camara, circuito, List.of(jugador.auto())));
+            }
+        }
         vistaCircuito = new VistaCircuito(mapa, recursos.batch);
         armarInterfaz();
     }
@@ -115,6 +132,11 @@ public class PantallaCarrera extends PantallaBase {
         centro.add(cartel).row();
         centro.add(subcartel);
         escena.addActor(centro);
+
+        divisor.setBounds(Config.ANCHO_VIRTUAL / 2f - ANCHO_DIVISOR / 2f, 0f, ANCHO_DIVISOR, Config.ALTO_VIRTUAL);
+        divisor.setTouchable(Touchable.disabled);
+        divisor.setVisible(false);
+        escena.addActor(divisor);
     }
 
     private List<Auto> autosLocales() {
@@ -125,7 +147,7 @@ public class PantallaCarrera extends PantallaBase {
         return autos;
     }
 
-    /** Los jugadores locales del primero al último en carrera: la cámara sigue al primero si no entran todos. */
+    /** Los jugadores locales del primero al último en carrera. */
     private List<Participante> ordenLocalesPorPosicion() {
         List<Participante> orden = new ArrayList<>();
         for (Participante p : carrera.clasificacion()) {
@@ -146,17 +168,57 @@ public class PantallaCarrera extends PantallaBase {
         }
         float alfa = acumulador / PASO;
 
-        seguimiento.actualizar(autosLocales(), alfa, delta);
+        List<Auto> autos = autosLocales();
+        seguimiento.actualizar(autos, alfa, delta);
+        for (int i = 0; i < seguimientosDivididos.size(); i++) {
+            seguimientosDivididos.get(i).actualizar(List.of(locales.get(i).auto()), alfa, delta);
+        }
+        actualizarModoDividido(autos, alfa);
+
         viewportMundo.apply();
-        vistaCircuito.dibujar(camaraMundo);
+        if (!dividido) {
+            dibujarMundo(camaraMundo, alfa);
+        } else {
+            // Cada jugador ve su propio auto en una mitad de la zona de juego (con las barras del FitViewport).
+            int x = viewportMundo.getScreenX();
+            int y = viewportMundo.getScreenY();
+            int ancho = viewportMundo.getScreenWidth();
+            int alto = viewportMundo.getScreenHeight();
+            int mitad = ancho / 2;
+            HdpiUtils.glViewport(x, y, mitad, alto);
+            dibujarMundo(camarasDivididas.get(0), alfa);
+            HdpiUtils.glViewport(x + mitad, y, ancho - mitad, alto);
+            dibujarMundo(camarasDivididas.get(1), alfa);
+        }
+        divisor.setVisible(dividido);
+
+        actualizarInterfaz(delta);
+    }
+
+    /**
+     * Pasa a pantalla dividida cuando los autos locales no entran juntos ni con el zoom máximo, y vuelve a una
+     * sola pantalla cuando se acercan lo suficiente.
+     */
+    private void actualizarModoDividido(List<Auto> autos, float alfa) {
+        if (camarasDivididas.isEmpty()) {
+            return;
+        }
+        float necesario = CamaraSeguimiento.zoomNecesario(autos, alfa);
+        if (!dividido && necesario > CamaraSeguimiento.ZOOM_MAX) {
+            dividido = true;
+        } else if (dividido && necesario < CamaraSeguimiento.ZOOM_MAX * HISTERESIS_UNION) {
+            dividido = false;
+        }
+    }
+
+    private void dibujarMundo(OrthographicCamera camara, float alfa) {
+        vistaCircuito.dibujar(camara);
         // Se dibujan de atrás hacia adelante en la clasificación para que el puntero quede arriba.
         List<Participante> clasificacion = carrera.clasificacion();
         for (int i = clasificacion.size() - 1; i >= 0; i--) {
             Participante p = clasificacion.get(i);
-            vistaAuto.dibujar(p.auto(), alfa, Paleta.COLORES_AUTOS[p.id() % Paleta.COLORES_AUTOS.length], camaraMundo);
+            vistaAuto.dibujar(p.auto(), alfa, Paleta.COLORES_AUTOS[p.id() % Paleta.COLORES_AUTOS.length], camara);
         }
-
-        actualizarInterfaz(delta);
     }
 
     private void leerEntradas() {
