@@ -23,6 +23,19 @@ public final class Config {
     public static final int PUERTO_TCP = 7777;
     public static final int PUERTO_UDP = 7778;
     public static final boolean DEBUG_RED = true;
+    /** Versión del formato de los mensajes; se manda en UNIRSE y si no coincide el servidor rechaza al cliente. */
+    public static final int VERSION_PROTOCOLO = 1;
+    /** Jugadores mínimos para que el host pueda iniciar la carrera. */
+    public static final int MIN_JUGADORES = 2;
+    public static final int LARGO_MAXIMO_NOMBRE = 12;
+    /** Cada cuánto manda un PING el cliente (ms). */
+    public static final int INTERVALO_PING_MS = 2000;
+    /** Sin recibir nada durante este tiempo, una conexión TCP se da por perdida (ms). */
+    public static final int TIMEOUT_TCP_MS = 6000;
+    /** Máximo para conectarse al host (ms). */
+    public static final int TIMEOUT_CONEXION_MS = 3000;
+    /** Nombre del circuito que se manda en CUENTA_REGRESIVA. */
+    public static final String CIRCUITO = "circuito1";
 
     // Pantalla: resolución virtual (pixel art) y ventana inicial
     public static final int ANCHO_VIRTUAL = 640;

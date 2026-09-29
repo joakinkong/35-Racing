@@ -57,6 +57,10 @@ public abstract class PantallaBase extends ScreenAdapter {
         escena.addActor(raiz);
     }
 
+    /** Se llama al principio de cada cuadro, antes de dibujar. Sirve para procesar lo que llegó por la red. */
+    protected void actualizar(float delta) {
+    }
+
     /** Se llama en cada cuadro después de limpiar la pantalla y antes de dibujar la interfaz. */
     protected void dibujarFondo(float delta) {
     }
@@ -90,6 +94,7 @@ public abstract class PantallaBase extends ScreenAdapter {
         if (Gdx.input.isKeyJustPressed(Keys.ESCAPE)) {
             volver();
         }
+        actualizar(delta);
         ScreenUtils.clear(Paleta.CARBONO);
         dibujarFondo(delta);
         escena.getViewport().apply();

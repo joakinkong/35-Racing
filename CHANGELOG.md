@@ -8,6 +8,9 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ### Agregado
 
+- Conexión y lobby por TCP según `docs/PROTOCOLO.md`: paquete `red` con `ServidorPartida` (hilo de aceptación, un lector por cliente y un hilo de lógica que es el único que toca el estado), `ClientePartida` (conexión en segundo plano, cola thread-safe de mensajes y `PING` cada 2 s), `Protocolo`, `ConexionTcp`, `EstadoLobby`, `SesionRed` y `DireccionesLocales`.
+- "Crear partida" (pide el nombre y levanta el servidor), "Unirse" (nombre e IP, con mensajes de error claros) y lobby en vivo con elección de auto sin repetir, "listo", botón de iniciar solo para el host y las IPs de la red del host. Al iniciar, cada jugador corre su propia carrera local con su nombre y color.
+- Log en consola de cada mensaje de red (`Config.DEBUG_RED`) y constantes de red en `Config`.
 - Diseño del protocolo de red en `docs/PROTOCOLO.md`: arquitectura con servidor autoritativo en el host, máquina de estados de la partida, mensajes TCP de texto con sus errores, paquetes UDP binarios `ENTRADA` (11 bytes) y `ESTADO` (132 bytes con 5 autos) con números de secuencia, frecuencias y ancho de banda, interpolación en el cliente, hilos, manejo de fallas y diagramas. Todavía sin código.
 - Esqueleto del juego con estética Fórmula 1 (fondo carbono, rojo de largada, bandera de cuadros y pianos): `Main` extiende `Game` y hay cinco pantallas navegables (`MenuPrincipal`, `UnirsePartida`, `Lobby`, `Carrera`, `Resultados`), con ESC para volver.
 - `Config` con las constantes globales, `Paleta` con los colores y `Recursos` que centraliza el `AssetManager`, el `SpriteBatch` y el `Skin` armado por código.

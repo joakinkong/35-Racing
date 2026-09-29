@@ -7,6 +7,10 @@ import ar.edu.et35.racing.juego.Circuito;
 import ar.edu.et35.racing.juego.EntradaAuto;
 import ar.edu.et35.racing.juego.EstadoCarrera;
 import ar.edu.et35.racing.juego.Participante;
+import ar.edu.et35.racing.red.Protocolo;
+import ar.edu.et35.racing.red.Protocolo.Mensaje;
+import ar.edu.et35.racing.red.SesionRed;
+import ar.edu.et35.racing.red.cliente.ClientePartida;
 import ar.edu.et35.racing.util.Config;
 import ar.edu.et35.racing.util.Paleta;
 import ar.edu.et35.racing.util.Tiempo;
@@ -57,6 +61,8 @@ public class PantallaCarrera extends PantallaBase {
     private final List<Participante> locales = new ArrayList<>();
     private final List<Controles[]> controlesLocales = new ArrayList<>();
     private final Map<Integer, EntradaAuto> entradas = new HashMap<>();
+    /** Índice de color de cada auto (id de participante a color de Paleta); si falta, se usa el id. */
+    private final Map<Integer, Integer> colorPorId = new HashMap<>();
 
     // Solo se usa para saber dónde queda la zona de juego (con las barras del FitViewport) dentro de la ventana.
     private final FitViewport viewportMundo = new FitViewport(Config.ANCHO_VIRTUAL, Config.ALTO_VIRTUAL);
@@ -77,6 +83,18 @@ public class PantallaCarrera extends PantallaBase {
 
     /** @param jugadoresLocales 1 (flechas o WASD) o 2 (J1 con WASD y J2 con flechas). */
     public PantallaCarrera(Main juego, int jugadoresLocales) {
+        this(juego, jugadoresLocales, null, 0);
+    }
+
+    /**
+     * Carrera de un jugador que viene del lobby en red, con el nombre y el color que eligió. Todavía es una carrera
+     * local (sin sincronizar con los demás), pero la conexión sigue abierta.
+     */
+    public PantallaCarrera(Main juego, String nombre, int auto) {
+        this(juego, 1, nombre, auto);
+    }
+
+    private PantallaCarrera(Main juego, int jugadoresLocales, String nombreRed, int autoRed) {
         super(juego, false);
         if (jugadoresLocales < 1 || jugadoresLocales > MAX_JUGADORES_LOCALES) {
             throw new IllegalArgumentException("Jugadores locales: de 1 a " + MAX_JUGADORES_LOCALES);
@@ -86,7 +104,10 @@ public class PantallaCarrera extends PantallaBase {
         circuito = CargadorCircuito.cargar(mapa, Config.MAX_JUGADORES);
         carrera = new Carrera(circuito, Config.VUELTAS);
         for (int i = 0; i < jugadoresLocales; i++) {
-            locales.add(carrera.agregarAuto(i, "Jugador " + (i + 1)));
+            locales.add(carrera.agregarAuto(i, nombreRed != null ? nombreRed : "Jugador " + (i + 1)));
+            if (nombreRed != null) {
+                colorPorId.put(i, autoRed);
+            }
             controlesLocales.add(jugadoresLocales == 1 ? new Controles[] {WASD, FLECHAS}
                 : new Controles[] {i == 0 ? WASD : FLECHAS});
             entradas.put(i, new EntradaAuto());
@@ -131,6 +152,38 @@ public class PantallaCarrera extends PantallaBase {
         escena.addActor(divisor);
     }
 
+    private Color colorDe(Participante p) {
+        int indice = colorPorId.getOrDefault(p.id(), p.id());
+        return Paleta.COLORES_AUTOS[Math.floorMod(indice, Paleta.COLORES_AUTOS.length)];
+    }
+
+    /**
+     * Si hay una partida en red abierta, mantiene la conexión viva (PING) y procesa lo que llega. Por ahora no se
+     * usa nada de la carrera en red; solo se atiende que la partida se cierre o se pierda la conexión.
+     */
+    @Override
+    protected void actualizar(float delta) {
+        SesionRed sesion = juego.sesion();
+        if (sesion == null || yaFueAResultados) {
+            return;
+        }
+        ClientePartida cliente = sesion.cliente();
+        cliente.actualizar();
+        Mensaje mensaje;
+        while ((mensaje = cliente.sondear()) != null) {
+            if (mensaje.es(Protocolo.CERRADA)) {
+                yaFueAResultados = true;
+                juego.irA(new MenuPrincipal(juego, "La partida se cerró: " + mensaje.campo(0)));
+                return;
+            }
+            if (mensaje.es(Protocolo.CONEXION_PERDIDA)) {
+                yaFueAResultados = true;
+                juego.irA(new MenuPrincipal(juego, mensaje.campo(0)));
+                return;
+            }
+        }
+    }
+
     @Override
     protected void dibujarFondo(float delta) {
         leerEntradas();
@@ -168,7 +221,7 @@ public class PantallaCarrera extends PantallaBase {
         List<Participante> clasificacion = carrera.clasificacion();
         for (int i = clasificacion.size() - 1; i >= 0; i--) {
             Participante p = clasificacion.get(i);
-            vistaAuto.dibujar(p.auto(), alfa, Paleta.COLORES_AUTOS[p.id() % Paleta.COLORES_AUTOS.length], camara);
+            vistaAuto.dibujar(p.auto(), alfa, colorDe(p), camara);
         }
     }
 
@@ -241,7 +294,7 @@ public class PantallaCarrera extends PantallaBase {
 
         PanelHud(Participante jugador) {
             this.jugador = jugador;
-            Color color = Paleta.COLORES_AUTOS[jugador.id() % Paleta.COLORES_AUTOS.length];
+            Color color = colorDe(jugador);
             tabla.setBackground(recursos.color(FONDO_HUD));
             tabla.pad(4);
             tabla.add(new Image(recursos.color(color))).width(ANCHO_FRANJA_COLOR).growY().padRight(6);

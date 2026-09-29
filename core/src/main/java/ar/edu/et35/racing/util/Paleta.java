@@ -15,6 +15,7 @@ public final class Paleta {
     public static final Color ROJO = Color.valueOf("E10600FF");
     public static final Color ROJO_OSCURO = Color.valueOf("8E0400FF");
     public static final Color BLANCO = Color.WHITE;
+    public static final Color VERDE = Color.valueOf("3ED26CFF");
 
     /** Un color por auto (según su id), para distinguir hasta MAX_JUGADORES autos. */
     public static final Color[] COLORES_AUTOS = {
@@ -24,4 +25,7 @@ public final class Paleta {
         Color.valueOf("00D2BEFF"),
         Color.valueOf("FF8700FF"),
     };
+
+    /** Nombre de cada color de auto, en el mismo orden que {@link #COLORES_AUTOS}. */
+    public static final String[] NOMBRES_AUTOS = {"ROJO", "AZUL", "AMARILLO", "TURQUESA", "NARANJA"};
 }

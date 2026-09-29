@@ -110,7 +110,7 @@ Reglas para que ambos lados se entiendan igual:
 | `CERRADA;<motivo>` | texto para mostrar | A todos, cuando el host cierra la partida |
 | `PONG;<marca>` | la misma marca del `PING` | Respuesta a cada `PING` |
 
-Al unirse, el servidor le asigna al jugador el **primer auto libre**, así nadie queda sin auto; `ELEGIR_AUTO` lo cambia si el pedido está libre. El orden en la grilla de largada es el orden de llegada al lobby.
+Al unirse, el servidor le asigna al jugador el **primer auto libre**, así nadie queda sin auto; `ELEGIR_AUTO` lo cambia si el pedido está libre. El orden en la grilla de largada es el orden de llegada al lobby. **El host es el primer jugador que se une**: es el que crea la partida y su cliente se conecta a su propio servidor enseguida. Una conexión que no manda `UNIRSE` (ni nada) queda sin datos, y a los 6 s el servidor la cierra por timeout.
 
 Ejemplo de `LOBBY` con dos jugadores, donde el host (id 0) eligió el auto 0 y está listo, y el otro eligió el auto 3 y no está listo:
 
@@ -131,7 +131,7 @@ LOBBY;0;2;0;Joaquin;0;1;1;Mateo;3;0
 | `NO_PERMITIDO` | `INICIAR` o `REVANCHA` de alguien que no es el host, o en un estado en que no corresponde | No |
 | `FALTAN_JUGADORES` | `INICIAR` con menos de 2 jugadores o con alguno que no está listo | No |
 
-Cuando el error cierra la conexión, el servidor manda el `ERROR` y después cierra el socket, para que el cliente pueda mostrar el motivo.
+Cuando el error cierra la conexión, el servidor manda el `ERROR` y después cierra el socket, para que el cliente pueda mostrar el motivo. Los errores se comprueban en este orden: `VERSION_DISTINTA`, `CARRERA_EN_CURSO`, `PARTIDA_LLENA`, `NOMBRE_INVALIDO` y `NOMBRE_REPETIDO`. Para `INICIAR`, el host también tiene que estar listo: "todos listos" incluye a todos los jugadores.
 
 ---
 
