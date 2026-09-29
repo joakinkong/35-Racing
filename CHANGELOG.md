@@ -24,7 +24,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 ### Corregido
 
 - Los checkpoints del circuito provisorio van de muro a muro (pista más pasto de escape) y no solo sobre la pista: un auto que se sale al pasto igual los cruza y sus vueltas cuentan, con la desventaja de ir más lento.
-- En la prueba local, cuando los dos autos se separan más de lo que entra con el zoom máximo, la pantalla se divide y cada jugador ve su propio auto. Antes la cámara seguía siempre al que iba primero y el otro quedaba fuera de pantalla.
+- En la prueba local, cuando los dos autos se separan más de lo que entra con el zoom máximo, la pantalla se divide y cada jugador ve su propio auto. Antes la cámara seguía siempre al que iba primero y el otro quedaba fuera de pantalla. Cada mitad usa el mismo zoom (2x) que tenía la cámara compartida al máximo, para que el corte no cambie la escala del mundo.
 
 ### Cambiado
 

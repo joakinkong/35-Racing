@@ -27,12 +27,24 @@ public class CamaraSeguimiento {
     private final Circuito circuito;
     private float centroX;
     private float centroY;
+    /** Si no es NaN, el zoom queda fijo en este valor en vez de ajustarse a los autos. */
+    private float zoomFijo = Float.NaN;
 
     public CamaraSeguimiento(OrthographicCamera camara, Circuito circuito, List<Auto> autos) {
         this.camara = camara;
         this.circuito = circuito;
         this.centroX = autos.get(0).x();
         this.centroY = autos.get(0).y();
+        aplicar();
+    }
+
+    /**
+     * Deja el zoom fijo (por ejemplo, en {@link #ZOOM_MAX} en pantalla dividida, para que el corte entre una y
+     * dos pantallas no cambie la escala del mundo).
+     */
+    public void fijarZoom(float zoom) {
+        zoomFijo = zoom;
+        camara.zoom = zoom;
         aplicar();
     }
 
@@ -64,7 +76,7 @@ public class CamaraSeguimiento {
         float[] limites = limites(autos, alfa);
         float objetivoX = (limites[0] + limites[2]) / 2f;
         float objetivoY = (limites[1] + limites[3]) / 2f;
-        float objetivoZoom = MathUtils.clamp(zoomNecesario(autos, alfa), 1f, ZOOM_MAX);
+        float objetivoZoom = Float.isNaN(zoomFijo) ? MathUtils.clamp(zoomNecesario(autos, alfa), 1f, ZOOM_MAX) : zoomFijo;
 
         float k = 1f - (float) Math.exp(-SUAVIZADO * delta);
         centroX += (objetivoX - centroX) * k;

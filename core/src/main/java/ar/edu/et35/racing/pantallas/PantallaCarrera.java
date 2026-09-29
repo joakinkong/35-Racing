@@ -102,7 +102,10 @@ public class PantallaCarrera extends PantallaBase {
             for (Participante jugador : locales) {
                 OrthographicCamera camara = new OrthographicCamera(Config.ANCHO_VIRTUAL / 2f, Config.ALTO_VIRTUAL);
                 camarasDivididas.add(camara);
-                seguimientosDivididos.add(new CamaraSeguimiento(camara, circuito, List.of(jugador.auto())));
+                CamaraSeguimiento seguimientoJugador = new CamaraSeguimiento(camara, circuito, List.of(jugador.auto()));
+                // Mismo zoom que tenía la cámara compartida al dividirse, para que el corte no cambie la escala.
+                seguimientoJugador.fijarZoom(CamaraSeguimiento.ZOOM_MAX);
+                seguimientosDivididos.add(seguimientoJugador);
             }
         }
         vistaCircuito = new VistaCircuito(mapa, recursos.batch);
