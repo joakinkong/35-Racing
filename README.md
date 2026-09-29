@@ -49,7 +49,7 @@ O en PowerShell:
 ## Documentación
 
 - [Propuesta del Proyecto](https://github.com/joakinkong/35-Racing/wiki/Propuesta-del-Proyecto-%E2%80%90-35-Racing): descripción, alcance, arquitectura y tácticas de trabajo.
-- [Cómo fuimos trabajando](docs/proceso/README.md): documentación del proceso de desarrollo, etapa por etapa, con decisiones, problemas, pruebas y capturas.
+- [Cómo fuimos trabajando](docs/proceso/README.md): documentación del proceso de desarrollo, etapa por etapa, con decisiones, problemas, pruebas y capturas. También está reunida en un [PDF](docs/proceso/proceso-de-desarrollo.pdf).
 - [CLAUDE.md](CLAUDE.md): contexto del proyecto, stack, arquitectura y convenciones de código.
 - [CHANGELOG.md](CHANGELOG.md): historial de cambios y versiones.
 
