@@ -29,7 +29,3 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 ### Cambios
 
 - Compilación configurada para Java 17 (LTS).
-
----
-
-[0.1.0]: https://github.com/joakinkong/35-Racing/releases/tag/v0.1.0
