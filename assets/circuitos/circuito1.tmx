@@ -76,52 +76,52 @@
 </data>
  </layer>
  <objectgroup id="2" name="checkpoints">
-  <object id="1" x="944" y="928" width="64" height="192">
+  <object id="1" x="944" y="864" width="64" height="320">
    <properties>
     <property name="orden" type="int" value="0"/>
    </properties>
   </object>
-  <object id="2" x="1519.53" y="815.529" width="192" height="192">
+  <object id="2" x="1494.39" y="790.392" width="242.274" height="242.274">
    <properties>
     <property name="orden" type="int" value="1"/>
    </properties>
   </object>
-  <object id="3" x="1632" y="608" width="192" height="64">
+  <object id="3" x="1568" y="608" width="320" height="64">
    <properties>
     <property name="orden" type="int" value="2"/>
    </properties>
   </object>
-  <object id="4" x="1519.53" y="272.471" width="192" height="192">
+  <object id="4" x="1494.39" y="247.334" width="242.274" height="242.274">
    <properties>
     <property name="orden" type="int" value="3"/>
    </properties>
   </object>
-  <object id="5" x="1120" y="160" width="64" height="192">
+  <object id="5" x="1120" y="96" width="64" height="320">
    <properties>
     <property name="orden" type="int" value="4"/>
    </properties>
   </object>
-  <object id="6" x="736" y="160" width="64" height="192">
+  <object id="6" x="736" y="96" width="64" height="320">
    <properties>
     <property name="orden" type="int" value="5"/>
    </properties>
   </object>
-  <object id="7" x="208.471" y="272.471" width="192" height="192">
+  <object id="7" x="183.334" y="247.334" width="242.274" height="242.274">
    <properties>
     <property name="orden" type="int" value="6"/>
    </properties>
   </object>
-  <object id="8" x="96" y="608" width="192" height="64">
+  <object id="8" x="32" y="608" width="320" height="64">
    <properties>
     <property name="orden" type="int" value="7"/>
    </properties>
   </object>
-  <object id="9" x="208.471" y="815.529" width="192" height="192">
+  <object id="9" x="183.334" y="790.392" width="242.274" height="242.274">
    <properties>
     <property name="orden" type="int" value="8"/>
    </properties>
   </object>
-  <object id="10" x="672" y="928" width="64" height="192">
+  <object id="10" x="672" y="864" width="64" height="320">
    <properties>
     <property name="orden" type="int" value="9"/>
    </properties>
