@@ -9,7 +9,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * activo, F8 la cambia en vivo. Afecta a todos los receptores UDP de esta PC.
  */
 public final class PerdidaSimulada {
-    private static final float[] NIVELES = {0f, 0.2f, 0.5f};
+    private static final float[] NIVELES = {0f, 0.2f, 0.5f, 1f};
     /** La leen los hilos receptores y la cambia el hilo de render: volatile para que vean el último valor. */
     private static volatile float fraccion = Config.PERDIDA_UDP_SIMULADA;
 
@@ -24,7 +24,7 @@ public final class PerdidaSimulada {
         fraccion = Math.max(0f, Math.min(1f, nueva));
     }
 
-    /** Pasa al siguiente nivel: 0 % -> 20 % -> 50 % -> 0 %. */
+    /** Pasa al siguiente nivel: 0 % -> 20 % -> 50 % -> 100 % (corte total) -> 0 %. */
     public static void siguienteNivel() {
         float actual = fraccion;
         for (int i = 0; i < NIVELES.length; i++) {

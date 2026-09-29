@@ -32,6 +32,10 @@ public final class Config {
     public static final int INTERVALO_PING_MS = 2000;
     /** Sin recibir nada durante este tiempo, una conexión TCP se da por perdida (ms). */
     public static final int TIMEOUT_TCP_MS = 6000;
+    /** Sin estados UDP durante este tiempo en plena carrera, se avisa y se vuelve al menú (s). */
+    public static final float TIMEOUT_RED = 5f;
+    /** Sin estados UDP durante este tiempo se muestra "conexión inestable" (s). */
+    public static final float AVISO_RED_INESTABLE = 1f;
     /** Máximo para conectarse al host (ms). */
     public static final int TIMEOUT_CONEXION_MS = 3000;
     /** Nombre del circuito que se manda en CUENTA_REGRESIVA. */

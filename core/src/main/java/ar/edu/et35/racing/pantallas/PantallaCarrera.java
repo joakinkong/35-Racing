@@ -84,10 +84,13 @@ public class PantallaCarrera extends PantallaBase {
     private final Label subcartel = new Label("", skin);
     private final Label aviso = new Label("", skin);
     private final Label indicadorPerdida = new Label("", skin, "rojo");
+    private final Label alertaRed = new Label("", skin, "rojo");
 
     private float tiempoTerminada;
     private float tiempoAviso;
     private boolean salio;
+    private float sinEstados;
+    private int estadosVistos;
 
     /** Prueba local: 1 jugador (flechas o WASD) o 2 en el mismo teclado (J1 con WASD y J2 con flechas). */
     public PantallaCarrera(Main juego, int jugadoresLocales) {
@@ -145,6 +148,7 @@ public class PantallaCarrera extends PantallaBase {
         }
         raiz.row();
         raiz.add(indicadorPerdida).colspan(idsLocales.size()).left().padLeft(4).row();
+        raiz.add(alertaRed).colspan(idsLocales.size()).padTop(2).row();
         // Los avisos van arriba y no en el centro, que es donde la cámara pone al auto propio.
         raiz.add(aviso).colspan(idsLocales.size()).padTop(4).row();
         Table ayuda = new Table();
@@ -223,6 +227,34 @@ public class PantallaCarrera extends PantallaBase {
         }
     }
 
+    /**
+     * En red, si dejan de llegar estados UDP: a AVISO_RED_INESTABLE segundos se avisa, y a TIMEOUT_RED se vuelve al
+     * menú. Si nunca llegó ninguno, lo más probable es que un firewall bloquee el UDP y el mensaje lo dice. No se
+     * controla una vez terminada la carrera: el servidor deja de mandar estados.
+     */
+    private void controlarDatosDeRed(FotoCarrera foto, float delta) {
+        if (red == null || salio) {
+            return;
+        }
+        boolean terminada = fuente.resultados() != null || (foto != null && foto.estado() == EstadoCarrera.TERMINADA);
+        if (red.estadosRecibidos() != estadosVistos || terminada) {
+            estadosVistos = red.estadosRecibidos();
+            sinEstados = 0f;
+            alertaRed.setText("");
+            return;
+        }
+        // Se limita el delta: si la ventana se congela un rato, los estados atrasados llegan enseguida y no es una falla.
+        sinEstados += Math.min(delta, 0.25f);
+        if (sinEstados >= Config.TIMEOUT_RED) {
+            String motivo = estadosVistos == 0
+                ? "No llegan datos por UDP: revisá el firewall de la PC del host (puerto " + Config.PUERTO_UDP + ")"
+                : "Se cortó la conexión con la carrera: no llegan datos hace " + Math.round(Config.TIMEOUT_RED) + " s";
+            irA(new MenuPrincipal(juego, motivo));
+        } else if (sinEstados >= Config.AVISO_RED_INESTABLE) {
+            alertaRed.setText("Conexión inestable...");
+        }
+    }
+
     private void mostrarAviso(String texto) {
         aviso.setText(texto);
         tiempoAviso = SEGUNDOS_AVISO;
@@ -240,6 +272,7 @@ public class PantallaCarrera extends PantallaBase {
         leerEntradas();
         fuente.avanzar(delta, entradas);
         FotoCarrera foto = fuente.foto();
+        controlarDatosDeRed(foto, delta);
 
         for (int i = 0; i < camaras.size(); i++) {
             FotoAuto propio = foto != null ? foto.auto(idsLocales.get(i)) : null;

@@ -83,6 +83,7 @@ public class ServidorPartida {
         final EntradaRemota udp;
         int auto;
         boolean listo;
+        boolean avisoUdpDado;
 
         Jugador(int id, String nombre, Cliente cliente, EntradaRemota udp, int auto) {
             this.id = id;
@@ -138,6 +139,7 @@ public class ServidorPartida {
     private Fase fase = Fase.LOBBY;
     private int idHost = -1;
     private Carrera carrera;
+    private int tickInicioCarrera;
     /** Número de tick de la simulación: nunca vuelve atrás, ni entre carreras. Es la secuencia del ESTADO. */
     private int tick;
 
@@ -212,6 +214,8 @@ public class ServidorPartida {
                 } else {
                     return;
                 }
+            } catch (RuntimeException e) {
+                RegistroRed.log(ORIGEN, "Error inesperado al aceptar una conexión: " + e);
             }
         }
     }
@@ -237,6 +241,10 @@ public class ServidorPartida {
             motivo = "sin respuesta durante " + Config.TIMEOUT_TCP_MS / 1000 + " s";
         } catch (IOException e) {
             motivo = cliente.conexion.cerrada() ? "conexión cerrada" : "error de red: " + e.getMessage();
+        } catch (RuntimeException e) {
+            // Un mensaje que rompa el procesamiento da de baja a ese cliente, pero no al servidor.
+            RegistroRed.log(ORIGEN, "Error inesperado con " + cliente.nombreParaLog() + ": " + e);
+            motivo = "error interno";
         } finally {
             cliente.conexion.cerrar();
             eventos.add(new Desconectado(cliente, motivo));
@@ -260,31 +268,39 @@ public class ServidorPartida {
             } catch (IOException e) {
                 return; // el socket se cerró: el servidor se está apagando
             }
-            if (PerdidaSimulada.descartar()) {
-                continue;
+            try {
+                procesarPaqueteUdp(bufer, paquete);
+            } catch (RuntimeException e) {
+                RegistroRed.log(ORIGEN, "Paquete UDP ignorado por error: " + e);
             }
-            PaquetesUdp.Entrada entrada = PaquetesUdp.leerEntrada(bufer, paquete.getLength());
-            if (entrada == null || entrada.id() >= Config.MAX_JUGADORES) {
-                continue;
-            }
-            EntradaRemota remota = remotas.get(entrada.id());
-            if (remota == null || remota.token != entrada.token()) {
-                continue;
-            }
-            if (remota.recibioAlguna && entrada.secuencia() <= remota.ultimaSecuencia) {
-                remota.descartados++;
-                continue;
-            }
-            remota.recibioAlguna = true;
-            remota.ultimaSecuencia = entrada.secuencia();
-            SocketAddress origen = paquete.getSocketAddress();
-            if (!origen.equals(remota.direccion)) {
-                RegistroRed.log(ORIGEN, "UDP del jugador #" + entrada.id() + " desde " + origen);
-                remota.direccion = origen;
-            }
-            remota.botones = entrada.botones();
-            remota.ultimaLlegadaNanos = System.nanoTime();
         }
+    }
+
+    private void procesarPaqueteUdp(byte[] bufer, DatagramPacket paquete) {
+        if (PerdidaSimulada.descartar()) {
+            return;
+        }
+        PaquetesUdp.Entrada entrada = PaquetesUdp.leerEntrada(bufer, paquete.getLength());
+        if (entrada == null || entrada.id() >= Config.MAX_JUGADORES) {
+            return;
+        }
+        EntradaRemota remota = remotas.get(entrada.id());
+        if (remota == null || remota.token != entrada.token()) {
+            return;
+        }
+        if (remota.recibioAlguna && entrada.secuencia() <= remota.ultimaSecuencia) {
+            remota.descartados++;
+            return;
+        }
+        remota.recibioAlguna = true;
+        remota.ultimaSecuencia = entrada.secuencia();
+        SocketAddress origen = paquete.getSocketAddress();
+        if (!origen.equals(remota.direccion)) {
+            RegistroRed.log(ORIGEN, "UDP del jugador #" + entrada.id() + " desde " + origen);
+            remota.direccion = origen;
+        }
+        remota.botones = entrada.botones();
+        remota.ultimaLlegadaNanos = System.nanoTime();
     }
 
     // ------------------------------------------------------------------ hilo de simulación
@@ -320,6 +336,11 @@ public class ServidorPartida {
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+        } catch (RuntimeException | Error e) {
+            // Una partida con la simulación muerta no se puede continuar: se avisa a todos y se cierra.
+            RegistroRed.log(ORIGEN, "Error inesperado en la simulación: " + e);
+            e.printStackTrace();
+            cerrar("Error interno del servidor (" + e.getClass().getSimpleName() + ")");
         }
     }
 
@@ -330,6 +351,7 @@ public class ServidorPartida {
         }
         EstadoCarrera antes = carrera.estado();
         carrera.actualizar(armarEntradas(), PASO);
+        avisarSiNoLlegaUdp();
         EstadoCarrera despues = carrera.estado();
 
         if (tick % TICKS_POR_ESTADO == 0 || despues != antes) {
@@ -341,6 +363,23 @@ public class ServidorPartida {
         } else if (despues == EstadoCarrera.TERMINADA) {
             fase = Fase.RESULTADOS;
             difundir(Protocolo.armarResultados(carrera.resultados()));
+        }
+    }
+
+    /**
+     * Si a los TIMEOUT_RED segundos de empezar un jugador no mandó ninguna ENTRADA, casi seguro es un firewall que
+     * bloquea el UDP: se avisa una sola vez en la consola del host.
+     */
+    private void avisarSiNoLlegaUdp() {
+        if (tick - tickInicioCarrera < Config.TIMEOUT_RED * Config.TICKS_POR_SEGUNDO) {
+            return;
+        }
+        for (Jugador j : jugadores.values()) {
+            if (!j.avisoUdpDado && j.udp.ultimaLlegadaNanos == 0) {
+                j.avisoUdpDado = true;
+                RegistroRed.log(ORIGEN, "AVISO: no llegó ninguna ENTRADA UDP de " + j.nombre
+                    + ". Probablemente el firewall bloquea el UDP " + puertoUdp() + " en esta PC");
+            }
         }
     }
 
@@ -499,6 +538,7 @@ public class ServidorPartida {
             carrera.agregarAuto(j.id, j.nombre);
         }
         entradas.clear();
+        tickInicioCarrera = tick;
         fase = Fase.CUENTA_REGRESIVA;
         // La cuenta regresiva la lleva la Carrera: cuando termina, simularTick() manda la LARGADA.
         difundir(Protocolo.armar(Protocolo.CUENTA_REGRESIVA, Config.CIRCUITO, Config.VUELTAS,
