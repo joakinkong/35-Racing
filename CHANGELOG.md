@@ -8,6 +8,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ### Agregado
 
+- Documentación de la etapa 9 (pruebas en LAN real): carrera completa con revancha entre 2 notebooks en el hotspot de un celular y pérdida UDP simulada sin problemas; en la red del colegio no se pudo unir nadie por el firewall. Quedan pendientes las pruebas con 3 y 5 jugadores.
 - Robustez de red: si dejan de llegar estados UDP en plena carrera, aviso "Conexión inestable..." a 1 s y vuelta al menú a `Config.TIMEOUT_RED` (5 s), con un mensaje que apunta al firewall si nunca llegó ninguno; el servidor avisa en su consola si un jugador no manda entradas UDP; una falla inesperada en la simulación del servidor cierra la partida para todos con el motivo.
 - Cierre de ventana a prueba de fallas en cualquier pantalla (sockets, hilos y puertos liberados) y tope de espera al conectar.
 - Carrera sincronizada por UDP según `docs/PROTOCOLO.md`: el servidor simula la `Carrera` a 60 ticks por segundo con la última entrada de cada jugador y manda el `ESTADO` de todos los autos 30 veces por segundo; los clientes mandan su `ENTRADA` 60 veces por segundo y dibujan lo que llega, interpolado 100 ms en el pasado. Paquetes binarios en `PaquetesUdp`, descarte por secuencia y por token, `Interpolador` y `CarreraEnRed`.

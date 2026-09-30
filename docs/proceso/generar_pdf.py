@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from datetime import date
 from pathlib import Path
 
@@ -257,7 +258,7 @@ def buscar_navegador() -> str:
 
 def main():
     navegador = buscar_navegador()
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         archivo_html = Path(tmp) / "proceso.html"
         archivo_html.write_text(armar_html(), encoding="utf-8")
         perfil = Path(tmp) / "perfil"
@@ -266,6 +267,11 @@ def main():
         subprocess.run([navegador, "--headless=new", "--disable-gpu", "--no-pdf-header-footer",
                         f"--user-data-dir={perfil}", f"--print-to-pdf={SALIDA}", archivo_html.as_uri()],
                        check=True, capture_output=True, timeout=180)
+        # Edge puede devolver el control antes de terminar de escribir el PDF: se espera sin borrar el HTML temporal.
+        for _ in range(60):
+            if SALIDA.exists():
+                break
+            time.sleep(0.5)
     if not SALIDA.exists():
         sys.exit("El navegador no generó el PDF.")
     print(f"PDF generado: {SALIDA} ({SALIDA.stat().st_size // 1024} KB)")
