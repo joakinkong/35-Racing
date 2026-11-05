@@ -1,12 +1,15 @@
-"""Genera los mapas .tmx de los circuitos a partir de los trazados SVG de f1-circuits-svg.
+"""Genera los circuitos en formato vectorial (.json) a partir de los trazados SVG de f1-circuits-svg.
 
 Uso:
     python tools/circuitos/generar_circuitos.py [circuito ...] [--svg RUTA] [--salida RUTA] [--vista RUTA]
 
 Sin nombres genera los 24 circuitos de la temporada 2026. Con --vista deja además un PNG por circuito para
-revisarlos a ojo. Los mapas usan tiles de 16 px (assets/circuitos/tileset16.png, que sale de reducir_tileset.py) y el mismo
-formato que circuito1.tmx (capas "suelo", "checkpoints" y "largada", propiedad "anguloLargada"), así que
-CargadorCircuito los lee sin cambios.
+revisarlos a ojo.
+
+Un circuito ya no es una grilla de tiles sino geometría: la línea central de la pista (una muestra cada
+PASO_MUESTREO píxeles), el ancho de la pista y el ancho del pasto de escape en cada muestra, los checkpoints y los
+lugares de largada. El juego dibuja esa geometría con líneas y polígonos, y para la colisión la rasteriza en una
+grilla fina. El formato está documentado en docs/FORMATO_CIRCUITO.md.
 
 Los trazados de f1-circuits-svg son de Jules Roy (CC BY 4.0): https://github.com/julesr0y/f1-circuits-svg
 """
@@ -20,36 +23,51 @@ import zlib
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import trazado  # noqa: E402
 
-# Tiles de 16 px (tileset16.png): más finos que los de 32 px, así entra un muro entre dos tramos de pista pegados.
-TILE = 16
-# El ancho de la pista (en tiles) cambia a lo largo del circuito, entre ANCHO_MIN y ANCHO_MAX: en cada punto es el
-# más ancho que deja SEPARACION_TILES libres (muro y pasto) hasta el tramo de pista más cercano que no es su vecino.
-# Así Mónaco, que tiene tramos pegados por todos lados, queda más angosto que Austin, y las horquillas se angostan
-# solas. A cada lado de la pista hay ESCAPE tiles de pasto y MURO de muro.
-ANCHO_MIN = 6
-ANCHO_MAX = 12
-SEPARACION_TILES = 3       # pasto, muro y pasto entre dos tramos pegados
-ARCO_MINIMO = 700          # tramos más cerca que esto a lo largo de la pista no cuentan (son la misma curva)
-CAMBIO_ANCHO = 0.25        # cuánto puede cambiar el ancho (en tiles) entre dos muestras, para que no haya escalones
-ESCAPE = 2
-MURO = 1
-MARGEN_EXTERIOR = 6
+VERSION_FORMATO = 1
 
-# Ids de los tiles del tileset (gid de Tiled). Las propiedades están en CABECERA_TILESET.
-PASTO, PISTA, MURO_T, META, PASTO_EXTERIOR = 1, 2, 3, 4, 5
+# Todas las medidas están en píxeles de mundo.
+# Lo primero es el asfalto: en cada punto de la pista mide lo más ancho que pueda (hasta ANCHO_MAX) y solo se achica si
+# otro tramo pasa tan cerca que no entra ni el muro pegado, pero nunca baja de ANCHO_MIN. Después viene el pasto: es lo
+# que sobra entre el asfalto y el muro (hasta ESCAPE px de cada lado). Donde no sobra nada, el muro queda pegado al
+# asfalto, como en Mónaco o Bakú. Si dos tramos quedan a menos de ANCHO_MIN + SEPARACION_MINIMA entre ejes, se los
+# separa (ver _separar_curvas_cerradas), así nunca se pisan los asfaltos.
+ANCHO_MIN = 72
+ANCHO_MAX = 128
+SEPARACION_MINIMA = 12     # hueco mínimo entre los bordes de asfalto de dos tramos: el muro (MURO) y un poco de aire
+ARCO_MINIMO = 300          # tramos más cerca que esto a lo largo de la pista no cuentan (son la misma curva)
+CAMBIO_ANCHO = 4.0         # cuánto puede cambiar el ancho entre dos muestras, para que no haya escalones
+# A cada lado del asfalto hay hasta ESCAPE px de pasto y después el muro, que es una línea de MURO px de grosor. Si
+# otro tramo de pista queda cerca, el pasto se acorta (hasta 0) para que el muro quede justo en el medio de los dos.
+# Los circuitos cortos son un poco más angostos: el ancho máximo y el mínimo se multiplican por un factor que va de
+# FACTOR_ANCHO_CORTO (KM_CORTO o menos) a 1 (KM_LARGO o más), en línea recta entre medio.
+FACTOR_ANCHO_CORTO = 0.8
+KM_CORTO = 3.4
+KM_LARGO = 5.4
+ARCO_REPULSION = 160       # muestras a menos de esto de arco son de la misma esquina: no se separan entre sí
+ITERACIONES_SEPARACION = 120
+VENTANA_EMPUJE = 6         # el empuje se reparte entre las muestras vecinas (6 a cada lado) para no hacer quiebres
+VENTANA_CURVA = 5          # muestras a cada lado con que se mide el radio de una curva (5 x 8 px = 40 px)
+FACTOR_CURVA = 1.6         # el ancho no pasa de FACTOR_CURVA x el radio de la curva (1,6 deja el borde de adentro con 0,2 radios)
+ESCAPE = 24
+CAMBIO_ESCAPE = 4.0        # igual que CAMBIO_ANCHO, para el pasto de escape
+MURO = 6
+MARGEN_MUNDO = 240         # distancia de la línea central al borde del mapa
 
 # Duración de una vuelta limpia: SEGUNDOS_VUELTA en promedio, un poco más en los circuitos más largos que el promedio
 # y menos en los más cortos (SEGUNDOS_POR_KM por cada kilómetro de diferencia). El largo en píxeles sale de multiplicar
 # esa duración por una velocidad media razonable (menor que ParametrosAuto.VELOCIDAD_MAX, por las curvas).
-SEGUNDOS_VUELTA = 75
+SEGUNDOS_VUELTA = 64       # calibrado con un bot que sigue la línea central con la física real: da unos 60 s de promedio
 SEGUNDOS_POR_KM = 8
-VELOCIDAD_MEDIA = 280      # px/s
+VELOCIDAD_MEDIA = 350      # px/s; es 0,78 de ParametrosAuto.VELOCIDAD_MAX (450), como antes (280 de 360)
 PASO_MUESTREO = 8          # distancia entre muestras de la línea central, en píxeles de mundo
 SEPARACION_CHECKPOINTS = 288
+HOLGURA_CHECKPOINT = 96    # lo que el lado del checkpoint supera al ancho de la pista
 LARGADA_ATRAS = 56         # píxeles entre la meta y el primer auto
 LARGADA_ENTRE_FILAS = 80
-LARGADA_LATERAL = 40      # separación del eje de la pista; se achica si la pista es angosta
+LARGADA_LATERAL = 40       # separación del eje de la pista; se achica si la pista es angosta
+LARGADA_BORDE = 16         # lo que queda libre entre el auto y el borde de la pista
 JUGADORES_MAX = 5
+CELDA_BUSQUEDA = 16        # lado de las celdas del índice espacial con que se buscan cruces
 
 # (id del SVG, kilómetros reales). El nombre del archivo sale del id con guiones bajos.
 CIRCUITOS = [
@@ -61,45 +79,25 @@ CIRCUITOS = [
     ('interlagos-2', 4.309), ('las-vegas-1', 6.201), ('lusail-1', 5.419), ('yas-marina-2', 5.281),
 ]
 
-KM_PROMEDIO = sum(km for _, km in CIRCUITOS) / len(CIRCUITOS)
+# Circuitos callejeros: no tienen pasto; donde estaría el pasto hay asfalto, y el muro queda pegado.
+FACTOR_ANCHO_CALLEJERO = 0.85   # el asfalto de un callejero (pista + lo que sería pasto) se achica a esta fracción
+CALLEJEROS = {'melbourne', 'jeddah', 'miami', 'montreal', 'monaco', 'madring', 'baku', 'marina_bay', 'las_vegas'}
 
-CABECERA_TILESET = """ <tileset firstgid="1" name="tileset16" tilewidth="16" tileheight="16" tilecount="5" columns="5">
-  <image source="tileset16.png" width="80" height="16"/>
-  <tile id="0">
-   <properties>
-    <property name="superficie" value="pasto"/>
-   </properties>
-  </tile>
-  <tile id="1">
-   <properties>
-    <property name="superficie" value="pista"/>
-   </properties>
-  </tile>
-  <tile id="2">
-   <properties>
-    <property name="superficie" value="muro"/>
-   </properties>
-  </tile>
-  <tile id="3">
-   <properties>
-    <property name="superficie" value="pista"/>
-   </properties>
-  </tile>
-  <tile id="4">
-   <properties>
-    <property name="superficie" value="pasto"/>
-   </properties>
-  </tile>
- </tileset>
-"""
+KM_PROMEDIO = sum(km for _, km in CIRCUITOS) / len(CIRCUITOS)
 
 
 def nombre_archivo(id_svg):
     return id_svg.rsplit('-', 1)[0].replace('-', '_')
 
 
+def factor_ancho(km):
+    """Cuánto del ancho normal tiene un circuito de ese largo: FACTOR_ANCHO_CORTO si es corto y 1 si es largo."""
+    t = max(0.0, min(1.0, (km - KM_CORTO) / (KM_LARGO - KM_CORTO)))
+    return FACTOR_ANCHO_CORTO + (1 - FACTOR_ANCHO_CORTO) * t
+
+
 class Circuito:
-    """Un circuito ya pasado a píxeles de mundo (eje Y hacia abajo, como Tiled)."""
+    """Un circuito ya pasado a píxeles de mundo. Acá el eje Y va hacia abajo (como el SVG); se invierte al escribir."""
 
     def __init__(self, id_svg, km, ruta_svg):
         self.id_svg = id_svg
@@ -120,51 +118,151 @@ class Circuito:
             puntos = [puntos[0]] + puntos[:0:-1]
         self.puntos = puntos
         self.paso = PASO_MUESTREO
+        self.limite_ancho_min = ANCHO_MIN * factor_ancho(km)
+        self.limite_ancho_max = ANCHO_MAX * factor_ancho(km)
+        self.callejero = self.nombre in CALLEJEROS
+        self.cruces = detectar_cruces(self)
+        self._separar_curvas_cerradas()
+        self.cruces = detectar_cruces(self)
+        self.cercanos = self._buscar_cercanos()
         self.anchos = self._calcular_anchos()
+        self.escapes = self._calcular_escapes()
+        if self.callejero:
+            # Sin pasto: lo que era pasto de escape pasa a ser asfalto y el muro queda pegado, pero un poco más angosto
+            # (FACTOR_ANCHO_CALLEJERO), sin bajar nunca del ancho mínimo.
+            self.anchos = [max(self.limite_ancho_min, (a + 2 * e) * FACTOR_ANCHO_CALLEJERO)
+                           for a, e in zip(self.anchos, self.escapes)]
+            self.escapes = [0.0] * len(self.escapes)
         self.ancho_minimo = min(self.anchos)
         self.ancho_maximo = max(self.anchos)
 
+    def _separar_curvas_cerradas(self):
+        """Abre las horquillas, chicanes y tramos paralelos que quedan más cerca de lo que entra una pista.
+
+        Dos muestras a más de ARCO_REPULSION de arco son tramos distintos (patas de una horquilla, o partes de la pista
+        que pasan una al lado de la otra). Si quedan a menos de ancho mínimo + SEPARACION_MINIMA entre ejes, los
+        asfaltos se pisan y el dibujo sale como una mancha. Esas muestras se empujan una de la otra, repartiendo el empuje a lo largo de la curva para que no
+        queden quiebres, hasta que entre una pista mínima con su pasto. Los cruces no se tocan.
+        """
+        n = len(self.puntos)
+        d_min = self.limite_ancho_min + SEPARACION_MINIMA
+        arco_min = int(ARCO_REPULSION / self.paso)
+        excluidos = set()
+        for i, j in self.cruces:
+            for k in (i, j):
+                excluidos.update((k + d) % n for d in range(-40, 41))
+        pts = [list(p) for p in self.puntos]
+        # Las muestras solo se separan, así que alcanza con buscar una vez los pares que alguna vez pueden quedar cerca.
+        lado = d_min * 2
+        celdas = {}
+        for i, (x, y) in enumerate(pts):
+            celdas.setdefault((int(x // lado), int(y // lado)), []).append(i)
+        pares = []
+        for a in range(n):
+            if a in excluidos:
+                continue
+            cx, cy = int(pts[a][0] // lado), int(pts[a][1] // lado)
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    for b in celdas.get((cx + dx, cy + dy), ()):
+                        arco = min(b - a, n - (b - a))
+                        if b > a and b not in excluidos and arco > arco_min \
+                                and math.dist(pts[a], pts[b]) < d_min * 1.5:
+                            pares.append((a, b))
+        for _ in range(ITERACIONES_SEPARACION):
+            empuje = [[0.0, 0.0] for _ in range(n)]
+            hubo = False
+            for a, b in pares:
+                vx, vy = pts[a][0] - pts[b][0], pts[a][1] - pts[b][1]
+                d = math.hypot(vx, vy)
+                if 1e-6 < d < d_min:
+                    f = (d_min - d) * 0.5 / d
+                    empuje[a][0] += vx * f
+                    empuje[a][1] += vy * f
+                    empuje[b][0] -= vx * f
+                    empuje[b][1] -= vy * f
+                    hubo = True
+            if not hubo:
+                break
+            for _ in range(2):
+                empuje = [[sum(empuje[(i + k) % n][c] for k in range(-VENTANA_EMPUJE, VENTANA_EMPUJE + 1))
+                           / (2 * VENTANA_EMPUJE + 1) for c in (0, 1)] for i in range(n)]
+            pts = [[p[0] + e[0], p[1] + e[1]] for p, e in zip(pts, empuje)]
+        self.puntos = self._remuestrear([tuple(p) for p in pts], self.paso)
+
     def medio(self, i):
         """Mitad del ancho de la pista (px) en la muestra i."""
-        return self.anchos[i % len(self.puntos)] * TILE / 2
+        return self.anchos[i % len(self.puntos)] / 2
 
-    def _calcular_anchos(self):
-        """Ancho de pista en cada muestra, según qué tan cerca pasa otro tramo de la pista."""
+    def _buscar_cercanos(self):
+        """Para cada muestra, las otras muestras cercanas que no son de su mismo tramo: [(índice, distancia)].
+
+        Quedan afuera las de los cruces (ahí la pista pasa por encima de sí misma, sin muro de por medio).
+        """
         pts = self.puntos
         n = len(pts)
         excluidos = set()
-        for i, j in detectar_cruces(self):
+        for i, j in self.cruces:
             for k in (i, j):
                 excluidos.update((k + d) % n for d in range(-40, 41))
         minimo_arco = int(ARCO_MINIMO / self.paso)
-        # Más allá de este radio el ancho ya es el máximo, así que alcanza con mirar las celdas vecinas.
-        lado_celda = (ANCHO_MAX + SEPARACION_TILES) * TILE
+        # Más allá de este radio ya no hay muro de por medio ni se achica el pasto: alcanza con mirar las celdas vecinas.
+        self.alcance = ANCHO_MAX + 2 * ESCAPE + MURO
         celdas = {}
         for i, (px, py) in enumerate(pts):
-            celdas.setdefault((int(px // lado_celda), int(py // lado_celda)), []).append(i)
-        anchos = []
+            celdas.setdefault((int(px // self.alcance), int(py // self.alcance)), []).append(i)
+        cercanos = []
         for a in range(n):
-            mejor = float('inf')
+            lista = []
             if a not in excluidos:
                 ax, ay = pts[a]
-                cx, cy = int(ax // lado_celda), int(ay // lado_celda)
+                cx, cy = int(ax // self.alcance), int(ay // self.alcance)
                 for dx in (-1, 0, 1):
                     for dy in (-1, 0, 1):
                         for b in celdas.get((cx + dx, cy + dy), ()):
                             if b in excluidos or min(abs(b - a), n - abs(b - a)) <= minimo_arco:
                                 continue
-                            d2 = (pts[b][0] - ax) ** 2 + (pts[b][1] - ay) ** 2
-                            if d2 < mejor:
-                                mejor = d2
-            separacion = math.sqrt(mejor)
-            anchos.append(max(ANCHO_MIN, min(ANCHO_MAX, (separacion - SEPARACION_TILES * TILE) / TILE)))
-        # Sin escalones: el ancho no puede cambiar más que CAMBIO_ANCHO por muestra (dos vueltas para cerrar el lazo).
-        for _ in range(2):
-            for a in range(n):
-                anchos[a] = min(anchos[a], anchos[a - 1] + CAMBIO_ANCHO)
-            for a in range(n - 1, -1, -1):
-                anchos[a] = min(anchos[a], anchos[(a + 1) % n] + CAMBIO_ANCHO)
-        return anchos
+                            d = math.hypot(pts[b][0] - ax, pts[b][1] - ay)
+                            if d < self.alcance:
+                                lista.append((b, d))
+            cercanos.append(lista)
+        return cercanos
+
+    def _calcular_anchos(self):
+        """Ancho de pista en cada muestra, según qué tan cerca pasa otro tramo de la pista."""
+        n = len(self.puntos)
+        anchos = []
+        for a in range(n):
+            mejor = min((d for _, d in self.cercanos[a]), default=float('inf'))
+            # En una curva cerrada el borde de adentro se pliega sobre sí mismo si el ancho es mayor que el doble del
+            # radio: el ancho no pasa de FACTOR_CURVA veces el radio de la curva (el borde interior queda con radio > 0).
+            tope_curva = FACTOR_CURVA * self.radio_de_curva(a)
+            anchos.append(max(self.limite_ancho_min, min(self.limite_ancho_max, mejor - MURO, tope_curva)))
+        return suavizar_hacia_abajo(anchos, CAMBIO_ANCHO)
+
+    def radio_de_curva(self, i):
+        """Radio (px) del círculo que pasa por la muestra i y las que están VENTANA_CURVA muestras antes y después."""
+        n = len(self.puntos)
+        a, b, c = self.puntos[(i - VENTANA_CURVA) % n], self.puntos[i], self.puntos[(i + VENTANA_CURVA) % n]
+        doble_area = abs((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]))
+        if doble_area < 1e-9:
+            return float('inf')
+        return math.dist(a, b) * math.dist(b, c) * math.dist(c, a) / (2 * doble_area)
+
+    def _calcular_escapes(self):
+        """Pasto de escape en cada muestra: el máximo que deja lugar al muro entre dos tramos cercanos.
+
+        Se mira cada tramo cercano y se reparte a la mitad lo que queda libre entre los bordes de pista, así los pastos
+        de los dos tramos nunca se pisan y el muro queda entre ambos.
+        """
+        n = len(self.puntos)
+        escapes = []
+        for a in range(n):
+            e = ESCAPE
+            for b, d in self.cercanos[a]:
+                e = min(e, (d - self.anchos[a] / 2 - self.anchos[b] / 2 - MURO) / 2)
+            escapes.append(max(0.0, e))
+        return suavizar_hacia_abajo(escapes, CAMBIO_ESCAPE)
 
     @staticmethod
     def _remuestrear(puntos, paso):
@@ -198,78 +296,25 @@ class Circuito:
         return (a[0] + (b[0] - a[0]) * r, a[1] + (b[1] - a[1]) * r), self.tangente(i % n)
 
 
-def construir_suelo(c):
-    """Devuelve (columnas, filas, origen_x, origen_y, suelo) con el gid de cada tile (suelo[fila][columna])."""
-    margen = ANCHO_MAX * TILE / 2 + (ESCAPE + MURO + MARGEN_EXTERIOR) * TILE
+def suavizar_hacia_abajo(valores, cambio):
+    """Sin escalones: un valor no puede superar al de su vecina en más de `cambio` (dos vueltas para cerrar el lazo)."""
+    n = len(valores)
+    for _ in range(2):
+        for a in range(n):
+            valores[a] = min(valores[a], valores[a - 1] + cambio)
+        for a in range(n - 1, -1, -1):
+            valores[a] = min(valores[a], valores[(a + 1) % n] + cambio)
+    return valores
+
+
+def encuadrar(c):
+    """Mueve el circuito para que quede a MARGEN_MUNDO del borde del mapa. Devuelve (ancho, alto) del mundo."""
     xs = [p[0] for p in c.puntos]
     ys = [p[1] for p in c.puntos]
-    origen_x = math.floor((min(xs) - margen) / TILE) * TILE
-    origen_y = math.floor((min(ys) - margen) / TILE) * TILE
-    columnas = math.ceil((max(xs) + margen - origen_x) / TILE)
-    filas = math.ceil((max(ys) + margen - origen_y) / TILE)
+    origen_x = min(xs) - MARGEN_MUNDO
+    origen_y = min(ys) - MARGEN_MUNDO
     c.desplazar(-origen_x, -origen_y)
-
-    # Para cada tile, "exceso" = distancia a la línea central menos la mitad del ancho de ese tramo, tomando la muestra
-    # más cercana: <= 0 es pista, y después vienen el pasto de escape y el muro. Se guarda también el exceso del tramo
-    # más cercano que no sea vecino (otra parte de la pista): si es casi igual, el tile está a mitad de camino entre dos
-    # tramos pegados y ahí va el muro, para que no se pueda cruzar de uno al otro.
-    n = len(c.puntos)
-    minimo_arco = int(ARCO_MINIMO / c.paso)
-    alcance = (ESCAPE + MURO) * TILE
-
-    def estampar(procesar):
-        for i, (px, py) in enumerate(c.puntos):
-            medio = c.medio(i)
-            radio_tiles = int((medio + alcance) // TILE) + 2
-            col0, fila0 = int(px // TILE), int(py // TILE)
-            for fila in range(max(0, fila0 - radio_tiles), min(filas, fila0 + radio_tiles + 1)):
-                for col in range(max(0, col0 - radio_tiles), min(columnas, col0 + radio_tiles + 1)):
-                    procesar(i, fila, col, math.hypot((col + 0.5) * TILE - px, (fila + 0.5) * TILE - py) - medio)
-
-    mejor = [[(None, -1)] * columnas for _ in range(filas)]
-
-    def primero(i, fila, col, exceso):
-        if mejor[fila][col][0] is None or exceso < mejor[fila][col][0]:
-            mejor[fila][col] = (exceso, i)
-
-    estampar(primero)
-    segundo = [[None] * columnas for _ in range(filas)]
-
-    def otro_tramo(i, fila, col, exceso):
-        i1 = mejor[fila][col][1]
-        if i1 >= 0 and min(abs(i - i1), n - abs(i - i1)) > minimo_arco:
-            if segundo[fila][col] is None or exceso < segundo[fila][col]:
-                segundo[fila][col] = exceso
-
-    estampar(otro_tramo)
-    suelo = [[PASTO_EXTERIOR] * columnas for _ in range(filas)]
-    for fila in range(filas):
-        for col in range(columnas):
-            exceso = mejor[fila][col][0]
-            if exceso is None:
-                continue
-            if exceso <= 0:
-                suelo[fila][col] = PISTA
-            elif exceso > alcance:
-                continue
-            elif segundo[fila][col] is not None and segundo[fila][col] - exceso <= TILE:
-                suelo[fila][col] = MURO_T
-            elif exceso <= ESCAPE * TILE:
-                suelo[fila][col] = PASTO
-            else:
-                suelo[fila][col] = MURO_T
-    # Línea de meta: una tira de tiles de pista cruzando la pista en la largada.
-    (px, py), (tx, ty) = c.punto_a_distancia(0)
-    for fila in range(filas):
-        for col in range(columnas):
-            if suelo[fila][col] != PISTA:
-                continue
-            dx, dy = (col + 0.5) * TILE - px, (fila + 0.5) * TILE - py
-            u = dx * tx + dy * ty
-            v = -dx * ty + dy * tx
-            if abs(u) <= TILE and abs(v) <= c.medio(0):
-                suelo[fila][col] = META
-    return columnas, filas, suelo
+    return math.ceil(max(xs) + MARGEN_MUNDO - origen_x), math.ceil(max(ys) + MARGEN_MUNDO - origen_y)
 
 
 def _intersecan(p1, p2, p3, p4):
@@ -282,16 +327,19 @@ def _intersecan(p1, p2, p3, p4):
 
 
 def detectar_cruces(c):
-    """Pares (i, j) de muestras donde la línea central se cruza consigo misma, con i < j y un solo par por cruce."""
+    """Pares (i, j) de muestras donde la línea central se cruza consigo misma, con i < j y un solo par por cruce.
+
+    El tramo i pasa "por debajo" (túnel) y el j "por arriba" (puente).
+    """
     pts = c.puntos
     n = len(pts)
     celdas = {}
     for i, p in enumerate(pts):
-        celdas.setdefault((int(p[0] // TILE), int(p[1] // TILE)), []).append(i)
+        celdas.setdefault((int(p[0] // CELDA_BUSQUEDA), int(p[1] // CELDA_BUSQUEDA)), []).append(i)
     cruces = []
     for i in range(n):
         a, b = pts[i], pts[(i + 1) % n]
-        cx, cy = int(a[0] // TILE), int(a[1] // TILE)
+        cx, cy = int(a[0] // CELDA_BUSQUEDA), int(a[1] // CELDA_BUSQUEDA)
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
                 for j in celdas.get((cx + dx, cy + dy), []):
@@ -304,58 +352,14 @@ def detectar_cruces(c):
     return cruces
 
 
-def construir_cruces(c, columnas, filas, suelo, cruces):
-    """Para cada cruce, el tramo anterior pasa "por debajo" (túnel) y el posterior "por arriba" (puente).
-
-    Devuelve la capa "puente" (gid de los tiles de pista del puente que tapan el túnel, 0 donde no hay)
-    y, por cruce, el rectángulo que los contiene con los ángulos de ambos tramos.
-    """
-    puente = [[0] * columnas for _ in range(filas)]
-    zonas = []
-    n = len(c.puntos)
-    for iu, ib in cruces:
-        tu, tb = c.tangente(iu), c.tangente(ib)
-        medio_b = c.medio(ib)
-        hasta_muro_u = c.medio(iu) + (ESCAPE + MURO) * TILE
-        seno = max(0.35, abs(tu[0] * tb[1] - tu[1] * tb[0]))
-        ventana = int(min(320.0, (c.medio(ib) + hasta_muro_u) / seno) / c.paso) + 1
-
-        def tiles_cerca(centro, radio):
-            tiles = set()
-            r_tiles = int(radio // TILE) + 1
-            for k in range(centro - ventana, centro + ventana + 1):
-                px, py = c.puntos[k % n]
-                col0, fila0 = int(px // TILE), int(py // TILE)
-                for fila in range(max(0, fila0 - r_tiles), min(filas, fila0 + r_tiles + 1)):
-                    for col in range(max(0, col0 - r_tiles), min(columnas, col0 + r_tiles + 1)):
-                        if (px - (col + 0.5) * TILE) ** 2 + (py - (fila + 0.5) * TILE) ** 2 <= radio * radio:
-                            tiles.add((fila, col))
-            return tiles
-
-        solape = tiles_cerca(ib, medio_b) & tiles_cerca(iu, hasta_muro_u)
-        solape = {(f, col) for f, col in solape if suelo[f][col] in (PISTA, META)}
-        if not solape:
-            continue
-        for f, col in solape:
-            puente[f][col] = suelo[f][col]
-        filas_z = [f for f, _ in solape]
-        cols_z = [col for _, col in solape]
-        x0, x1 = min(cols_z) * TILE, (max(cols_z) + 1) * TILE
-        y0, y1 = min(filas_z) * TILE, (max(filas_z) + 1) * TILE
-        # El mapa del juego tiene el eje Y hacia arriba: los ángulos se miden con el Y invertido.
-        zonas.append((x0, y0, x1 - x0, y1 - y0,
-                      math.degrees(math.atan2(-tu[1], tu[0])), math.degrees(math.atan2(-tb[1], tb[0]))))
-    return puente, zonas
-
-
 def calcular_checkpoints(c):
-    """Cuadrados centrados en la línea central, de la meta en adelante. Devuelve [(x, y, lado)]."""
+    """Cuadrados centrados en la línea central, de la meta en adelante. Devuelve [(x, y, lado)] con (x, y) arriba a la izquierda."""
     cantidad = max(8, round(c.largo / SEPARACION_CHECKPOINTS))
     resultado = []
     for k in range(cantidad):
         s = c.largo * k / cantidad
         (x, y), _ = c.punto_a_distancia(s)
-        lado = 2 * c.medio(round(s / c.paso)) + 2 * (ESCAPE + MURO) * TILE
+        lado = 2 * c.medio(round(s / c.paso)) + HOLGURA_CHECKPOINT
         resultado.append((x - lado / 2, y - lado / 2, lado))
     return resultado
 
@@ -366,24 +370,28 @@ def calcular_largada(c):
     for i in range(JUGADORES_MAX):
         atras = LARGADA_ATRAS + LARGADA_ENTRE_FILAS * (i // 2)
         (x, y), (tx, ty) = c.punto_a_distancia(-atras)
-        lateral = min(LARGADA_LATERAL, c.medio(round(-atras / c.paso)) - 16)
+        lateral = min(LARGADA_LATERAL, c.medio(round(-atras / c.paso)) - LARGADA_BORDE)
         lado = lateral if i % 2 == 0 else -lateral
         posiciones.append((x - ty * lado, y + tx * lado))
     (_, _), (tx, ty) = c.punto_a_distancia(0)
-    # El mapa del juego tiene el eje Y hacia arriba: el ángulo se mide con el Y invertido.
+    # En el juego el eje Y va hacia arriba: el ángulo se mide con el Y invertido.
     angulo = math.degrees(math.atan2(-ty, tx))
     return posiciones, angulo
 
 
-def validar(c, columnas, filas, suelo, checkpoints, largada):
+def validar(c, checkpoints, largada):
     avisos = []
-    for i, (x, y) in enumerate(largada):
-        col, fila = int(x // TILE), int(y // TILE)
-        if not (0 <= col < columnas and 0 <= fila < filas) or suelo[fila][col] not in (PISTA, META):
-            avisos.append('el lugar de largada %d no cae sobre la pista' % (i + 1))
-    # Un checkpoint no debería contener tramos de pista lejanos (en arco) del suyo.
     n = len(c.puntos)
-    cercania = int((ANCHO_MAX + 2 * (ESCAPE + MURO)) * TILE * 1.5 / c.paso)
+    for i, (x, y) in enumerate(largada):
+        k = min(range(n), key=lambda j: math.hypot(c.puntos[j][0] - x, c.puntos[j][1] - y))
+        if math.hypot(c.puntos[k][0] - x, c.puntos[k][1] - y) > c.medio(k):
+            avisos.append('el lugar de largada %d no cae sobre la pista' % (i + 1))
+    # Entre dos tramos cercanos tiene que entrar el muro: si no, se podría pasar de uno al otro.
+    pegados = sum(1 for a in range(n) for b, d in c.cercanos[a] if b > a and d - c.medio(a) - c.medio(b) < MURO)
+    if pegados:
+        avisos.append('%d pares de muestras tienen los bordes de pista a menos de %d px (no entra el muro)' % (pegados, MURO))
+    # Un checkpoint no debería contener tramos de pista lejanos (en arco) del suyo.
+    cercania = int((ANCHO_MAX + 2 * HOLGURA_CHECKPOINT) * 1.5 / c.paso)
     conflictos = 0
     for k, (x, y, lado) in enumerate(checkpoints):
         centro_i = round(n * k / len(checkpoints))
@@ -403,79 +411,57 @@ def validar(c, columnas, filas, suelo, checkpoints, largada):
     return avisos
 
 
-def escribir_tmx(ruta, c, columnas, filas, suelo, checkpoints, largada, angulo, puente=None, zonas=()):
-    lineas = ['<?xml version="1.0" encoding="UTF-8"?>']
-    siguiente_objeto = 1 + len(checkpoints) + len(largada) + len(zonas)
-    lineas.append('<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" '
-                  'width="%d" height="%d" tilewidth="%d" tileheight="%d" infinite="0" nextlayerid="%d" nextobjectid="%d">'
-                  % (columnas, filas, TILE, TILE, 6 if zonas else 4, siguiente_objeto))
-    lineas.append(' <properties>')
-    lineas.append('  <property name="anguloLargada" type="float" value="%s"/>' % redondear(angulo))
-    lineas.append(' </properties>')
-    lineas.append(CABECERA_TILESET.rstrip('\n'))
-    lineas.append(' <layer id="1" name="suelo" width="%d" height="%d">' % (columnas, filas))
-    lineas.append('  <data encoding="csv">')
-    for i, fila in enumerate(suelo):
-        lineas.append(','.join(str(g) for g in fila) + (',' if i < filas - 1 else ''))
-    lineas.append('</data>')
-    lineas.append(' </layer>')
-    if zonas:
-        lineas.append(' <layer id="4" name="puente" width="%d" height="%d">' % (columnas, filas))
-        lineas.append('  <data encoding="csv">')
-        for i, fila in enumerate(puente):
-            lineas.append(','.join(str(g) for g in fila) + (',' if i < filas - 1 else ''))
-        lineas.append('</data>')
-        lineas.append(' </layer>')
-    lineas.append(' <objectgroup id="2" name="checkpoints">')
-    for orden, (x, y, lado) in enumerate(checkpoints):
-        lineas.append('  <object id="%d" x="%s" y="%s" width="%s" height="%s">'
-                      % (orden + 1, redondear(x), redondear(y), redondear(lado), redondear(lado)))
-        lineas.append('   <properties>')
-        lineas.append('    <property name="orden" type="int" value="%d"/>' % orden)
-        lineas.append('   </properties>')
-        lineas.append('  </object>')
-    lineas.append(' </objectgroup>')
-    lineas.append(' <objectgroup id="3" name="largada">')
-    for i, (x, y) in enumerate(largada):
-        lineas.append('  <object id="%d" x="%s" y="%s" width="16" height="16">'
-                      % (len(checkpoints) + i + 1, redondear(x - 8), redondear(y - 8)))
-        lineas.append('   <properties>')
-        lineas.append('    <property name="posicion" type="int" value="%d"/>' % (i + 1))
-        lineas.append('   </properties>')
-        lineas.append('  </object>')
-    lineas.append(' </objectgroup>')
-    if zonas:
-        lineas.append(' <objectgroup id="5" name="cruces">')
-        for k, (x, y, ancho, alto, ang_tunel, ang_puente) in enumerate(zonas):
-            lineas.append('  <object id="%d" x="%s" y="%s" width="%s" height="%s">'
-                          % (len(checkpoints) + len(largada) + k + 1, redondear(x), redondear(y),
-                             redondear(ancho), redondear(alto)))
-            lineas.append('   <properties>')
-            lineas.append('    <property name="anguloTunel" type="float" value="%s"/>' % redondear(ang_tunel))
-            lineas.append('    <property name="anguloPuente" type="float" value="%s"/>' % redondear(ang_puente))
-            lineas.append('   </properties>')
-            lineas.append('  </object>')
-        lineas.append(' </objectgroup>')
-    lineas.append('</map>')
+def numero(v):
+    """Un decimal alcanza (0,1 px); sin ceros de más para que el archivo pese poco."""
+    texto = ('%.1f' % v).rstrip('0').rstrip('.')
+    return texto if texto not in ('-0', '') else '0'
+
+
+def escribir_json(ruta, c, ancho_mundo, alto_mundo, checkpoints, largada, angulo):
+    """Escribe el circuito. El eje Y del archivo va hacia arriba, como el mundo del juego: acá se invierte."""
+    def y_juego(y):
+        return alto_mundo - y
+
+    lineas = ['{']
+    lineas.append(' "version": %d,' % VERSION_FORMATO)
+    lineas.append(' "nombre": "%s",' % c.nombre)
+    lineas.append(' "origen": "f1-circuits-svg (Jules Roy, CC BY 4.0)",')
+    lineas.append(' "callejero": %s,' % ('true' if c.callejero else 'false'))
+    lineas.append(' "ancho": %d,' % ancho_mundo)
+    lineas.append(' "alto": %d,' % alto_mundo)
+    lineas.append(' "anguloLargada": %s,' % numero(angulo))
+    lineas.append(' "muro": %s,' % numero(MURO))
+    lineas.append(' "paso": %s,' % numero(c.paso))
+    lineas.append(' "linea": [%s],' % ','.join('[%s,%s]' % (numero(x), numero(y_juego(y))) for x, y in c.puntos))
+    lineas.append(' "anchos": [%s],' % ','.join(numero(v) for v in c.anchos))
+    lineas.append(' "escapes": [%s],' % ','.join(numero(v) for v in c.escapes))
+    lineas.append(' "cruces": [%s],' % ','.join('{"tunel":%d,"puente":%d}' % (i, j) for i, j in c.cruces))
+    lineas.append(' "checkpoints": [')
+    lineas.append(',\n'.join('  {"orden":%d,"x":%s,"y":%s,"ancho":%s,"alto":%s}'
+                             % (orden, numero(x), numero(y_juego(y + lado)), numero(lado), numero(lado))
+                             for orden, (x, y, lado) in enumerate(checkpoints)))
+    lineas.append(' ],')
+    lineas.append(' "largada": [')
+    lineas.append(',\n'.join('  {"posicion":%d,"x":%s,"y":%s}' % (i + 1, numero(x), numero(y_juego(y)))
+                             for i, (x, y) in enumerate(largada)))
+    lineas.append(' ]')
+    lineas.append('}')
     with open(ruta, 'w', encoding='utf-8', newline='\n') as f:
         f.write('\n'.join(lineas) + '\n')
 
 
-def redondear(v):
-    texto = ('%.3f' % v).rstrip('0').rstrip('.')
-    return texto if texto not in ('-0', '') else '0'
-
-
 # ---------------------------------------------------------------- vista previa
 
-COLORES = {
-    PASTO: (76, 150, 70), PISTA: (62, 62, 72), MURO_T: (205, 55, 55), META: (245, 245, 245),
-    PASTO_EXTERIOR: (40, 105, 45),
-}
+ESCALA_VISTA = 0.25        # píxeles de la imagen por píxel de mundo
+FONDO_VISTA = (40, 105, 45)
+PASTO_VISTA = (76, 150, 70)
+PISTA_VISTA = (62, 62, 72)
+MURO_VISTA = (205, 55, 55)
+META_VISTA = (245, 245, 245)
 
 
-def escribir_png(ruta, ancho, alto, pixeles):
-    crudo = b''.join(b'\x00' + bytes(fila) for fila in pixeles)
+def escribir_png(ruta, ancho, alto, filas):
+    crudo = b''.join(b'\x00' + bytes(fila) for fila in filas)
 
     def trozo(tipo, datos):
         cuerpo = tipo + datos
@@ -488,29 +474,39 @@ def escribir_png(ruta, ancho, alto, pixeles):
         f.write(trozo(b'IEND', b''))
 
 
-def escribir_vista(ruta, c, columnas, filas, suelo, checkpoints, largada, px=2, puente=None):
-    ancho, alto = columnas * px, filas * px
-    img = [[0] * (ancho * 3) for _ in range(alto)]
-    for fila in range(filas):
-        for col in range(columnas):
-            color = (90, 130, 230) if puente and puente[fila][col] else COLORES[suelo[fila][col]]
-            for dy in range(px):
-                linea = img[fila * px + dy]
-                for dx in range(px):
-                    o = (col * px + dx) * 3
-                    linea[o:o + 3] = color
+def escribir_vista(ruta, c, ancho_mundo, alto_mundo, checkpoints, largada):
+    """Dibuja el circuito con círculos apilados sobre cada muestra: muro, pasto y pista, en ese orden."""
+    ancho, alto = int(ancho_mundo * ESCALA_VISTA) + 1, int(alto_mundo * ESCALA_VISTA) + 1
+    filas = [bytearray(bytes(FONDO_VISTA) * ancho) for _ in range(alto)]
 
-    def punto(x, y, color, radio=2):
-        cx, cy = int(x / TILE * px), int(y / TILE * px)
-        for yy in range(max(0, cy - radio), min(alto, cy + radio + 1)):
-            for xx in range(max(0, cx - radio), min(ancho, cx + radio + 1)):
-                img[yy][xx * 3:xx * 3 + 3] = color
+    def disco(x, y, radio, color):
+        cx, cy, r = x * ESCALA_VISTA, y * ESCALA_VISTA, max(radio * ESCALA_VISTA, 0.6)
+        pintura = bytes(color)
+        for yy in range(max(0, int(cy - r)), min(alto, int(cy + r) + 1)):
+            medio = math.sqrt(max(0.0, r * r - (yy + 0.5 - cy) ** 2))
+            x0, x1 = max(0, int(cx - medio)), min(ancho, int(cx + medio) + 1)
+            if x1 > x0:
+                filas[yy][x0 * 3:x1 * 3] = pintura * (x1 - x0)
 
+    for capa in range(3):
+        for i, (x, y) in enumerate(c.puntos):
+            medio = c.medio(i)
+            if capa == 0:
+                disco(x, y, medio + c.escapes[i] + MURO, MURO_VISTA)
+            elif capa == 1:
+                disco(x, y, medio + c.escapes[i], PASTO_VISTA)
+            else:
+                disco(x, y, medio, PISTA_VISTA)
+    # Línea de meta: una tira blanca atravesada en la pista, en la muestra 0.
+    (px, py), (tx, ty) = c.punto_a_distancia(0)
+    paso = 1 / ESCALA_VISTA
+    for k in range(int(-c.medio(0) / paso), int(c.medio(0) / paso) + 1):
+        disco(px - ty * k * paso, py + tx * k * paso, 5, META_VISTA)
     for x, y, lado in checkpoints:
-        punto(x + lado / 2, y + lado / 2, (250, 220, 40), 1)
+        disco(x + lado / 2, y + lado / 2, 6, (250, 220, 40))
     for x, y in largada:
-        punto(x, y, (60, 140, 255), 2)
-    escribir_png(ruta, ancho, alto, img)
+        disco(x, y, 8, (60, 140, 255))
+    escribir_png(ruta, ancho, alto, filas)
 
 
 def main():
@@ -531,19 +527,16 @@ def main():
         os.makedirs(args.vista, exist_ok=True)
     for id_svg, km in elegidos:
         c = Circuito(id_svg, km, os.path.join(args.svg, id_svg + '.svg'))
-        columnas, filas, suelo = construir_suelo(c)
+        ancho_mundo, alto_mundo = encuadrar(c)
         checkpoints = calcular_checkpoints(c)
         largada, angulo = calcular_largada(c)
-        avisos = validar(c, columnas, filas, suelo, checkpoints, largada)
-        puente, zonas = construir_cruces(c, columnas, filas, suelo, detectar_cruces(c))
-        escribir_tmx(os.path.join(args.salida, c.nombre + '.tmx'), c, columnas, filas, suelo, checkpoints, largada,
-                     angulo, puente, zonas)
+        avisos = validar(c, checkpoints, largada)
+        escribir_json(os.path.join(args.salida, c.nombre + '.json'), c, ancho_mundo, alto_mundo, checkpoints, largada, angulo)
         if args.vista:
-            escribir_vista(os.path.join(args.vista, c.nombre + '.png'), c, columnas, filas, suelo, checkpoints, largada,
-                           puente=puente)
-        print('%-18s %3dx%-3d tiles  pista de %.1f a %.1f tiles  vuelta %5.0f px (~%2.0f s)  %2d checkpoints%s%s'
-              % (c.nombre, columnas, filas, c.ancho_minimo, c.ancho_maximo, c.largo, c.largo / VELOCIDAD_MEDIA, len(checkpoints),
-                 '  cruces: %d' % len(zonas) if zonas else '',
+            escribir_vista(os.path.join(args.vista, c.nombre + '.png'), c, ancho_mundo, alto_mundo, checkpoints, largada)
+        print('%-18s %4dx%-4d px  pista de %3.0f a %3.0f px  vuelta %5.0f px (~%2.0f s)  %2d checkpoints%s%s'
+              % (c.nombre, ancho_mundo, alto_mundo, c.ancho_minimo, c.ancho_maximo, c.largo, c.largo / VELOCIDAD_MEDIA,
+                 len(checkpoints), '  cruces: %d' % len(c.cruces) if c.cruces else '',
                  ''.join('\n    AVISO: ' + a for a in avisos)))
 
 
