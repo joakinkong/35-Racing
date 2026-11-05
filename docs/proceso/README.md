@@ -34,7 +34,7 @@ Las etapas 0 a 4 se hicieron el 28/09/2026, entre las 21:16 y las 23:45 (hora lo
 | [7. Carrera sincronizada por UDP](07-carrera-sincronizada-udp.md) | La carrera se juega en red: el servidor la simula, los clientes mandan sus teclas y dibujan lo que llega; resultados, revancha y tolerancia a pérdida de paquetes | [#9](https://github.com/joakinkong/35-Racing/pull/9) y [#10](https://github.com/joakinkong/35-Racing/pull/10) |
 | [8. Robustez de red](08-robustez-de-red.md) | Aviso y vuelta al menú si dejan de llegar datos UDP, fallas del servidor que cierran la partida con motivo, y cierre de ventana limpio desde cualquier pantalla | [#12](https://github.com/joakinkong/35-Racing/pull/12) |
 | [9. Pruebas en LAN real](09-pruebas-lan-real.md) | Carrera completa con revancha entre 2 notebooks en el hotspot de un celular, y pérdida de paquetes simulada. En la red del colegio no se pudo unir nadie (firewall sin permisos de administrador) | Solo documentación |
-| [10. Circuitos vectoriales y HUD](10-circuitos-vectoriales-y-hud.md) | Los 24 circuitos de 2026 como geometría (sin tiles ni pixel art), dibujados con antialiasing; física más exigente; elección de circuito en la prueba local; torre de tiempos estilo Fórmula 1 | Pendiente (rama `feature/estetica-f1`) |
+| [10. Circuitos vectoriales y HUD](10-circuitos-vectoriales-y-hud.md) | Los 24 circuitos de 2026 como geometría (sin tiles ni pixel art), dibujados con antialiasing; física más exigente; elección de circuito en la prueba local; torre de tiempos estilo Fórmula 1 | Todavía sin abrir (rama `feature/estetica-f1`) |
 
 Estado del repositorio al cerrar la etapa 9: `main` tiene todo hasta la etapa 8; la documentación de la etapa 9 está en la rama `docs/pruebas-lan`.
 

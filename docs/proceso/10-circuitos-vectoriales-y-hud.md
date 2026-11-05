@@ -79,6 +79,14 @@ El proyecto compila (`gradlew compileJava`). La prueba local con 2 jugadores se 
 - **Los sprites** de los autos siguen siendo los provisorios.
 - **Nueve circuitos callejeros** sin pasto: los autos chocan apenas salen del asfalto, así que se sienten más exigentes. Si resulta demasiado, se puede dar un margen.
 
-## Uso de IA y commits
+## Uso de IA, commits y pull request
 
-El trabajo se hizo con Claude Code a partir de pedidos del grupo, con planes aprobados antes de cada cambio. Rama de trabajo: `feature/estetica-f1`. Los commits y el pull request se agregan acá cuando se hagan.
+El trabajo se hizo con Claude Code a partir de pedidos del grupo, con planes aprobados antes de cada cambio. Los commits salen de la cuenta de Joaquín Barreira y no llevan la línea `Co-Authored-By`; el uso de IA se declara en el [README de esta carpeta](README.md). Rama de trabajo: `feature/estetica-f1`.
+
+- [`a25a455`](https://github.com/joakinkong/35-Racing/commit/a25a455): Feat: Circuitos vectoriales en JSON y generador desde SVG.
+- [`a9eb546`](https://github.com/joakinkong/35-Racing/commit/a9eb546): Feat: Carga, colisión y dibujo de circuitos vectoriales, prueba local con elección y torre de tiempos.
+- [`025b627`](https://github.com/joakinkong/35-Racing/commit/025b627): Feat: Física del auto más exigente.
+- [`a0985f0`](https://github.com/joakinkong/35-Racing/commit/a0985f0): Refactor: Eliminar los mapas de Tiled y sus tilesets.
+- [`17441e5`](https://github.com/joakinkong/35-Racing/commit/17441e5): Docs: Etapa 10, skill de circuitos y verificación.
+
+El pull request a `develop` todavía no se abrió.
