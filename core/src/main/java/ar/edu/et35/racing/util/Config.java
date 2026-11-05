@@ -43,8 +43,13 @@ public final class Config {
     public static final int TIMEOUT_CARGA_CIRCUITO_S = 20;
     /** Máximo para conectarse al host (ms). */
     public static final int TIMEOUT_CONEXION_MS = 3000;
-    /** Circuito por defecto: el que está elegido al crear la partida y el de la prueba local (nombre del .tmx). */
+    /** Circuito por defecto: el que está elegido al crear la partida y el de la prueba local (nombre del .json). */
     public static final String CIRCUITO = "monza";
+    /**
+     * Lado de las celdas de la grilla de colisión de un circuito (px). Más chico = bordes más fieles a la geometría,
+     * pero más memoria y más celdas por revisar en cada choque; con 4 px el error es menor que el ancho del muro.
+     */
+    public static final float CELDA_COLISION = 4f;
     /** Paquetes ENTRADA que manda cada cliente por segundo. */
     public static final int ENVIOS_ENTRADA_POR_SEGUNDO = 60;
     /** Paquetes ESTADO que manda el servidor a cada cliente por segundo (uno cada 2 ticks). */
@@ -64,6 +69,8 @@ public final class Config {
     public static final int ALTO_VIRTUAL = 360;
     public static final int VENTANA_ANCHO = 1280;
     public static final int VENTANA_ALTO = 720;
+    /** Muestras de antialiasing (MSAA) de la ventana: 0 lo apaga; 4 alcanza para que los bordes diagonales salgan lisos. */
+    public static final int MUESTRAS_ANTIALIASING = 4;
     /** Zoom de la cámara de cada jugador: 2 = se ve el doble de mundo que con la resolución virtual. */
-    public static final float ZOOM_CAMARA = 2f;
+    public static final float ZOOM_CAMARA = 1.25f;
 }

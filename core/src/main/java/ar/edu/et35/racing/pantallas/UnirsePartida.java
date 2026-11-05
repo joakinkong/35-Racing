@@ -87,11 +87,11 @@ public class UnirsePartida extends PantallaBase {
     }
 
     /**
-     * El host levanta su servidor y se conecta a él por 127.0.0.1, como un cliente más. El circuito se carga acá, en
-     * el hilo de render, porque cargar el mapa de Tiled crea texturas y eso no se puede hacer desde el hilo del
-     * servidor. Por eso el servidor recibe un proveedor: cuando el host inicia la carrera, le pide el circuito elegido
-     * y este lo carga en el hilo de render (con postRunnable) y le devuelve solo el Circuito (datos puros); el mapa se
-     * libera enseguida.
+     * El host levanta su servidor y se conecta a él por 127.0.0.1, como un cliente más. El circuito se carga en el
+     * hilo de render y no en el del servidor, porque el archivo se lee con Gdx.files y la regla del proyecto es no
+     * tocar LibGDX desde los hilos de red. Por eso el servidor recibe un proveedor: cuando el host inicia la carrera,
+     * le pide el circuito elegido y este lo carga en el hilo de render (con postRunnable) y le devuelve solo el
+     * Circuito (datos puros).
      */
     private void crearPartida(String nombre) {
         ServidorPartida servidor;
@@ -111,10 +111,8 @@ public class UnirsePartida extends PantallaBase {
     private Circuito cargarCircuitoEnRender(String archivo) throws Exception {
         CompletableFuture<Circuito> futuro = new CompletableFuture<>();
         Gdx.app.postRunnable(() -> {
-            String ruta = Recursos.rutaCircuito(archivo);
             try {
-                futuro.complete(CargadorCircuito.cargar(recursos.cargarMapa(ruta), Config.MAX_JUGADORES));
-                recursos.liberar(ruta);
+                futuro.complete(CargadorCircuito.cargar(Gdx.files.internal(Recursos.rutaCircuito(archivo)), Config.MAX_JUGADORES));
             } catch (RuntimeException e) {
                 futuro.completeExceptionally(e);
             }

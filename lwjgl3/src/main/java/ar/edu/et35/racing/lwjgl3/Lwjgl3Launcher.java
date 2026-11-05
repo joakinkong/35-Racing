@@ -29,6 +29,9 @@ public class Lwjgl3Launcher {
         //// useful for testing performance, but can also be very stressful to some hardware.
         //// You may also need to configure GPU drivers to fully disable Vsync; this can cause screen tearing.
 
+        // Antialiasing de 4 muestras: sin él, los bordes diagonales del circuito (que ya no son tiles) salen con escalones.
+        configuration.setBackBufferConfig(8, 8, 8, 8, 16, 0, Config.MUESTRAS_ANTIALIASING);
+
         configuration.setWindowedMode(Config.VENTANA_ANCHO, Config.VENTANA_ALTO);
         configuration.setResizable(true);
         configuration.setWindowSizeLimits(Config.ANCHO_VIRTUAL, Config.ALTO_VIRTUAL, -1, -1);

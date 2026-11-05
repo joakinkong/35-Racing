@@ -115,8 +115,8 @@ public class ServidorPartida {
     }
 
     /**
-     * Carga un circuito por el nombre de su archivo. Lo implementa el host con su hilo de render, porque cargar el mapa
-     * de Tiled crea texturas y eso no se puede hacer desde los hilos del servidor; se lo llama desde el hilo de
+     * Carga un circuito por el nombre de su archivo. Lo implementa el host con su hilo de render, porque leer el archivo
+     * usa Gdx.files y no se toca LibGDX desde los hilos del servidor; se lo llama desde el hilo de
      * simulación, que espera la respuesta (no hay carrera en curso, así que no se atrasa nada).
      */
     @FunctionalInterface

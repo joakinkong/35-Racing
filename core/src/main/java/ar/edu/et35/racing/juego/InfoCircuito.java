@@ -1,9 +1,9 @@
 package ar.edu.et35.racing.juego;
 
 /**
- * Los datos para mostrar de un circuito. El trazado en sí está en {@code assets/circuitos/<archivo>.tmx}.
+ * Los datos para mostrar de un circuito. El trazado en sí está en {@code assets/circuitos/<archivo>.json}.
  *
- * @param archivo nombre del .tmx sin la extensión; es lo que identifica al circuito en la red
+ * @param archivo nombre del .json sin la extensión; es lo que identifica al circuito en la red
  * @param gp      nombre del Gran Premio
  * @param pais    código ISO de dos letras en minúscula, que es también el nombre del archivo de su bandera
  * @param km      largo real de una vuelta
