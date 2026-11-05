@@ -1,0 +1,5 @@
+allprojects { afterEvaluate { p ->
+  if (p.name == 'lwjgl3') {
+    p.tasks.register('printCp') { doLast { println 'CP=' + p.sourceSets.main.runtimeClasspath.asPath } }
+  }
+} }

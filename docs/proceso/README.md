@@ -19,7 +19,7 @@ Los commits usan los prefijos `Feat:`, `Fix:`, `Docs:` y `Refactor:`, como pide 
 
 ## Línea de tiempo
 
-Las etapas 0 a 4 se hicieron el 28/09/2026, entre las 21:16 y las 23:45 (hora local, según los commits). Esta documentación del proceso se armó a continuación, y las etapas 5 a 9 el 29/09/2026.
+Las etapas 0 a 4 se hicieron el 28/09/2026, entre las 21:16 y las 23:45 (hora local, según los commits). Esta documentación del proceso se armó a continuación, y las etapas 5 a 9 el 29/09/2026. La etapa 10 se hizo el 05/11/2026.
 
 | Etapa | Qué quedó funcionando | Pull request |
 |---|---|---|
@@ -34,6 +34,7 @@ Las etapas 0 a 4 se hicieron el 28/09/2026, entre las 21:16 y las 23:45 (hora lo
 | [7. Carrera sincronizada por UDP](07-carrera-sincronizada-udp.md) | La carrera se juega en red: el servidor la simula, los clientes mandan sus teclas y dibujan lo que llega; resultados, revancha y tolerancia a pérdida de paquetes | [#9](https://github.com/joakinkong/35-Racing/pull/9) y [#10](https://github.com/joakinkong/35-Racing/pull/10) |
 | [8. Robustez de red](08-robustez-de-red.md) | Aviso y vuelta al menú si dejan de llegar datos UDP, fallas del servidor que cierran la partida con motivo, y cierre de ventana limpio desde cualquier pantalla | [#12](https://github.com/joakinkong/35-Racing/pull/12) |
 | [9. Pruebas en LAN real](09-pruebas-lan-real.md) | Carrera completa con revancha entre 2 notebooks en el hotspot de un celular, y pérdida de paquetes simulada. En la red del colegio no se pudo unir nadie (firewall sin permisos de administrador) | Solo documentación |
+| [10. Circuitos vectoriales y HUD](10-circuitos-vectoriales-y-hud.md) | Los 24 circuitos de 2026 como geometría (sin tiles ni pixel art), dibujados con antialiasing; física más exigente; elección de circuito en la prueba local; torre de tiempos estilo Fórmula 1 | Pendiente (rama `feature/estetica-f1`) |
 
 Estado del repositorio al cerrar la etapa 9: `main` tiene todo hasta la etapa 8; la documentación de la etapa 9 está en la rama `docs/pruebas-lan`.
 
@@ -41,7 +42,8 @@ Estado del repositorio al cerrar la etapa 9: `main` tiene todo hasta la etapa 8;
 
 - **Antes de seguir:** que los cinco integrantes lean [docs/PROTOCOLO.md](../PROTOCOLO.md), porque es lo que tienen que poder explicar.
 - **Pendiente de la etapa 9:** probar con 3 y con 5 jugadores, y conseguir que abran los puertos TCP 7777 y UDP 7778 en las PC del colegio (hace falta un administrador). Mientras tanto, la demo en red se puede hacer con el hotspot de un celular.
-- **Pendiente de arte:** el circuito definitivo en Tiled y los sprites. Hoy el circuito y los autos son provisorios (ver [etapa 3](03-auto-y-circuito.md)).
+- **Pendiente de arte:** los sprites. Los circuitos ya son definitivos desde la [etapa 10](10-circuitos-vectoriales-y-hud.md), pero los autos siguen siendo los provisorios (ver [etapa 3](03-auto-y-circuito.md)).
+- **Pendiente de la etapa 10:** los pianos en las curvas, el puente de Suzuka y repetir la prueba en LAN con los circuitos nuevos.
 
 ## Participación del equipo
 

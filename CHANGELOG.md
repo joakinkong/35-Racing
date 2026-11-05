@@ -8,8 +8,14 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ### Agregado
 
+- `VistaCircuito` arma una sola vez la malla del circuito (círculos apilados sobre cada punto de la línea central, en tres capas: muro, pasto y asfalto) con la misma forma que usa la colisión, y dibuja solo los bloques que entran en la cámara. El lanzador activa antialiasing de 4 muestras (`Config.MUESTRAS_ANTIALIASING`).
+- `CargadorCircuito` lee el JSON y rasteriza una grilla de colisión de 4 px (`Config.CELDA_COLISION`): pista, pasto y, todo lo demás, muro.
+- HUD estilo Fórmula 1: `TorreHud` muestra una fila por auto con la posición (el puntero en rojo), la franja de su escudería, las tres letras del piloto y su mejor vuelta, más la vuelta del puntero; el panel de cada jugador queda con su vuelta y su tiempo.
+- La prueba local ahora abre `PruebaLocal`, donde se elige el circuito entre los 24 (con `<` y `>` o las flechas) antes de correr; ESC en la carrera vuelve ahí.
+- Skill `circuitos` (`.claude/skills/circuitos/SKILL.md`) y programas de verificación en `tools/circuitos/verificacion` (carga, atajos, vuelta de un bot y capturas de la vista real).
+
 - Escuderías, pilotos y circuitos de la temporada 2026: `Catalogo` con las 11 escuderías, los 22 pilotos (número, país, color) y los 24 circuitos (Gran Premio, ciudad, kilómetros, curvas), con los datos de `f1.db` de proyecto f1.
-- Generador de circuitos (`tools/circuitos/generar_circuitos.py`): convierte los trazados SVG de f1-circuits-svg en mapas `.tmx` para los 24 circuitos de `assets/circuitos`. Los circuitos usan tiles de 16 px (`tileset16.png`, generado con `tools/circuitos/reducir_tileset.py`), así que entra un muro fino entre dos tramos de pista pegados. Cada vuelta dura en promedio poco más de un minuto (de unos 60 s en Mónaco a unos 90 s en Spa, estimado) y el ancho de pista cambia a lo largo del circuito (de 6 a 12 tiles, o sea de 96 a 192 px) según qué tan cerca pasan otros tramos, así que Mónaco queda más angosto que Austin. Suzuka, el único que se cruza consigo mismo, trae las capas `puente` y `cruces` para el túnel. Con `--vista` deja un PNG por circuito. Los trazados son de Jules Roy (CC BY 4.0).
+- Circuitos vectoriales: los 24 circuitos de la temporada 2026 son archivos JSON en `assets/circuitos` (línea central, ancho de asfalto y de pasto en cada punto, checkpoints y largada; formato en `docs/FORMATO_CIRCUITO.md`) que genera `tools/circuitos/generar_circuitos.py` a partir de los trazados SVG de f1-circuits-svg (Jules Roy, CC BY 4.0). El asfalto va lo más ancho que permite cada circuito (los cortos, un poco más angostos), el pasto es lo que sobra entre el asfalto y el muro, y los tramos que quedan demasiado cerca se separan. Los 9 circuitos callejeros (Albert Park, Jeddah, Miami, Gilles-Villeneuve, Mónaco, Madring, Bakú, Marina Bay y Las Vegas) no tienen pasto: es asfalto con el muro pegado. Cada vuelta dura en promedio un minuto. Con `--vista` deja un PNG por circuito.
 - Vueltas elegibles: el host elige de 1 a 10 vueltas en el lobby (`ELEGIR_VUELTAS`; el `LOBBY` las incluye). Protocolo versión 3.
 - Lobby: cada jugador elige uno de los 22 pilotos (con un solo jugador por escudería) y el host elige el circuito. El HUD muestra el código del piloto y los autos se pintan con el color de su escudería.
 - Protocolo versión 2 (la 3 agregó las vueltas): `ELEGIR_PILOTO` (0 a 21) reemplaza a `ELEGIR_AUTO`, `ELEGIR_CIRCUITO` (solo el host), el `LOBBY` trae el circuito elegido, el error `ESCUDERIA_OCUPADA` reemplaza a `AUTO_OCUPADO` y `CUENTA_REGRESIVA` trae el nombre del circuito elegido. El servidor pide el circuito elegido al host recién cuando se inicia la carrera (`ProveedorCircuitos`), que lo carga en su hilo de render; si falla, el host recibe `CIRCUITO_NO_CARGO`.
@@ -49,6 +55,14 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 - `VistaAuto` y `CamaraSeguimiento` reciben posición, ángulo y velocidad en lugar de un `Auto`; `ResultadoJugador` suma el id del jugador; el servidor recibe el `Circuito` ya cargado.
 - La pantalla `Carrera` pasa a llamarse `PantallaCarrera`, para no chocar con el modelo `juego.Carrera`. "Prueba local" abre 2 jugadores y "Iniciar" en el Lobby, 1 jugador (hasta que haya red).
+- La física del auto es más exigente: velocidad máxima de 450 px/s, la aceleración baja a medida que se acerca a ese máximo, el radio mínimo de giro crece con el cuadrado de la velocidad (radio = velocidad² / `ACELERACION_LATERAL`) y girar cuesta un poco de velocidad (`PERDIDA_POR_GIRO`). El zoom de la cámara pasa de 2 a 1,25.
+- `Circuito` guarda la geometría de la pista y una grilla de colisión fina en lugar de una grilla de tiles; la API (`superficieEn`, `chocaConMuro`, checkpoints, largada) no cambia, así que `Auto`, `Carrera` y el servidor siguen igual. Un circuito sin los campos `linea`, `anchos` y `escapes` no se puede cargar.
+- El servidor sigue pidiendo el circuito al host cuando se inicia la carrera, pero ya no hace falta cargarlo en el hilo de render por las texturas: se mantiene así por la regla de no tocar LibGDX desde los hilos de red.
+- El panel de cada jugador ya no muestra la posición ni la mejor vuelta: pasaron a la torre de tiempos.
+
+### Eliminado
+
+- Los 25 mapas de Tiled (`.tmx`), los dos tilesets (`tileset.png` y `tileset16.png`) y `tools/circuitos/reducir_tileset.py`. `Superficie.desdeTexto` también, porque solo servía para leer las propiedades de Tiled.
 
 ## [0.1.0] - 2026-09-28
 
