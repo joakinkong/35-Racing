@@ -17,7 +17,9 @@ public final class Protocolo {
 
     // Cliente -> servidor
     public static final String UNIRSE = "UNIRSE";
-    public static final String ELEGIR_AUTO = "ELEGIR_AUTO";
+    public static final String ELEGIR_PILOTO = "ELEGIR_PILOTO";
+    public static final String ELEGIR_CIRCUITO = "ELEGIR_CIRCUITO";
+    public static final String ELEGIR_VUELTAS = "ELEGIR_VUELTAS";
     public static final String LISTO = "LISTO";
     public static final String INICIAR = "INICIAR";
     public static final String REVANCHA = "REVANCHA";
@@ -46,9 +48,10 @@ public final class Protocolo {
     public static final String NOMBRE_REPETIDO = "NOMBRE_REPETIDO";
     public static final String VERSION_DISTINTA = "VERSION_DISTINTA";
     public static final String NOMBRE_INVALIDO = "NOMBRE_INVALIDO";
-    public static final String AUTO_OCUPADO = "AUTO_OCUPADO";
+    public static final String ESCUDERIA_OCUPADA = "ESCUDERIA_OCUPADA";
     public static final String NO_PERMITIDO = "NO_PERMITIDO";
     public static final String FALTAN_JUGADORES = "FALTAN_JUGADORES";
+    public static final String CIRCUITO_NO_CARGO = "CIRCUITO_NO_CARGO";
 
     /** Solo letras (con acentos y ñ), números y espacios: así el nombre nunca trae ";" ni saltos de línea. */
     private static final Pattern NOMBRE = Pattern.compile("[\\p{L}\\p{N} ]+");

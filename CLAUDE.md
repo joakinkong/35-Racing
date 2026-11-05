@@ -17,7 +17,8 @@ Proyecto final de Programación sobre Redes (grupo de 5). Juego de carreras 2D e
   - util: Config (constantes) y utilidades.
 - Simulación a paso fijo (1/60 s), separada del render.
 - Todo lo que un jugador hace con su auto es una EntradaAuto (acelerar, frenar, giro). Es lo que viaja por red.
-- Circuitos: mapas de Tiled (.tmx) en assets/circuitos, convertidos a Circuito (datos puros: superficies, checkpoints, largada).
+- Circuitos: archivos JSON vectoriales en assets/circuitos (línea central, ancho de asfalto y de pasto en cada punto, checkpoints, largada; formato en docs/FORMATO_CIRCUITO.md), convertidos a Circuito (datos puros: geometría para dibujar y una grilla fina de superficies para la colisión). Los genera tools/circuitos/generar_circuitos.py a partir de trazados SVG (hay una skill, circuitos, que explica cómo). Ya no se usa Tiled.
+- Dibujo del circuito: VistaCircuito arma una sola vez círculos apilados en tres capas (muro, pasto, asfalto) con la misma forma que usa la colisión; el lanzador activa antialiasing (Config.MUESTRAS_ANTIALIASING). El HUD de carrera es una torre de tiempos estilo F1 (vista/TorreHud).
 - Red: servidor autoritativo embebido en el proceso del host, con hilo propio. El host también se conecta como cliente a 127.0.0.1, así hay un solo camino de código para los clientes.
   - TCP: lobby, selección, inicio y fin de carrera, desconexiones (lo que no se puede perder).
   - UDP: entradas cliente → servidor y estado de los autos servidor → clientes (lo que se reemplaza constantemente).

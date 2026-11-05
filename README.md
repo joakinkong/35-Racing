@@ -56,9 +56,9 @@ O en PowerShell:
 
 ## Estado actual
 
-Etapa 8 completada: la carrera se juega en red y las fallas de red se avisan con mensajes claros. Se crea una partida, los demás se unen por IP, esperan en un lobby en vivo y corren una carrera sincronizada (el servidor la simula y cada PC dibuja lo que recibe), con resultados y revancha. Hay menú y pantallas navegables con estética de Fórmula 1, un auto con física arcade sobre un circuito provisorio y las reglas de una carrera completa (cuenta regresiva, vueltas por checkpoints, posiciones, choques y resultados). Se puede probar con 2 jugadores en el mismo teclado desde "Prueba local" (J1 con WASD y J2 con flechas).
+Etapa 10 completada: circuitos vectoriales, física más exigente y HUD estilo Fórmula 1. La etapa 8 había dejado lista la red: la carrera se juega en red y las fallas de red se avisan con mensajes claros. Se crea una partida, los demás se unen por IP, esperan en un lobby en vivo y corren una carrera sincronizada (el servidor la simula y cada PC dibuja lo que recibe), con resultados y revancha. Hay menú y pantallas navegables con estética de Fórmula 1, un auto con física arcade sobre un circuito provisorio y las reglas de una carrera completa (cuenta regresiva, vueltas por checkpoints, posiciones, choques y resultados). Se puede probar con 2 jugadores en el mismo teclado desde "Prueba local" (J1 con WASD y J2 con flechas).
 
-El protocolo de red ya está diseñado en [docs/PROTOCOLO.md](docs/PROTOCOLO.md). Lo que falta: las pruebas en varias PC de la red del colegio, el circuito definitivo en Tiled y los sprites. La red ya avisa con un mensaje claro de cada falla (ver la [etapa 8](docs/proceso/08-robustez-de-red.md)). El detalle de cada etapa está en [docs/proceso](docs/proceso/README.md).
+El protocolo de red ya está diseñado en [docs/PROTOCOLO.md](docs/PROTOCOLO.md). Los 24 circuitos de la temporada 2026 ya son definitivos (archivos vectoriales generados desde trazados SVG, ver la [etapa 10](docs/proceso/10-circuitos-vectoriales-y-hud.md)). Lo que falta: las pruebas en varias PC de la red del colegio y los sprites. La red ya avisa con un mensaje claro de cada falla (ver la [etapa 8](docs/proceso/08-robustez-de-red.md)). El detalle de cada etapa está en [docs/proceso](docs/proceso/README.md).
 
 ## Licencia
 

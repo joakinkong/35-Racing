@@ -25,8 +25,8 @@ public interface FuenteCarrera {
 
     String nombre(int id);
 
-    /** Índice del color del auto en {@code Paleta.COLORES_AUTOS}. */
-    int color(int id);
+    /** Índice en {@link Catalogo#PILOTOS} del piloto de ese auto; de ahí salen la escudería y el color. */
+    int piloto(int id);
 
     /** Lugar en la grilla de largada (0 = primero); sirve para ubicar la cámara antes de que haya una foto. */
     int lugarDeLargada(int id);

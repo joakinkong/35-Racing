@@ -54,9 +54,10 @@ public class SimulacionLocal implements FuenteCarrera {
         return p != null ? p.nombre() : "?";
     }
 
+    /** Cada jugador local corre para una escudería distinta, para que los autos se distingan. */
     @Override
-    public int color(int id) {
-        return id;
+    public int piloto(int id) {
+        return id * 2;
     }
 
     @Override

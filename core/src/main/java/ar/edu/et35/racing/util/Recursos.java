@@ -8,8 +8,6 @@ import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.maps.tiled.TiledMap;
-import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle;
@@ -32,28 +30,16 @@ public class Recursos implements Disposable {
     public final Skin skin = new Skin();
 
     public Recursos() {
-        assets.setLoader(TiledMap.class, new TmxMapLoader());
         crearTexturas();
         crearFuentes();
         crearEstilos();
     }
 
-    /** Ruta del mapa de Tiled de un circuito, a partir de su nombre (el que viaja en CUENTA_REGRESIVA). */
+    /** Ruta del archivo de un circuito, a partir de su nombre (el que viaja en CUENTA_REGRESIVA). */
     public static String rutaCircuito(String nombre) {
         // Solo minúsculas, números y guion bajo: un nombre raro que llegue por la red no puede apuntar a otro archivo.
         String seguro = nombre != null && nombre.matches("[a-z0-9_]+") ? nombre : Config.CIRCUITO;
-        return "circuitos/" + seguro + ".tmx";
-    }
-
-    /** Carga un mapa de Tiled (y su tileset) y espera a que termine. Hay que liberarlo con {@link #liberar}. */
-    public TiledMap cargarMapa(String ruta) {
-        assets.load(ruta, TiledMap.class);
-        assets.finishLoadingAsset(ruta);
-        return assets.get(ruta, TiledMap.class);
-    }
-
-    public void liberar(String ruta) {
-        assets.unload(ruta);
+        return "circuitos/" + seguro + ".json";
     }
 
     /** Drawable de un color liso. */

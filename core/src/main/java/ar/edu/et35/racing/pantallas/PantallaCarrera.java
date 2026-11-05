@@ -2,6 +2,7 @@ package ar.edu.et35.racing.pantallas;
 
 import ar.edu.et35.racing.Main;
 import ar.edu.et35.racing.juego.CargadorCircuito;
+import ar.edu.et35.racing.juego.Catalogo;
 import ar.edu.et35.racing.juego.Circuito;
 import ar.edu.et35.racing.juego.EntradaAuto;
 import ar.edu.et35.racing.juego.EstadoCarrera;
@@ -20,6 +21,7 @@ import ar.edu.et35.racing.util.Paleta;
 import ar.edu.et35.racing.util.Recursos;
 import ar.edu.et35.racing.util.Tiempo;
 import ar.edu.et35.racing.vista.CamaraSeguimiento;
+import ar.edu.et35.racing.vista.TorreHud;
 import ar.edu.et35.racing.vista.VistaAuto;
 import ar.edu.et35.racing.vista.VistaCircuito;
 import com.badlogic.gdx.Gdx;
@@ -27,7 +29,6 @@ import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.HdpiUtils;
-import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Touchable;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
@@ -52,6 +53,9 @@ public class PantallaCarrera extends PantallaBase {
     private static final float ANCHO_FRANJA_COLOR = 4f;
     private static final float ANCHO_DIVISOR = 2f;
     private static final float SEGUNDOS_AVISO = 3f;
+    private static final float MARGEN_TORRE = 8f;
+    /** Lo que ocupan arriba el margen y el panel de los jugadores, antes de que empiece la torre de tiempos. */
+    private static final float DESDE_ARRIBA_TORRE = 58f;
 
     /** Teclas de un esquema de control. */
     private record Controles(int acelerar, int frenar, int izquierda, int derecha) {
@@ -60,8 +64,8 @@ public class PantallaCarrera extends PantallaBase {
     private static final Controles WASD = new Controles(Keys.W, Keys.S, Keys.A, Keys.D);
     private static final Controles FLECHAS = new Controles(Keys.UP, Keys.DOWN, Keys.LEFT, Keys.RIGHT);
 
-    private final String rutaMapa;
-    private final TiledMap mapa;
+    /** Nombre del archivo del circuito; en la prueba local sirve para volver a la pantalla de elección con ese circuito. */
+    private final String nombreCircuito;
     private final Circuito circuito;
     private final FuenteCarrera fuente;
     /** La misma fuente si la carrera es en red; null en la prueba local. */
@@ -80,6 +84,7 @@ public class PantallaCarrera extends PantallaBase {
     private final VistaAuto vistaAuto = new VistaAuto();
 
     private final List<PanelHud> paneles = new ArrayList<>();
+    private final TorreHud torre;
     private final Label cartel = new Label("", skin, "titulo");
     private final Label subcartel = new Label("", skin);
     private final Label aviso = new Label("", skin);
@@ -92,9 +97,12 @@ public class PantallaCarrera extends PantallaBase {
     private float sinEstados;
     private int estadosVistos;
 
-    /** Prueba local: 1 jugador (flechas o WASD) o 2 en el mismo teclado (J1 con WASD y J2 con flechas). */
-    public PantallaCarrera(Main juego, int jugadoresLocales) {
-        this(juego, Recursos.rutaCircuito(Config.CIRCUITO), null, jugadoresLocales, 0);
+    /**
+     * Prueba local en el circuito indicado (nombre del archivo): 1 jugador (flechas o WASD) o 2 en el mismo teclado
+     * (J1 con WASD y J2 con flechas).
+     */
+    public PantallaCarrera(Main juego, int jugadoresLocales, String nombreCircuito) {
+        this(juego, nombreCircuito, null, jugadoresLocales, 0);
     }
 
     /**
@@ -102,17 +110,16 @@ public class PantallaCarrera extends PantallaBase {
      * el orden de la grilla.
      */
     public PantallaCarrera(Main juego, String nombreCircuito, int vueltas) {
-        this(juego, Recursos.rutaCircuito(nombreCircuito), juego.sesion(), 1, vueltas);
+        this(juego, nombreCircuito, juego.sesion(), 1, vueltas);
     }
 
-    private PantallaCarrera(Main juego, String rutaMapa, SesionRed sesion, int jugadoresLocales, int vueltasRed) {
+    private PantallaCarrera(Main juego, String nombreCircuito, SesionRed sesion, int jugadoresLocales, int vueltasRed) {
         super(juego, false);
         if (jugadoresLocales < 1 || jugadoresLocales > MAX_JUGADORES_LOCALES) {
             throw new IllegalArgumentException("Jugadores locales: de 1 a " + MAX_JUGADORES_LOCALES);
         }
-        this.rutaMapa = rutaMapa;
-        mapa = recursos.cargarMapa(rutaMapa);
-        circuito = CargadorCircuito.cargar(mapa, Config.MAX_JUGADORES);
+        this.nombreCircuito = nombreCircuito;
+        circuito = CargadorCircuito.cargar(Gdx.files.internal(Recursos.rutaCircuito(nombreCircuito)), Config.MAX_JUGADORES);
         if (sesion != null) {
             ClientePartida cliente = sesion.cliente();
             cliente.descartarEstadosPendientes();
@@ -135,7 +142,8 @@ public class PantallaCarrera extends PantallaBase {
             camaras.add(camara);
             seguimientos.add(new CamaraSeguimiento(camara, circuito, largada.x, largada.y, Config.ZOOM_CAMARA));
         }
-        vistaCircuito = new VistaCircuito(mapa, recursos.batch);
+        vistaCircuito = new VistaCircuito(circuito, skin.getRegion("blanco"));
+        torre = new TorreHud(recursos, fuente);
         armarInterfaz();
     }
 
@@ -170,6 +178,10 @@ public class PantallaCarrera extends PantallaBase {
         centro.add(subcartel);
         escena.addActor(centro);
 
+        // La torre de tiempos va arriba a la izquierda, debajo del panel de cada jugador. El Table no captura clics.
+        torre.setTouchable(Touchable.disabled);
+        escena.addActor(torre);
+
         divisor.setBounds(Config.ANCHO_VIRTUAL / 2f - ANCHO_DIVISOR / 2f, 0f, ANCHO_DIVISOR, Config.ALTO_VIRTUAL);
         divisor.setTouchable(Touchable.disabled);
         divisor.setVisible(idsLocales.size() > 1);
@@ -177,7 +189,7 @@ public class PantallaCarrera extends PantallaBase {
     }
 
     private Color colorDe(int id) {
-        return Paleta.COLORES_AUTOS[Math.floorMod(fuente.color(id), Paleta.COLORES_AUTOS.length)];
+        return Paleta.colorDePiloto(fuente.piloto(id));
     }
 
     // ------------------------------------------------------------------ red (TCP)
@@ -334,6 +346,8 @@ public class PantallaCarrera extends PantallaBase {
         for (PanelHud panel : paneles) {
             panel.actualizar(foto);
         }
+        torre.actualizar(foto);
+        torre.setPosition(MARGEN_TORRE, Config.ALTO_VIRTUAL - DESDE_ARRIBA_TORRE - torre.getHeight());
         tiempoAviso -= delta;
         if (tiempoAviso <= 0f) {
             aviso.setText("");
@@ -371,20 +385,21 @@ public class PantallaCarrera extends PantallaBase {
 
     @Override
     protected void volver() {
-        irA(new MenuPrincipal(juego));
+        // En la prueba local se vuelve a elegir circuito; en red, al menú (que además cierra la sesión).
+        irA(red == null ? new PruebaLocal(juego, nombreCircuito) : new MenuPrincipal(juego));
     }
 
     @Override
     public void dispose() {
         vistaCircuito.dispose();
         vistaAuto.dispose();
-        recursos.liberar(rutaMapa);
         super.dispose();
     }
 
     /** Panel del HUD de un jugador: franja con el color de su auto, vuelta, posición, tiempo actual y mejor vuelta. */
     private class PanelHud {
         private final int id;
+        private final String codigo;
         private final Table tabla = new Table();
         private final Label cabecera = new Label("", skin);
         private final Label tiempos = new Label("", skin, "gris");
@@ -394,6 +409,7 @@ public class PantallaCarrera extends PantallaBase {
             tabla.setBackground(recursos.color(FONDO_HUD));
             tabla.pad(4);
             tabla.add(new Image(recursos.color(colorDe(id)))).width(ANCHO_FRANJA_COLOR).growY().padRight(6);
+            codigo = Catalogo.piloto(fuente.piloto(id)).codigo();
             Table textos = new Table();
             textos.add(cabecera).left().row();
             textos.add(tiempos).left();
@@ -403,16 +419,16 @@ public class PantallaCarrera extends PantallaBase {
         void actualizar(FotoCarrera foto) {
             FotoAuto yo = foto != null ? foto.auto(id) : null;
             int vueltas = fuente.vueltasTotales();
+            // La posición y la mejor vuelta de todos están en la torre de tiempos: acá solo lo propio de este jugador.
             if (yo == null) {
-                cabecera.setText(fuente.nombre(id) + "   VUELTA 1/" + vueltas);
-                tiempos.setText("TIEMPO " + Tiempo.formato(0f) + "   MEJOR " + Tiempo.formato(Float.NaN));
+                cabecera.setText(fuente.nombre(id) + " [" + codigo + "]");
+                tiempos.setText("VUELTA 1/" + vueltas + "   TIEMPO " + Tiempo.formato(0f));
                 return;
             }
             int vuelta = Math.min(yo.vueltas() + 1, vueltas);
-            String vueltaTexto = yo.terminado() ? "FIN" : "VUELTA " + vuelta + "/" + vueltas;
-            cabecera.setText(fuente.nombre(id) + "   " + vueltaTexto + "   POS " + yo.posicion() + "/" + foto.autosEnCarrera());
-            tiempos.setText((yo.terminado() ? "TOTAL " : "TIEMPO ") + Tiempo.formato(yo.tiempo())
-                + "   MEJOR " + Tiempo.formato(yo.mejorVuelta()));
+            cabecera.setText(fuente.nombre(id) + " [" + codigo + "]");
+            tiempos.setText((yo.terminado() ? "FIN   TOTAL " : "VUELTA " + vuelta + "/" + vueltas + "   TIEMPO ")
+                + Tiempo.formato(yo.tiempo()));
         }
     }
 }
