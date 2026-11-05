@@ -2,6 +2,7 @@ package ar.edu.et35.racing.pantallas;
 
 import ar.edu.et35.racing.Main;
 import ar.edu.et35.racing.juego.CargadorCircuito;
+import ar.edu.et35.racing.juego.Catalogo;
 import ar.edu.et35.racing.juego.Circuito;
 import ar.edu.et35.racing.juego.EntradaAuto;
 import ar.edu.et35.racing.juego.EstadoCarrera;
@@ -177,7 +178,7 @@ public class PantallaCarrera extends PantallaBase {
     }
 
     private Color colorDe(int id) {
-        return Paleta.COLORES_AUTOS[Math.floorMod(fuente.color(id), Paleta.COLORES_AUTOS.length)];
+        return Paleta.colorDePiloto(fuente.piloto(id));
     }
 
     // ------------------------------------------------------------------ red (TCP)
@@ -385,6 +386,7 @@ public class PantallaCarrera extends PantallaBase {
     /** Panel del HUD de un jugador: franja con el color de su auto, vuelta, posición, tiempo actual y mejor vuelta. */
     private class PanelHud {
         private final int id;
+        private final String codigo;
         private final Table tabla = new Table();
         private final Label cabecera = new Label("", skin);
         private final Label tiempos = new Label("", skin, "gris");
@@ -394,6 +396,7 @@ public class PantallaCarrera extends PantallaBase {
             tabla.setBackground(recursos.color(FONDO_HUD));
             tabla.pad(4);
             tabla.add(new Image(recursos.color(colorDe(id)))).width(ANCHO_FRANJA_COLOR).growY().padRight(6);
+            codigo = Catalogo.piloto(fuente.piloto(id)).codigo();
             Table textos = new Table();
             textos.add(cabecera).left().row();
             textos.add(tiempos).left();
@@ -404,13 +407,13 @@ public class PantallaCarrera extends PantallaBase {
             FotoAuto yo = foto != null ? foto.auto(id) : null;
             int vueltas = fuente.vueltasTotales();
             if (yo == null) {
-                cabecera.setText(fuente.nombre(id) + "   VUELTA 1/" + vueltas);
+                cabecera.setText(fuente.nombre(id) + " [" + codigo + "]   VUELTA 1/" + vueltas);
                 tiempos.setText("TIEMPO " + Tiempo.formato(0f) + "   MEJOR " + Tiempo.formato(Float.NaN));
                 return;
             }
             int vuelta = Math.min(yo.vueltas() + 1, vueltas);
             String vueltaTexto = yo.terminado() ? "FIN" : "VUELTA " + vuelta + "/" + vueltas;
-            cabecera.setText(fuente.nombre(id) + "   " + vueltaTexto + "   POS " + yo.posicion() + "/" + foto.autosEnCarrera());
+            cabecera.setText(fuente.nombre(id) + " [" + codigo + "]   " + vueltaTexto + "   POS " + yo.posicion() + "/" + foto.autosEnCarrera());
             tiempos.setText((yo.terminado() ? "TOTAL " : "TIEMPO ") + Tiempo.formato(yo.tiempo())
                 + "   MEJOR " + Tiempo.formato(yo.mejorVuelta()));
         }

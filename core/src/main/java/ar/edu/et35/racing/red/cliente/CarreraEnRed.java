@@ -88,9 +88,9 @@ public class CarreraEnRed implements FuenteCarrera {
     }
 
     @Override
-    public int color(int id) {
+    public int piloto(int id) {
         JugadorLobby jugador = lobby.jugador(id);
-        return jugador != null ? jugador.auto() : id;
+        return jugador != null ? jugador.piloto() : 0;
     }
 
     @Override

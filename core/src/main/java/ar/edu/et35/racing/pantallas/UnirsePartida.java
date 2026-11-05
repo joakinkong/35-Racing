@@ -10,10 +10,13 @@ import ar.edu.et35.racing.red.cliente.ClientePartida;
 import ar.edu.et35.racing.red.servidor.ServidorPartida;
 import ar.edu.et35.racing.util.Config;
 import ar.edu.et35.racing.util.Recursos;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Formulario para crear una partida (solo el nombre) o unirse a una (nombre e IP del anfitrión). La conexión se
@@ -86,15 +89,14 @@ public class UnirsePartida extends PantallaBase {
     /**
      * El host levanta su servidor y se conecta a él por 127.0.0.1, como un cliente más. El circuito se carga acá, en
      * el hilo de render, porque cargar el mapa de Tiled crea texturas y eso no se puede hacer desde el hilo del
-     * servidor; al servidor le llega solo el Circuito (datos puros), y el mapa se libera enseguida.
+     * servidor. Por eso el servidor recibe un proveedor: cuando el host inicia la carrera, le pide el circuito elegido
+     * y este lo carga en el hilo de render (con postRunnable) y le devuelve solo el Circuito (datos puros); el mapa se
+     * libera enseguida.
      */
     private void crearPartida(String nombre) {
-        String ruta = Recursos.rutaCircuito(Config.CIRCUITO);
-        Circuito circuito = CargadorCircuito.cargar(recursos.cargarMapa(ruta), Config.MAX_JUGADORES);
-        recursos.liberar(ruta);
         ServidorPartida servidor;
         try {
-            servidor = ServidorPartida.crear(Config.PUERTO_TCP, Config.PUERTO_UDP, circuito);
+            servidor = ServidorPartida.crear(Config.PUERTO_TCP, Config.PUERTO_UDP, this::cargarCircuitoEnRender);
         } catch (IOException e) {
             mostrarError("No se pudo crear la partida: los puertos " + Config.PUERTO_TCP + " y " + Config.PUERTO_UDP
                 + " están ocupados. ¿Ya hay una partida creada en esta PC?");
@@ -103,6 +105,21 @@ public class UnirsePartida extends PantallaBase {
         ClientePartida cliente = new ClientePartida(nombre);
         cliente.conectar("127.0.0.1", servidor.puerto());
         esperarRespuesta(new SesionRed(servidor, cliente), "Creando la partida...");
+    }
+
+    /** Se llama desde el hilo del servidor: pide la carga al hilo de render y espera el resultado. */
+    private Circuito cargarCircuitoEnRender(String archivo) throws Exception {
+        CompletableFuture<Circuito> futuro = new CompletableFuture<>();
+        Gdx.app.postRunnable(() -> {
+            String ruta = Recursos.rutaCircuito(archivo);
+            try {
+                futuro.complete(CargadorCircuito.cargar(recursos.cargarMapa(ruta), Config.MAX_JUGADORES));
+                recursos.liberar(ruta);
+            } catch (RuntimeException e) {
+                futuro.completeExceptionally(e);
+            }
+        });
+        return futuro.get(Config.TIMEOUT_CARGA_CIRCUITO_S, TimeUnit.SECONDS);
     }
 
     private void unirse(String nombre) {

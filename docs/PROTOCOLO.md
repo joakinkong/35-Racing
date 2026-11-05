@@ -88,8 +88,10 @@ Reglas para que ambos lados se entiendan igual:
 
 | Mensaje | Campos | Cuándo se envía |
 |---|---|---|
-| `UNIRSE;<version>;<nombre>` | versión del protocolo (hoy `1`); nombre del jugador | Primer mensaje, apenas se conecta. Cualquier otro mensaje antes de este se ignora. |
-| `ELEGIR_AUTO;<auto>` | número de auto, de 0 a 4 (cada uno es un color) | En el lobby, al elegir otro auto |
+| `UNIRSE;<version>;<nombre>` | versión del protocolo (hoy `3`); nombre del jugador | Primer mensaje, apenas se conecta. Cualquier otro mensaje antes de este se ignora. |
+| `ELEGIR_PILOTO;<piloto>` | índice del piloto en `Catalogo.PILOTOS`, de 0 a 21 (11 escuderías, 2 pilotos cada una; el piloto `i` es de la escudería `i / 2`) | En el lobby, al elegir otro piloto |
+| `ELEGIR_CIRCUITO;<circuito>` | índice del circuito en `Catalogo.CIRCUITOS`, de 0 a 23 | Solo el host, en el lobby |
+| `ELEGIR_VUELTAS;<vueltas>` | cantidad de vueltas, de `MIN_VUELTAS` (1) a `MAX_VUELTAS` (10) | Solo el host, en el lobby |
 | `LISTO;<valor>` | `1` = listo, `0` = no listo | En el lobby |
 | `INICIAR` | (ninguno) | Solo el host, en el lobby |
 | `REVANCHA` | (ninguno) | Solo el host, en resultados |
@@ -101,8 +103,8 @@ Reglas para que ambos lados se entiendan igual:
 | Mensaje | Campos | Cuándo se envía |
 |---|---|---|
 | `BIENVENIDA;<id>;<token>;<esHost>;<puertoUdp>` | id asignado (0 a 4); token para los paquetes UDP (entero al azar); `1` si es el host; puerto UDP del servidor | Respuesta a un `UNIRSE` aceptado |
-| `LOBBY;<idHost>;<cantidad>;` y, por cada jugador, `<id>;<nombre>;<auto>;<listo>` | quién es el host; cantidad de jugadores; los datos de cada uno | A todos, cada vez que cambia algo del lobby (entra o sale alguien, elige auto, marca listo, revancha) |
-| `CUENTA_REGRESIVA;<circuito>;<vueltas>;<segundos>` | nombre del circuito (hoy `circuito1`); vueltas (3); duración de la cuenta (3) | A todos, al aceptar `INICIAR` |
+| `LOBBY;<idHost>;<circuito>;<vueltas>;<cantidad>;` y, por cada jugador, `<id>;<nombre>;<piloto>;<listo>` | quién es el host; circuito y vueltas elegidos; cantidad de jugadores; los datos de cada uno | A todos, cada vez que cambia algo del lobby (entra o sale alguien, elige piloto, circuito o vueltas, marca listo, revancha) |
+| `CUENTA_REGRESIVA;<circuito>;<vueltas>;<segundos>` | nombre del archivo del circuito elegido (por ejemplo `monza`; es `archivo` en `Catalogo.CIRCUITOS`); vueltas elegidas (3 por defecto); duración de la cuenta (3) | A todos, al aceptar `INICIAR` |
 | `LARGADA` | (ninguno) | A todos, cuando termina la cuenta (el "¡YA!") |
 | `SALIO;<id>` | id del jugador que se fue | A todos, durante la carrera, cuando alguien abandona o se cae |
 | `RESULTADOS;<cantidad>;` y, por cada jugador, `<posicion>;<id>;<nombre>;<totalMs>;<mejorVueltaMs>` | tiempos en milisegundos; `-1` si no terminó o no completó ninguna vuelta | A todos, cuando la carrera pasa a `TERMINADA` |
@@ -110,12 +112,12 @@ Reglas para que ambos lados se entiendan igual:
 | `CERRADA;<motivo>` | texto para mostrar | A todos, cuando el host cierra la partida |
 | `PONG;<marca>` | la misma marca del `PING` | Respuesta a cada `PING` |
 
-Al unirse, el servidor le asigna al jugador el **primer auto libre**, así nadie queda sin auto; `ELEGIR_AUTO` lo cambia si el pedido está libre. El orden en la grilla de largada es el orden de llegada al lobby. **El host es el primer jugador que se une**: es el que crea la partida y su cliente se conecta a su propio servidor enseguida. Una conexión que no manda `UNIRSE` (ni nada) queda sin datos, y a los 6 s el servidor la cierra por timeout.
+Al unirse, el servidor le asigna al jugador el **primer piloto de la primera escudería libre**, así nadie queda sin piloto; `ELEGIR_PILOTO` lo cambia si nadie más corre para esa escudería (se puede cambiar al compañero de equipo propio). Cada escudería tiene su color, así que dos jugadores nunca comparten escudería. El circuito arranca en `Config.CIRCUITO` y las vueltas en `Config.VUELTAS`; solo el host los cambia, y la revancha conserva lo elegido. Los índices de piloto y de circuito son los de `Catalogo` (paquete `juego`): todas las PC tienen que tener el mismo catálogo, y si cambia el orden de sus listas hay que subir `VERSION_PROTOCOLO`. El orden en la grilla de largada es el orden de llegada al lobby. **El host es el primer jugador que se une**: es el que crea la partida y su cliente se conecta a su propio servidor enseguida. Una conexión que no manda `UNIRSE` (ni nada) queda sin datos, y a los 6 s el servidor la cierra por timeout.
 
-Ejemplo de `LOBBY` con dos jugadores, donde el host (id 0) eligió el auto 0 y está listo, y el otro eligió el auto 3 y no está listo:
+Ejemplo de `LOBBY` con el circuito 14 (Monza), 3 vueltas y dos jugadores, donde el host (id 0) eligió el piloto 0 (George Russell, Mercedes) y está listo, y el otro eligió el piloto 9 (Franco Colapinto, Alpine) y no está listo:
 
 ```text
-LOBBY;0;2;0;Joaquin;0;1;1;Mateo;3;0
+LOBBY;0;14;3;2;0;Joaquin;0;1;1;Mateo;9;0
 ```
 
 ### Errores
@@ -127,8 +129,9 @@ LOBBY;0;2;0;Joaquin;0;1;1;Mateo;3;0
 | `NOMBRE_REPETIDO` | Otro jugador ya usa ese nombre (sin distinguir mayúsculas) | Sí |
 | `VERSION_DISTINTA` | La versión del `UNIRSE` no es la del servidor | Sí |
 | `NOMBRE_INVALIDO` | Nombre vacío, de más de 12 caracteres o con caracteres no permitidos | Sí |
-| `AUTO_OCUPADO` | `ELEGIR_AUTO` de un auto que ya tiene otro jugador | No |
-| `NO_PERMITIDO` | `INICIAR` o `REVANCHA` de alguien que no es el host, o en un estado en que no corresponde | No |
+| `ESCUDERIA_OCUPADA` | `ELEGIR_PILOTO` de un piloto cuya escudería ya tiene otro jugador | No |
+| `NO_PERMITIDO` | `INICIAR`, `REVANCHA`, `ELEGIR_CIRCUITO` o `ELEGIR_VUELTAS` de alguien que no es el host, o en un estado en que no corresponde (por ejemplo, `ELEGIR_PILOTO` con la carrera empezada) | No |
+| `CIRCUITO_NO_CARGO` | `INICIAR` cuando el host no pudo cargar el circuito elegido (el servidor lo carga recién al iniciar) | No |
 | `FALTAN_JUGADORES` | `INICIAR` con menos de 2 jugadores o con alguno que no está listo | No |
 
 Cuando el error cierra la conexión, el servidor manda el `ERROR` y después cierra el socket, para que el cliente pueda mostrar el motivo. Los errores se comprueban en este orden: `VERSION_DISTINTA`, `CARRERA_EN_CURSO`, `PARTIDA_LLENA`, `NOMBRE_INVALIDO` y `NOMBRE_REPETIDO`. Para `INICIAR`, el host también tiene que estar listo: "todos listos" incluye a todos los jugadores.
@@ -286,7 +289,7 @@ Casi toda la demora es el retraso de interpolación, no la red. En un juego de c
 
 **Regla principal: el estado de la partida (jugadores, lobby, `Carrera`) lo toca un solo hilo, el de simulación.** Así no hacen falta `synchronized` en el modelo ni pueden aparecer condiciones de carrera en él. Los otros hilos solo le pasan datos por dos vías:
 
-- **Cola de eventos** (`ConcurrentLinkedQueue`): para lo que llega por TCP (`UNIRSE`, `ELEGIR_AUTO`, `LISTO`, `INICIAR`, `REVANCHA`, `SALIR`, desconexiones). Son eventos: ninguno se puede perder, y se procesan en el orden en que llegaron.
+- **Cola de eventos** (`ConcurrentLinkedQueue`): para lo que llega por TCP (`UNIRSE`, `ELEGIR_PILOTO`, `ELEGIR_CIRCUITO`, `ELEGIR_VUELTAS`, `LISTO`, `INICIAR`, `REVANCHA`, `SALIR`, desconexiones). Son eventos: ninguno se puede perder, y se procesan en el orden en que llegaron.
 - **Última entrada por jugador** (un campo `volatile int` con los bits de los botones, y otro con el momento en que llegó): para lo que llega por UDP. Solo importa el valor más reciente, así que no hace falta cola. Hay un solo hilo que escribe (el receptor UDP) y uno solo que lee (el de simulación), y con `volatile` alcanza para que el lector vea el último valor.
 
 Es la misma lógica que TCP y UDP (sección 9): lo que no se puede perder va en cola; lo que se reemplaza constantemente, en un solo lugar que se sobrescribe.
@@ -363,12 +366,12 @@ sequenceDiagram
     S-->>CH: LOBBY (1 jugador)
 
     CB->>S: TCP: conexión a la IP del host, puerto 7777
-    CB->>S: UNIRSE (versión 1, Mateo)
+    CB->>S: UNIRSE (versión 3, Mateo)
     S-->>CB: BIENVENIDA (id 1, token, no es host, puerto UDP 7778)
     S-->>CH: LOBBY (2 jugadores)
     S-->>CB: LOBBY (2 jugadores)
 
-    CB->>S: ELEGIR_AUTO (3)
+    CB->>S: ELEGIR_PILOTO (9)
     S-->>CH: LOBBY
     S-->>CB: LOBBY
     CH->>S: LISTO (1)
@@ -412,7 +415,8 @@ Las que ya existen (`MAX_JUGADORES`, `VUELTAS`, `TICKS_POR_SEGUNDO`, `PUERTO_TCP
 
 | Constante | Valor | Para qué |
 |---|---|---|
-| `VERSION_PROTOCOLO` | 1 | Se manda en `UNIRSE`; si cambia el formato de algún mensaje, se sube |
+| `VERSION_PROTOCOLO` | 3 | Se manda en `UNIRSE`; si cambia el formato de algún mensaje o el orden del catálogo, se sube. La 2 agregó el circuito al `LOBBY` y cambió el auto (0 a 4) por el piloto (0 a 21); la 3 agregó las vueltas |
+| `MIN_VUELTAS` / `MAX_VUELTAS` | 1 / 10 | Rango de vueltas que puede elegir el host (`VUELTAS` = 3 es el valor inicial) |
 | `MIN_JUGADORES` | 2 | Mínimo para `INICIAR` |
 | `LARGO_MAXIMO_NOMBRE` | 12 | Validación del nombre |
 | `ENVIOS_ENTRADA_POR_SEGUNDO` | 60 | Frecuencia de `ENTRADA` |

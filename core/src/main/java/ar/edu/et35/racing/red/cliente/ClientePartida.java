@@ -254,8 +254,18 @@ public class ClientePartida {
         }
     }
 
-    public void elegirAuto(int auto) {
-        enviar(Protocolo.armar(Protocolo.ELEGIR_AUTO, auto));
+    public void elegirPiloto(int piloto) {
+        enviar(Protocolo.armar(Protocolo.ELEGIR_PILOTO, piloto));
+    }
+
+    /** Solo lo acepta el servidor si lo manda el host. */
+    public void elegirCircuito(int circuito) {
+        enviar(Protocolo.armar(Protocolo.ELEGIR_CIRCUITO, circuito));
+    }
+
+    /** Solo lo acepta el servidor si lo manda el host. */
+    public void elegirVueltas(int vueltas) {
+        enviar(Protocolo.armar(Protocolo.ELEGIR_VUELTAS, vueltas));
     }
 
     public void marcarListo(boolean listo) {
@@ -336,9 +346,9 @@ public class ClientePartida {
         return lobby;
     }
 
-    /** El auto que tiene asignado este jugador según el último LOBBY, o 0 si todavía no llegó. */
-    public int miAuto() {
+    /** El piloto que tiene asignado este jugador según el último LOBBY, o 0 si todavía no llegó. */
+    public int miPiloto() {
         EstadoLobby.JugadorLobby yo = lobby.jugador(miId);
-        return yo != null ? yo.auto() : 0;
+        return yo != null ? yo.piloto() : 0;
     }
 }

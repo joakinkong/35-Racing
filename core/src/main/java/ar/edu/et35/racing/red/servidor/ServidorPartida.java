@@ -1,6 +1,7 @@
 package ar.edu.et35.racing.red.servidor;
 
 import ar.edu.et35.racing.juego.Carrera;
+import ar.edu.et35.racing.juego.Catalogo;
 import ar.edu.et35.racing.juego.Circuito;
 import ar.edu.et35.racing.juego.EntradaAuto;
 import ar.edu.et35.racing.juego.EstadoCarrera;
@@ -81,16 +82,16 @@ public class ServidorPartida {
         final String nombre;
         final Cliente cliente;
         final EntradaRemota udp;
-        int auto;
+        int piloto;
         boolean listo;
         boolean avisoUdpDado;
 
-        Jugador(int id, String nombre, Cliente cliente, EntradaRemota udp, int auto) {
+        Jugador(int id, String nombre, Cliente cliente, EntradaRemota udp, int piloto) {
             this.id = id;
             this.nombre = nombre;
             this.cliente = cliente;
             this.udp = udp;
-            this.auto = auto;
+            this.piloto = piloto;
         }
     }
 
@@ -113,6 +114,16 @@ public class ServidorPartida {
         }
     }
 
+    /**
+     * Carga un circuito por el nombre de su archivo. Lo implementa el host con su hilo de render, porque cargar el mapa
+     * de Tiled crea texturas y eso no se puede hacer desde los hilos del servidor; se lo llama desde el hilo de
+     * simulación, que espera la respuesta (no hay carrera en curso, así que no se atrasa nada).
+     */
+    @FunctionalInterface
+    public interface ProveedorCircuitos {
+        Circuito cargar(String archivo) throws Exception;
+    }
+
     private interface Evento {
     }
 
@@ -124,8 +135,11 @@ public class ServidorPartida {
 
     private final ServerSocket socketTcp;
     private final DatagramSocket socketUdp;
-    /** Se carga en el hilo de render del host y se pasa en el constructor: los hilos del servidor solo lo leen. */
-    private final Circuito circuito;
+    /** Cómo conseguir el circuito elegido al iniciar la carrera (lo carga el host en su hilo de render). */
+    private final ProveedorCircuitos proveedor;
+    /** El último circuito cargado, para que una revancha en el mismo circuito no lo cargue de nuevo. */
+    private String archivoCargado;
+    private Circuito circuitoCargado;
     private final BlockingQueue<Evento> eventos = new LinkedBlockingQueue<>();
     private final List<Cliente> conexiones = new CopyOnWriteArrayList<>();
     /** Por id de jugador: lo comparten el receptor UDP (busca el token) y la simulación (crea y borra). */
@@ -138,15 +152,21 @@ public class ServidorPartida {
     private final Map<Integer, EntradaAuto> entradas = new HashMap<>();
     private Fase fase = Fase.LOBBY;
     private int idHost = -1;
+    /** Índice en el catálogo del circuito elegido; lo cambia el host en el lobby. */
+    private int circuitoElegido;
+    /** Vueltas elegidas por el host en el lobby. */
+    private int vueltasElegidas = Config.VUELTAS;
     private Carrera carrera;
     private int tickInicioCarrera;
     /** Número de tick de la simulación: nunca vuelve atrás, ni entre carreras. Es la secuencia del ESTADO. */
     private int tick;
 
-    private ServidorPartida(ServerSocket socketTcp, DatagramSocket socketUdp, Circuito circuito) {
+    private ServidorPartida(ServerSocket socketTcp, DatagramSocket socketUdp, ProveedorCircuitos proveedor) {
         this.socketTcp = socketTcp;
         this.socketUdp = socketUdp;
-        this.circuito = circuito;
+        this.proveedor = proveedor;
+        int inicial = Catalogo.indiceDeCircuito(Config.CIRCUITO);
+        this.circuitoElegido = inicial >= 0 ? inicial : 0;
     }
 
     /**
@@ -154,10 +174,11 @@ public class ServidorPartida {
      *
      * @param puertoTcp puerto TCP; 0 deja que el sistema elija uno libre (se usa en las pruebas)
      * @param puertoUdp puerto UDP; 0 igual
-     * @param circuito  el circuito de la carrera, ya cargado (en el hilo de render, porque carga texturas)
+     * @param proveedor carga el circuito elegido cuando el host inicia la carrera. Se pide recién ahí y no al crear la
+     *                  partida porque los mapas son grandes y el host puede elegir cualquiera de los 24
      * @throws IOException si alguno de los puertos ya está ocupado (por ejemplo, otra partida creada en esta PC)
      */
-    public static ServidorPartida crear(int puertoTcp, int puertoUdp, Circuito circuito) throws IOException {
+    public static ServidorPartida crear(int puertoTcp, int puertoUdp, ProveedorCircuitos proveedor) throws IOException {
         ServerSocket tcp = new ServerSocket(puertoTcp);
         DatagramSocket udp;
         try {
@@ -166,7 +187,7 @@ public class ServidorPartida {
             tcp.close();
             throw e;
         }
-        ServidorPartida servidor = new ServidorPartida(tcp, udp, circuito);
+        ServidorPartida servidor = new ServidorPartida(tcp, udp, proveedor);
         servidor.iniciarHilos();
         RegistroRed.log(ORIGEN, "Escuchando TCP en el puerto " + servidor.puerto() + " y UDP en el " + servidor.puertoUdp());
         return servidor;
@@ -436,8 +457,14 @@ public class ServidorPartida {
             return;
         }
         switch (mensaje.nombre()) {
-            case Protocolo.ELEGIR_AUTO:
-                elegirAuto(jugador, mensaje);
+            case Protocolo.ELEGIR_PILOTO:
+                elegirPiloto(jugador, mensaje);
+                break;
+            case Protocolo.ELEGIR_CIRCUITO:
+                elegirCircuito(jugador, mensaje);
+                break;
+            case Protocolo.ELEGIR_VUELTAS:
+                elegirVueltas(jugador, mensaje);
                 break;
             case Protocolo.LISTO:
                 marcarListo(jugador, mensaje);
@@ -481,7 +508,7 @@ public class ServidorPartida {
         boolean esHost = jugadores.isEmpty();
         int id = primerIdLibre();
         EntradaRemota udp = new EntradaRemota(azar.nextInt());
-        Jugador jugador = new Jugador(id, nombre, cliente, udp, primerAutoLibre());
+        Jugador jugador = new Jugador(id, nombre, cliente, udp, primerPilotoLibre());
         jugadores.put(id, jugador);
         remotas.set(id, udp);
         cliente.jugador = jugador;
@@ -493,23 +520,55 @@ public class ServidorPartida {
         difundirLobby();
     }
 
-    private void elegirAuto(Jugador jugador, Mensaje mensaje) {
+    /** Un piloto solo se puede elegir si nadie más corre para su escudería (cada escudería tiene un color). */
+    private void elegirPiloto(Jugador jugador, Mensaje mensaje) {
         if (fase != Fase.LOBBY) {
-            error(jugador.cliente, Protocolo.NO_PERMITIDO, "Ya no se puede cambiar de auto");
+            error(jugador.cliente, Protocolo.NO_PERMITIDO, "Ya no se puede cambiar de piloto");
             return;
         }
-        int auto = mensaje.entero(0, -1);
-        if (auto < 0 || auto >= Config.MAX_JUGADORES) {
-            RegistroRed.log(ORIGEN, "Auto inválido de " + jugador.nombre + ": " + mensaje.campo(0));
+        int piloto = mensaje.entero(0, -1);
+        if (!Catalogo.pilotoValido(piloto)) {
+            RegistroRed.log(ORIGEN, "Piloto inválido de " + jugador.nombre + ": " + mensaje.campo(0));
             return;
         }
+        int escuderia = Catalogo.piloto(piloto).escuderia();
         for (Jugador otro : jugadores.values()) {
-            if (otro != jugador && otro.auto == auto) {
-                error(jugador.cliente, Protocolo.AUTO_OCUPADO, "Ese auto ya lo eligió otro jugador");
+            if (otro != jugador && Catalogo.piloto(otro.piloto).escuderia() == escuderia) {
+                error(jugador.cliente, Protocolo.ESCUDERIA_OCUPADA, "Esa escudería ya la eligió otro jugador");
                 return;
             }
         }
-        jugador.auto = auto;
+        jugador.piloto = piloto;
+        difundirLobby();
+    }
+
+    /** Solo el host cambia el circuito, y solo en el lobby. */
+    private void elegirCircuito(Jugador jugador, Mensaje mensaje) {
+        if (jugador.id != idHost || fase != Fase.LOBBY) {
+            error(jugador.cliente, Protocolo.NO_PERMITIDO, "Solo el anfitrión puede elegir el circuito, y solo desde el lobby");
+            return;
+        }
+        int circuito = mensaje.entero(0, -1);
+        if (!Catalogo.circuitoValido(circuito)) {
+            RegistroRed.log(ORIGEN, "Circuito inválido de " + jugador.nombre + ": " + mensaje.campo(0));
+            return;
+        }
+        circuitoElegido = circuito;
+        difundirLobby();
+    }
+
+    /** Solo el host cambia las vueltas, y solo en el lobby. */
+    private void elegirVueltas(Jugador jugador, Mensaje mensaje) {
+        if (jugador.id != idHost || fase != Fase.LOBBY) {
+            error(jugador.cliente, Protocolo.NO_PERMITIDO, "Solo el anfitrión puede elegir las vueltas, y solo desde el lobby");
+            return;
+        }
+        int vueltas = mensaje.entero(0, -1);
+        if (vueltas < Config.MIN_VUELTAS || vueltas > Config.MAX_VUELTAS) {
+            RegistroRed.log(ORIGEN, "Vueltas inválidas de " + jugador.nombre + ": " + mensaje.campo(0));
+            return;
+        }
+        vueltasElegidas = vueltas;
         difundirLobby();
     }
 
@@ -533,7 +592,15 @@ public class ServidorPartida {
                 "Hacen falta al menos " + Config.MIN_JUGADORES + " jugadores y que todos estén listos");
             return;
         }
-        carrera = new Carrera(circuito, Config.VUELTAS);
+        Circuito circuito;
+        try {
+            circuito = circuitoElegido();
+        } catch (Exception e) {
+            RegistroRed.log(ORIGEN, "No se pudo cargar el circuito " + Catalogo.circuito(circuitoElegido).archivo() + ": " + e);
+            error(jugador.cliente, Protocolo.CIRCUITO_NO_CARGO, "No se pudo cargar el circuito, elegí otro");
+            return;
+        }
+        carrera = new Carrera(circuito, vueltasElegidas);
         for (Jugador j : jugadores.values()) {
             carrera.agregarAuto(j.id, j.nombre);
         }
@@ -541,8 +608,17 @@ public class ServidorPartida {
         tickInicioCarrera = tick;
         fase = Fase.CUENTA_REGRESIVA;
         // La cuenta regresiva la lleva la Carrera: cuando termina, simularTick() manda la LARGADA.
-        difundir(Protocolo.armar(Protocolo.CUENTA_REGRESIVA, Config.CIRCUITO, Config.VUELTAS,
+        difundir(Protocolo.armar(Protocolo.CUENTA_REGRESIVA, Catalogo.circuito(circuitoElegido).archivo(), vueltasElegidas,
             Config.SEGUNDOS_CUENTA_REGRESIVA));
+    }
+
+    private Circuito circuitoElegido() throws Exception {
+        String archivo = Catalogo.circuito(circuitoElegido).archivo();
+        if (!archivo.equals(archivoCargado)) {
+            circuitoCargado = proveedor.cargar(archivo);
+            archivoCargado = archivo;
+        }
+        return circuitoCargado;
     }
 
     /** Vuelve al lobby con los mismos jugadores (los que siguen conectados), todos sin "listo". */
@@ -587,9 +663,9 @@ public class ServidorPartida {
     private EstadoLobby estadoLobby() {
         List<JugadorLobby> lista = new ArrayList<>();
         for (Jugador j : jugadores.values()) {
-            lista.add(new JugadorLobby(j.id, j.nombre, j.auto, j.listo));
+            lista.add(new JugadorLobby(j.id, j.nombre, j.piloto, j.listo));
         }
-        return new EstadoLobby(idHost, lista);
+        return new EstadoLobby(idHost, circuitoElegido, vueltasElegidas, lista);
     }
 
     private void difundirLobby() {
@@ -631,17 +707,18 @@ public class ServidorPartida {
         return id;
     }
 
-    private int primerAutoLibre() {
-        for (int auto = 0; auto < Config.MAX_JUGADORES; auto++) {
+    /** El primer piloto de la primera escudería que nadie eligió, así nadie queda sin piloto. */
+    private int primerPilotoLibre() {
+        for (int escuderia = 0; escuderia < Catalogo.ESCUDERIAS.size(); escuderia++) {
             boolean libre = true;
             for (Jugador j : jugadores.values()) {
-                libre &= j.auto != auto;
+                libre &= Catalogo.piloto(j.piloto).escuderia() != escuderia;
             }
             if (libre) {
-                return auto;
+                return escuderia * 2;
             }
         }
-        return 0; // no pasa: hay tantos autos como jugadores máximos
+        return 0; // no pasa: hay más escuderías que jugadores máximos
     }
 
     private boolean nombreEnUso(String nombre) {
