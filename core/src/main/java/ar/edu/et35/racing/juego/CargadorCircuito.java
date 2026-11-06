@@ -67,7 +67,8 @@ public final class CargadorCircuito {
             }
             cruces.add(new Circuito.Cruce(tunel, puente));
         }
-        return new Circuito.Geometria(linea, anchos, escapes, raiz.getFloat("muro"), List.copyOf(cruces));
+        return new Circuito.Geometria(linea, anchos, escapes, raiz.getFloat("muro"), List.copyOf(cruces),
+            raiz.getBoolean("callejero", false));
     }
 
     private static JsonValue campo(JsonValue raiz, String nombre) {

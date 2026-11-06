@@ -1,0 +1,141 @@
+entorno.png
+size: 2048,806
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+ambulancia_aba
+  bounds: 1206, 377, 72, 165
+ambulancia_arr
+  bounds: 1280, 377, 72, 150
+ambulancia_der
+  bounds: 2, 647, 171, 100
+ambulancia_izq
+  bounds: 175, 647, 171, 100
+arbol_1
+  bounds: 1125, 647, 70, 82
+arbol_2
+  bounds: 348, 647, 102, 93
+arbol_3
+  bounds: 1580, 377, 133, 118
+arbusto_1
+  bounds: 951, 749, 45, 40
+arbusto_2
+  bounds: 904, 749, 45, 42
+arbusto_3
+  bounds: 839, 749, 63, 45
+auto_aba_1
+  bounds: 575, 647, 48, 85
+auto_aba_2
+  bounds: 675, 647, 48, 85
+auto_aba_3
+  bounds: 775, 647, 48, 85
+auto_aba_4
+  bounds: 875, 647, 48, 85
+auto_aba_5
+  bounds: 975, 647, 48, 85
+auto_aba_6
+  bounds: 1075, 647, 48, 85
+auto_aba_7
+  bounds: 1829, 377, 55, 106
+auto_aba_8
+  bounds: 1886, 377, 55, 106
+auto_arr_1
+  bounds: 525, 647, 48, 85
+auto_arr_2
+  bounds: 625, 647, 48, 85
+auto_arr_3
+  bounds: 725, 647, 48, 85
+auto_arr_4
+  bounds: 825, 647, 48, 85
+auto_arr_5
+  bounds: 925, 647, 48, 85
+auto_arr_6
+  bounds: 1025, 647, 48, 85
+auto_arr_7
+  bounds: 1715, 377, 55, 108
+auto_arr_8
+  bounds: 1772, 377, 55, 108
+auto_der_1
+  bounds: 1763, 647, 91, 55
+auto_der_2
+  bounds: 1949, 647, 91, 55
+auto_der_3
+  bounds: 95, 749, 91, 55
+auto_der_4
+  bounds: 281, 749, 91, 55
+auto_der_5
+  bounds: 467, 749, 91, 55
+auto_der_6
+  bounds: 653, 749, 91, 55
+auto_der_7
+  bounds: 1295, 647, 115, 60
+auto_der_8
+  bounds: 1529, 647, 115, 60
+auto_izq_1
+  bounds: 1856, 647, 91, 55
+auto_izq_2
+  bounds: 2, 749, 91, 55
+auto_izq_3
+  bounds: 188, 749, 91, 55
+auto_izq_4
+  bounds: 374, 749, 91, 55
+auto_izq_5
+  bounds: 560, 749, 91, 55
+auto_izq_6
+  bounds: 746, 749, 91, 55
+auto_izq_7
+  bounds: 1412, 647, 115, 60
+auto_izq_8
+  bounds: 1646, 647, 115, 60
+barrera_1
+  bounds: 1058, 749, 45, 22
+cartel_1
+  bounds: 1354, 377, 111, 136
+cartel_2
+  bounds: 1467, 377, 111, 136
+edificio_casa1
+  bounds: 591, 2, 271, 358
+edificio_casa2
+  bounds: 864, 2, 271, 358
+edificio_casa3
+  bounds: 2, 2, 273, 373
+edificio_condo1
+  bounds: 1573, 2, 72, 288
+edificio_condo2
+  bounds: 1647, 2, 72, 288
+edificio_condo3
+  bounds: 428, 377, 144, 250
+edificio_condo4
+  bounds: 574, 377, 144, 250
+edificio_condo5
+  bounds: 277, 2, 312, 360
+edificio_ferreteria
+  bounds: 720, 377, 192, 213
+edificio_mercado1
+  bounds: 1084, 377, 120, 178
+edificio_mercado2
+  bounds: 1721, 2, 168, 271
+edificio_mercado3
+  bounds: 914, 377, 168, 202
+edificio_shopping
+  bounds: 2, 377, 424, 268
+edificio_villa1
+  bounds: 1137, 2, 216, 312
+edificio_villa2
+  bounds: 1355, 2, 216, 312
+farol_1
+  bounds: 452, 647, 21, 91
+muro_h
+  bounds: 1006, 749, 24, 24
+muro_v
+  bounds: 1032, 749, 24, 24
+neumatico_1
+  bounds: 1105, 749, 24, 21
+tribuna_h
+  bounds: 1197, 647, 96, 61
+tribuna_v
+  bounds: 475, 647, 48, 88
+valla_h
+  bounds: 1131, 749, 24, 21
+valla_v
+  bounds: 998, 749, 6, 24

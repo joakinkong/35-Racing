@@ -8,6 +8,8 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ### Agregado
 
+- Entorno alrededor de los circuitos, solo de dibujo: calles, edificios, autos estacionados y faroles en los callejeros; pasto, tribunas con público, ambulancias, neumáticos, vallas, muros y árboles en los permanentes. Sprites de Modern Exteriors (LimeZu). No cambia la física, el protocolo ni los JSON.
+- `tools/entorno/armar_atlas.py` arma los sprites y `PruebaEntorno` comprueba su ubicación en los 24 circuitos.
 - Pianos rojos y blancos en las curvas cerradas (`vista/Pianos`). Son solo dibujo: no cambian la física ni los JSON.
 - Puente en el cruce de Suzuka: los autos de abajo pasan tapados por el puente y los de distintos niveles no se chocan ni se esquivan. El muro del puente es solo dibujo. No cambia el protocolo.
 - `PruebaCruce`, en `tools/circuitos/verificacion`, comprueba los niveles y los choques en el cruce.
@@ -19,6 +21,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ### Cambiado
 
+- Los autos son monoplazas dibujados con polígonos, con el color principal y el de acento de cada escudería.
 - La grilla de largada es escalonada, como en la F1: cada auto, 40 px más atrás que el anterior. No cambia ningún trazado.
 - Hasta 8 jugadores por partida (`Config.MAX_JUGADORES`). Los 24 circuitos tienen 8 lugares de largada, sin cambios en el trazado ni en los 5 lugares que ya existían. El `ESTADO` con 8 autos ocupa 204 bytes. Protocolo versión 4.
 - El pasto es de un verde un poco más fuerte.

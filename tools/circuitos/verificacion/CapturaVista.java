@@ -67,11 +67,11 @@ public class CapturaVista extends ApplicationAdapter {
             // Un auto en el centro, para tener una referencia de tamaño. Con "abajo" al final, pasa debajo del puente.
             boolean abajo = partes.length > 3 && partes[3].equals("abajo");
             if (abajo) {
-                auto.dibujar(g.linea()[2 * indice], g.linea()[2 * indice + 1], 0f, Color.CYAN, camara);
+                auto.dibujar(g.linea()[2 * indice], g.linea()[2 * indice + 1], 0f, Color.valueOf("E8002D"), Color.valueOf("FFEB00"), camara);
             }
             vista.dibujarPuentes(camara);
             if (!abajo) {
-                auto.dibujar(g.linea()[2 * indice], g.linea()[2 * indice + 1], 0f, Color.CYAN, camara);
+                auto.dibujar(g.linea()[2 * indice], g.linea()[2 * indice + 1], 0f, Color.valueOf("E8002D"), Color.valueOf("FFEB00"), camara);
             }
             Gdx.gl.glFinish();
             Pixmap leido = Pixmap.createFromFrameBuffer(0, 0, 1280, 720);
@@ -80,7 +80,7 @@ public class CapturaVista extends ApplicationAdapter {
             for (int y = 0; y < 720; y++) {
                 pixmap.drawPixmap(leido, 0, y, 0, 719 - y, 1280, 1);
             }
-            PixmapIO.writePNG(Gdx.files.absolute(salida + "/" + nombre + "_" + indice + ".png"), pixmap);
+            PixmapIO.writePNG(Gdx.files.absolute(salida + "/" + nombre + "_" + indice + (partes.length > 2 ? "_" + partes[2] : "") + (abajo ? "_abajo" : "") + ".png"), pixmap);
             leido.dispose();
             pixmap.dispose();
         }

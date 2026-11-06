@@ -42,6 +42,11 @@ final class Pianos {
     private Pianos() {
     }
 
+    /** Para cada muestra: 1 si es parte de una curva cerrada a la izquierda, -1 a la derecha, 0 si no. */
+    static int[] curvas(Circuito circuito) {
+        return marcarCurvas(circuito.geometria(), muestrasEnCruces(circuito));
+    }
+
     static List<Franjas> calcular(Circuito circuito) {
         Circuito.Geometria g = circuito.geometria();
         boolean[] prohibida = muestrasEnCruces(circuito);

@@ -69,4 +69,8 @@ Falta probar la clasificación, los bots y los torneos entre varias PC y con per
 
 ## Licencia
 
-Los recursos de terceros utilizados son de licencia libre (CC0) y se acreditan en el repositorio.
+Recursos de terceros:
+
+- Entorno de los circuitos: [Modern Exteriors](https://limezu.itch.io/modernexteriors), de LimeZu (pack comprado).
+- Trazados de los circuitos: f1-circuits-svg, de Jules Roy (CC BY 4.0).
+- Fuentes: Space Grotesk e Inter (SIL Open Font License).

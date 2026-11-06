@@ -357,7 +357,7 @@ public class PantallaCarrera extends PantallaBase {
             nivelesCruce.put(a.id(), nivel);
             if ((nivel == NivelCruce.ABAJO) == losDeAbajo && !a.desconectado()
                 && (!clasificacion || idsLocales.contains(a.id()))) {
-                vistaAuto.dibujar(a.x(), a.y(), a.angulo(), colorDe(a.id()), camara);
+                vistaAuto.dibujar(a.x(), a.y(), a.angulo(), colorDe(a.id()), Paleta.detalleDePiloto(fuente.piloto(a.id())), camara);
             }
         }
     }

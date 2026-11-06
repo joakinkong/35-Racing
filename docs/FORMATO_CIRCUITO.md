@@ -59,6 +59,9 @@ solo dibujo. En los `cruces`, el tramo `puente` se dibuja encima de los autos qu
 pasto (`juego/ZonaCruce`). La grilla de colisión no cambia: el muro del puente tampoco es sólido, y solo los autos en
 niveles distintos dejan de chocarse.
 
+El entorno tampoco está en el archivo: `vista/DisposicionEntorno` lo calcula al cargar a partir de la línea central y del
+campo `callejero`. Es solo dibujo.
+
 ## Parámetros del generador
 
 Están al principio de `generar_circuitos.py`: `ANCHO_MIN` y `ANCHO_MAX` (asfalto), `ESCAPE` (pasto máximo), `MURO`,
