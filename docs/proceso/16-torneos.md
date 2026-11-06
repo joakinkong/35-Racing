@@ -85,4 +85,4 @@ El código y esta documentación los escribió Claude (Claude Code) a pedido de 
 
 ## Commits y PR
 
-Se completa al commitear.
+Todo lo de las etapas 11 a 16 quedó junto, en la rama `feature/estetica-pitwall`, porque esas etapas tocan los mismos archivos: `de4678c` (código, recursos y pruebas) y `0d74733` (documentación). PR pendiente.
