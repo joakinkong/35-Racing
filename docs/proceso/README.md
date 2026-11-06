@@ -42,16 +42,16 @@ Las etapas 0 a 4 se hicieron el 28/09/2026, entre las 21:16 y las 23:45 (hora lo
 | [15. Clasificación](15-clasificacion.md) | Clasificación opcional de una vuelta, todos a la vez y sin verse, que arma la grilla; grilla de largada escalonada; protocolo versión 6 | [#15](https://github.com/joakinkong/35-Racing/pull/15), [#16](https://github.com/joakinkong/35-Racing/pull/16) y [#17](https://github.com/joakinkong/35-Racing/pull/17) |
 | [16. Torneos](16-torneos.md) | Torneos con calendario a elección y puntos acumulados, con la tabla de la F1 al revés; protocolo versión 7 | [#15](https://github.com/joakinkong/35-Racing/pull/15), [#16](https://github.com/joakinkong/35-Racing/pull/16) y [#17](https://github.com/joakinkong/35-Racing/pull/17) |
 | [17. Pianos y cruce de Suzuka](17-pianos-y-cruce.md) | Pianos en las curvas cerradas, solo de dibujo, y un puente en Suzuka: los autos pasan por debajo y no se chocan entre niveles; no cambia el protocolo | [#20](https://github.com/joakinkong/35-Racing/pull/20) y [#21](https://github.com/joakinkong/35-Racing/pull/21) |
+| [18. Entorno y autos](18-entorno-y-autos.md) | Calles y edificios en los callejeros; pasto, tribunas, ambulancias y muros en los permanentes; monoplazas con los colores de los autos de 2026; no cambia el protocolo | Rama `feature/entorno-y-autos` |
 
 Estado del repositorio al cerrar la etapa 9: `main` tiene todo hasta la etapa 8; la documentación de la etapa 9 está en la rama `docs/pruebas-lan`.
 
 ## Lo que sigue
 
 - **Próxima etapa:** probar la clasificación, los bots y los torneos entre varias PC y con personas de verdad, y ajustar el nivel difícil con esos tiempos.
-- **Más adelante:** las gradas alrededor de los circuitos y la integración con PIT WALL.
+- **Más adelante:** la integración con PIT WALL.
 - **Antes de seguir:** que los cinco integrantes lean [docs/PROTOCOLO.md](../PROTOCOLO.md), porque es lo que tienen que poder explicar.
 - **Pendiente de la etapa 9:** probar con 3 y hasta 8 jugadores, y conseguir que abran los puertos TCP 7777 y UDP 7778 en las PC del colegio (hace falta un administrador). Mientras tanto, la demo en red se puede hacer con el hotspot de un celular.
-- **Pendiente de arte:** los sprites. Los circuitos ya son definitivos desde la [etapa 10](10-circuitos-vectoriales-y-hud.md), pero los autos siguen siendo los provisorios (ver [etapa 3](03-auto-y-circuito.md)).
 - **Pendiente de la etapa 10:** repetir la prueba en LAN con los circuitos nuevos.
 
 ## Participación del equipo

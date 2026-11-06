@@ -21,7 +21,7 @@ public class Circuito {
      * de la pista y pasto de escape a cada lado en cada muestra, y grosor de la línea de muro (solo para dibujar).
      * Los arreglos no se deben modificar.
      */
-    public record Geometria(float[] linea, float[] anchos, float[] escapes, float muro, List<Cruce> cruces) {
+    public record Geometria(float[] linea, float[] anchos, float[] escapes, float muro, List<Cruce> cruces, boolean callejero) {
         public int muestras() {
             return anchos.length;
         }

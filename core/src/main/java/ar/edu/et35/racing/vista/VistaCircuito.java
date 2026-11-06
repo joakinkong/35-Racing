@@ -45,11 +45,13 @@ public class VistaCircuito implements Disposable {
     private final List<Bloque> asfaltoPuentes = new ArrayList<>();
     private final List<Bloque> pianosRojos = new ArrayList<>();
     private final List<Bloque> pianosBlancos = new ArrayList<>();
+    private final VistaEntorno entorno;
 
     /** @param blanco región de una textura blanca de 1 x 1; no la libera esta clase */
     public VistaCircuito(Circuito circuito, TextureRegion blanco) {
         this.circuito = circuito;
         this.blanco = blanco;
+        this.entorno = new VistaEntorno(circuito, blanco);
         for (int capa = 0; capa < CAPAS; capa++) {
             capas.add(armarCapa(capa));
         }
@@ -175,13 +177,9 @@ public class VistaCircuito implements Disposable {
 
     /** La pista, sin los puentes. */
     public void dibujar(OrthographicCamera camara) {
-        float mitadAncho = camara.viewportWidth * camara.zoom / 2f;
-        float mitadAlto = camara.viewportHeight * camara.zoom / 2f;
-
         batch.setProjectionMatrix(camara.combined);
         batch.begin();
-        batch.setColor(Paleta.PISTA_FONDO);
-        batch.draw(blanco, camara.position.x - mitadAncho, camara.position.y - mitadAlto, mitadAncho * 2f, mitadAlto * 2f);
+        entorno.dibujar(batch, camara);
         for (int capa = 0; capa < CAPAS; capa++) {
             dibujarBloques(capas.get(capa), colorDeCapa(capa), camara);
         }
@@ -219,6 +217,7 @@ public class VistaCircuito implements Disposable {
 
     @Override
     public void dispose() {
+        entorno.dispose();
         batch.dispose();
     }
 }
