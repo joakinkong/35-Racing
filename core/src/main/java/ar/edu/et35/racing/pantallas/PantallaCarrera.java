@@ -9,7 +9,9 @@ import ar.edu.et35.racing.juego.EstadoCarrera;
 import ar.edu.et35.racing.juego.FotoAuto;
 import ar.edu.et35.racing.juego.FotoCarrera;
 import ar.edu.et35.racing.juego.FuenteCarrera;
+import ar.edu.et35.racing.juego.NivelCruce;
 import ar.edu.et35.racing.juego.SimulacionLocal;
+import ar.edu.et35.racing.juego.ZonaCruce;
 import ar.edu.et35.racing.red.EstadoTorneo;
 import ar.edu.et35.racing.red.PerdidaSimulada;
 import ar.edu.et35.racing.red.Protocolo;
@@ -89,6 +91,8 @@ public class PantallaCarrera extends PantallaBase {
     private final Image divisor = new Image(recursos.color(Paleta.FONDO));
     private final VistaCircuito vistaCircuito;
     private final VistaAuto vistaAuto = new VistaAuto();
+    /** En qué nivel de un cruce va cada auto: el cliente lo calcula con las posiciones que recibe. */
+    private final Map<Integer, NivelCruce> nivelesCruce = new HashMap<>();
 
     private final List<PanelHud> paneles = new ArrayList<>();
     private final TorreHud torre;
@@ -333,14 +337,26 @@ public class PantallaCarrera extends PantallaBase {
 
     private void dibujarMundo(OrthographicCamera camara, FotoCarrera foto) {
         vistaCircuito.dibujar(camara);
-        if (foto == null) {
-            return;
+        if (foto != null) {
+            dibujarAutos(camara, foto, true);
         }
+        vistaCircuito.dibujarPuentes(camara);
+        if (foto != null) {
+            dibujarAutos(camara, foto, false);
+        }
+    }
+
+    /** Dibuja los autos que van por debajo de un puente, o todos los demás. */
+    private void dibujarAutos(OrthographicCamera camara, FotoCarrera foto, boolean losDeAbajo) {
         // Los autos vienen ordenados por posición: se dibujan del último al primero para que el puntero quede arriba.
         List<FotoAuto> autos = foto.autos();
         for (int i = autos.size() - 1; i >= 0; i--) {
             FotoAuto a = autos.get(i);
-            if (!a.desconectado() && (!clasificacion || idsLocales.contains(a.id()))) {
+            NivelCruce nivel = ZonaCruce.nivel(circuito.zonasCruce(),
+                nivelesCruce.getOrDefault(a.id(), NivelCruce.FUERA), a.x(), a.y());
+            nivelesCruce.put(a.id(), nivel);
+            if ((nivel == NivelCruce.ABAJO) == losDeAbajo && !a.desconectado()
+                && (!clasificacion || idsLocales.contains(a.id()))) {
                 vistaAuto.dibujar(a.x(), a.y(), a.angulo(), colorDe(a.id()), camara);
             }
         }

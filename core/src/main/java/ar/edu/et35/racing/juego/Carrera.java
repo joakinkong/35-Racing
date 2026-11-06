@@ -90,6 +90,7 @@ public class Carrera {
             // Un auto que ya terminó deja de recibir entradas y se va frenando solo.
             EntradaAuto entrada = p.terminado() ? SIN_ENTRADA : entradas.getOrDefault(p.id(), SIN_ENTRADA);
             p.auto().actualizar(entrada, circuito, dt);
+            p.actualizarNivelCruce(circuito.zonasCruce());
             p.sumarTiempo(dt);
             comprobarCheckpoint(p);
         }
@@ -133,6 +134,10 @@ public class Carrera {
         float distanciaMinima = 2f * ParametrosAuto.RADIO_COLISION;
         for (int i = 0; i < lista.size(); i++) {
             for (int j = i + 1; j < lista.size(); j++) {
+                // En un cruce, uno pasa por encima del otro: están en el mismo punto del plano pero no se tocan.
+                if (lista.get(i).nivelCruce().seCruzaCon(lista.get(j).nivelCruce())) {
+                    continue;
+                }
                 Auto a = lista.get(i).auto();
                 Auto b = lista.get(j).auto();
                 float dx = b.x() - a.x();

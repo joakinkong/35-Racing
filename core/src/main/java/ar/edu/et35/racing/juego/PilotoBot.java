@@ -92,7 +92,7 @@ public final class PilotoBot {
         float adelanteY = MathUtils.sin(radianes);
         float ventana = Math.max(VENTANA_AUTOS_MINIMA, VENTANA_AUTOS_POR_VELOCIDAD * rapidez);
         for (Participante otro : todos) {
-            if (otro == yo || otro.desconectado()) {
+            if (otro == yo || otro.desconectado() || yo.nivelCruce().seCruzaCon(otro.nivelCruce())) {
                 continue;
             }
             float dx = otro.auto().x() - auto.x();

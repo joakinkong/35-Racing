@@ -64,8 +64,15 @@ public class CapturaVista extends ApplicationAdapter {
             Gdx.gl.glViewport(0, 0, 1280, 720);
             ScreenUtils.clear(0f, 0f, 0f, 1f);
             vista.dibujar(camara);
-            // Un auto en el centro, para tener una referencia de tamaño.
-            auto.dibujar(g.linea()[2 * indice], g.linea()[2 * indice + 1], 0f, Color.CYAN, camara);
+            // Un auto en el centro, para tener una referencia de tamaño. Con "abajo" al final, pasa debajo del puente.
+            boolean abajo = partes.length > 3 && partes[3].equals("abajo");
+            if (abajo) {
+                auto.dibujar(g.linea()[2 * indice], g.linea()[2 * indice + 1], 0f, Color.CYAN, camara);
+            }
+            vista.dibujarPuentes(camara);
+            if (!abajo) {
+                auto.dibujar(g.linea()[2 * indice], g.linea()[2 * indice + 1], 0f, Color.CYAN, camara);
+            }
             Gdx.gl.glFinish();
             Pixmap leido = Pixmap.createFromFrameBuffer(0, 0, 1280, 720);
             // El framebuffer viene con el origen abajo: se da vuelta para que la imagen salga derecha.

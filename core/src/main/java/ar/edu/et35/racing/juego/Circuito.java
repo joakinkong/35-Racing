@@ -38,6 +38,7 @@ public class Circuito {
     private final List<Vector2> posicionesLargada; // el índice 0 es la posición 1
     private final float anguloLargada; // grados: 0 = derecha, 90 = arriba
     private final Vector2[] sentidos;
+    private final List<ZonaCruce> zonasCruce;
 
     /**
      * @param celdas superficie de cada celda de la grilla de colisión (ordinal de {@link Superficie}), por filas desde abajo;
@@ -59,6 +60,7 @@ public class Circuito {
         this.posicionesLargada = List.copyOf(posicionesLargada);
         this.anguloLargada = anguloLargada;
         this.sentidos = calcularSentidos(this.checkpoints);
+        this.zonasCruce = ZonaCruce.de(geometria);
     }
 
     /** Sentido de la pista en cada checkpoint: apunta desde su centro hacia el centro del siguiente. */
@@ -88,6 +90,11 @@ public class Circuito {
     /** La pista como línea central con anchos, para dibujarla. */
     public Geometria geometria() {
         return geometria;
+    }
+
+    /** Una zona por cada lugar donde la pista pasa por encima de sí misma; vacía en casi todos los circuitos. */
+    public List<ZonaCruce> zonasCruce() {
+        return zonasCruce;
     }
 
     public List<Rectangle> checkpoints() {

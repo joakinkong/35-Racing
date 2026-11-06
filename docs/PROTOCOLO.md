@@ -171,7 +171,7 @@ Los `byte` de Java tienen signo: un campo que puede pasar de 127 se lee con `buf
 | Byte | Tamaño | Campo | Tipo en Java | Valor |
 |---|---|---|---|---|
 | 0 | 1 | tipo | `byte` | `1` |
-| 1 | 1 | id del jugador | `byte` | 0 a 4, el de la `BIENVENIDA` |
+| 1 | 1 | id del jugador | `byte` | 0 a 7, el de la `BIENVENIDA` |
 | 2 a 5 | 4 | token | `int` | el de la `BIENVENIDA` |
 | 6 a 9 | 4 | secuencia | `int` | contador del cliente, sube de a 1 en cada envío |
 | 10 | 1 | botones | `byte` | bit 0 acelerar, bit 1 frenar, bit 2 izquierda, bit 3 derecha |
@@ -199,11 +199,11 @@ Después, un bloque de 24 bytes por auto (los desconectados también van, con su
 
 | Byte (dentro del bloque) | Tamaño | Campo | Tipo en Java | Valor |
 |---|---|---|---|---|
-| 0 | 1 | id del jugador | `byte` | 0 a 4 |
+| 0 | 1 | id del jugador | `byte` | 0 a 7 |
 | 1 a 4 | 4 | x | `float` | píxeles de mundo |
 | 5 a 8 | 4 | y | `float` | píxeles de mundo |
 | 9 a 12 | 4 | ángulo | `float` | grados (0 = derecha, 90 = arriba) |
-| 13 | 1 | vueltas completadas | `byte` | 0 a 3 |
+| 13 | 1 | vueltas completadas | `byte` | 0 a `MAX_VUELTAS` (10) |
 | 14 | 1 | posición en carrera | `byte` | 1 a 8 |
 | 15 | 1 | banderas | `byte` | bit 0 terminó, bit 1 desconectado |
 | 16 a 19 | 4 | tiempo | `float` | segundos de la vuelta actual; si terminó, el tiempo total |

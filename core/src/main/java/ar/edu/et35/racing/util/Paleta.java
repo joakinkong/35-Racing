@@ -41,6 +41,8 @@ public final class Paleta {
     public static final Color PISTA_PASTO = Color.valueOf("24592FFF");
     public static final Color PISTA_ASFALTO = SUPERFICIE_MAXIMA;
     public static final Color PISTA_META = TEXTO;
+    public static final Color PISTA_PIANO_ROJO = ROJO;
+    public static final Color PISTA_PIANO_BLANCO = TEXTO;
 
     /** Color principal de cada escudería, en el orden de {@link Catalogo#ESCUDERIAS}. */
     private static final Color[] COLORES_ESCUDERIAS = colores(false);
