@@ -20,6 +20,8 @@ public class Carrera {
 
     private final Circuito circuito;
     private final int vueltasTotales;
+    /** En una clasificación todos salen del mismo lugar y los autos no se chocan: cada uno corre solo contra el reloj. */
+    private final boolean clasificacion;
     private final Map<Integer, Participante> participantes = new LinkedHashMap<>();
     private final Vector2 auxiliar = new Vector2();
 
@@ -30,8 +32,13 @@ public class Carrera {
     private float cierreRestante;
 
     public Carrera(Circuito circuito, int vueltasTotales) {
+        this(circuito, vueltasTotales, false);
+    }
+
+    public Carrera(Circuito circuito, int vueltasTotales, boolean clasificacion) {
         this.circuito = circuito;
         this.vueltasTotales = vueltasTotales;
+        this.clasificacion = clasificacion;
     }
 
     /** Suma un auto en el próximo lugar libre de la largada. Solo antes de que arranque la carrera. */
@@ -45,7 +52,7 @@ public class Carrera {
         if (participantes.containsKey(id)) {
             throw new IllegalArgumentException("Ya hay un auto con el id " + id);
         }
-        Vector2 lugar = circuito.posicionesLargada().get(participantes.size());
+        Vector2 lugar = circuito.posicionesLargada().get(clasificacion ? 0 : participantes.size());
         Auto auto = new Auto(lugar.x, lugar.y, circuito.anguloLargada());
         Participante participante = new Participante(id, nombre, auto, circuito.checkpoints().size());
         participantes.put(id, participante);
@@ -86,7 +93,9 @@ public class Carrera {
             p.sumarTiempo(dt);
             comprobarCheckpoint(p);
         }
-        resolverChoques();
+        if (!clasificacion) {
+            resolverChoques();
+        }
         actualizarFin(dt);
     }
 
@@ -179,7 +188,7 @@ public class Carrera {
         }
         if (alguno && !cierreActivo) {
             cierreActivo = true;
-            cierreRestante = Config.TIEMPO_CIERRE;
+            cierreRestante = clasificacion ? Config.TIEMPO_CIERRE_CLASIFICACION : Config.TIEMPO_CIERRE;
         } else if (cierreActivo) {
             cierreRestante -= dt;
         }

@@ -4,6 +4,7 @@ import ar.edu.et35.racing.juego.EntradaAuto;
 import ar.edu.et35.racing.juego.EstadoCarrera;
 import ar.edu.et35.racing.juego.FotoAuto;
 import ar.edu.et35.racing.juego.FotoCarrera;
+import ar.edu.et35.racing.util.Config;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -22,8 +23,8 @@ public final class PaquetesUdp {
     public static final int LARGO_ENTRADA = 11;
     public static final int LARGO_CABECERA_ESTADO = 12;
     public static final int LARGO_AUTO = 24;
-    /** Tamaño más grande que puede tener un paquete (ESTADO con 5 autos). Los búferes de recepción lo superan. */
-    public static final int LARGO_MAXIMO = LARGO_CABECERA_ESTADO + 5 * LARGO_AUTO;
+    /** Tamaño más grande que puede tener un paquete (ESTADO con todos los autos). Los búferes de recepción lo superan. */
+    public static final int LARGO_MAXIMO = LARGO_CABECERA_ESTADO + Config.MAX_JUGADORES * LARGO_AUTO;
     /** Valor del campo "cierre" cuando todavía nadie terminó. */
     private static final int SIN_CIERRE = 255;
 

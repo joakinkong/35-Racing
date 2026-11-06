@@ -34,7 +34,7 @@ public class Lwjgl3Launcher {
 
         configuration.setWindowedMode(Config.VENTANA_ANCHO, Config.VENTANA_ALTO);
         configuration.setResizable(true);
-        configuration.setWindowSizeLimits(Config.ANCHO_VIRTUAL, Config.ALTO_VIRTUAL, -1, -1);
+        configuration.setWindowSizeLimits(Config.ANCHO_MUNDO, Config.ALTO_MUNDO, -1, -1);
         //// You can change these files; they are in lwjgl3/src/main/resources/ .
         //// They can also be loaded from the root of assets/ .
         configuration.setWindowIcon("libgdx128.png", "libgdx64.png", "libgdx32.png", "libgdx16.png");

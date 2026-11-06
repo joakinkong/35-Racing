@@ -63,10 +63,10 @@ PASO_MUESTREO = 8          # distancia entre muestras de la línea central, en p
 SEPARACION_CHECKPOINTS = 288
 HOLGURA_CHECKPOINT = 96    # lo que el lado del checkpoint supera al ancho de la pista
 LARGADA_ATRAS = 56         # píxeles entre la meta y el primer auto
-LARGADA_ENTRE_FILAS = 80
+LARGADA_ESCALON = 40       # píxeles de pista entre un auto y el siguiente: cada fila queda a 80, como la grilla de F1
 LARGADA_LATERAL = 40       # separación del eje de la pista; se achica si la pista es angosta
 LARGADA_BORDE = 16         # lo que queda libre entre el auto y el borde de la pista
-JUGADORES_MAX = 5
+JUGADORES_MAX = 8
 CELDA_BUSQUEDA = 16        # lado de las celdas del índice espacial con que se buscan cruces
 
 # (id del SVG, kilómetros reales). El nombre del archivo sale del id con guiones bajos.
@@ -365,10 +365,10 @@ def calcular_checkpoints(c):
 
 
 def calcular_largada(c):
-    """Posiciones 1 a 5, en filas de dos, detrás de la meta y sobre la línea central."""
+    """Posiciones 1 a JUGADORES_MAX detrás de la meta, de a dos y escalonadas como en la F1: cada auto, un poco más atrás que el anterior."""
     posiciones = []
     for i in range(JUGADORES_MAX):
-        atras = LARGADA_ATRAS + LARGADA_ENTRE_FILAS * (i // 2)
+        atras = LARGADA_ATRAS + LARGADA_ESCALON * i
         (x, y), (tx, ty) = c.punto_a_distancia(-atras)
         lateral = min(LARGADA_LATERAL, c.medio(round(-atras / c.paso)) - LARGADA_BORDE)
         lado = lateral if i % 2 == 0 else -lateral

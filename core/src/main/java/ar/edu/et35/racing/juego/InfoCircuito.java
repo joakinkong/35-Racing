@@ -10,4 +10,15 @@ package ar.edu.et35.racing.juego;
  * @param curvas  cantidad de curvas reales
  */
 public record InfoCircuito(String archivo, String gp, String nombre, String ciudad, String pais, float km, int curvas) {
+    private static final String[] PREFIJOS_GP = {"GP de los ", "GP de "};
+
+    /** El nombre del Gran Premio sin el "GP de", para las listas donde hay poco lugar. */
+    public String gpCorto() {
+        for (String prefijo : PREFIJOS_GP) {
+            if (gp.startsWith(prefijo)) {
+                return gp.substring(prefijo.length());
+            }
+        }
+        return gp;
+    }
 }

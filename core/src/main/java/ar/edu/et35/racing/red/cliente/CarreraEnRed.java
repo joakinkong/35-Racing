@@ -25,6 +25,7 @@ public class CarreraEnRed implements FuenteCarrera {
     private final ClientePartida cliente;
     private final EstadoLobby lobby;
     private final int vueltas;
+    private final List<Integer> grilla;
     private final Interpolador interpolador = new Interpolador(Config.RETRASO_INTERPOLACION);
     private float acumuladorEntrada;
     private List<ResultadoJugador> resultados;
@@ -32,7 +33,9 @@ public class CarreraEnRed implements FuenteCarrera {
     private int estadosDescartados;
     private long ultimoEstadoNanos;
 
-    public CarreraEnRed(ClientePartida cliente, EstadoLobby lobby, int vueltas) {
+    /** @param grilla ids en el orden de largada, como los manda el servidor; vacía si todos salen del mismo lugar */
+    public CarreraEnRed(ClientePartida cliente, EstadoLobby lobby, int vueltas, List<Integer> grilla) {
+        this.grilla = grilla;
         this.cliente = cliente;
         this.lobby = lobby;
         this.vueltas = vueltas;
@@ -95,13 +98,7 @@ public class CarreraEnRed implements FuenteCarrera {
 
     @Override
     public int lugarDeLargada(int id) {
-        List<JugadorLobby> jugadores = lobby.jugadores();
-        for (int i = 0; i < jugadores.size(); i++) {
-            if (jugadores.get(i).id() == id) {
-                return i;
-            }
-        }
-        return 0;
+        return Math.max(0, grilla.indexOf(id));
     }
 
     @Override

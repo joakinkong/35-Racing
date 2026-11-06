@@ -1,5 +1,6 @@
 import ar.edu.et35.racing.juego.CargadorCircuito;
 import ar.edu.et35.racing.juego.Circuito;
+import ar.edu.et35.racing.util.Config;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -21,7 +22,7 @@ public class PruebaAtajos {
             archivos = s.filter(p -> p.toString().endsWith(".json")).sorted().toList();
         }
         for (Path p : archivos) {
-            Circuito c = CargadorCircuito.cargarDesdeTexto(Files.readString(p), 5);
+            Circuito c = CargadorCircuito.cargarDesdeTexto(Files.readString(p), Config.MAX_JUGADORES);
             Circuito.Geometria g = c.geometria();
             int n = g.muestras();
             int cols = (int) (c.ancho() / PASO) + 1;

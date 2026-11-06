@@ -1,5 +1,6 @@
 import ar.edu.et35.racing.juego.CargadorCircuito;
 import ar.edu.et35.racing.juego.Circuito;
+import ar.edu.et35.racing.util.Config;
 import ar.edu.et35.racing.util.Recursos;
 import ar.edu.et35.racing.vista.VistaAuto;
 import ar.edu.et35.racing.vista.VistaCircuito;
@@ -52,7 +53,7 @@ public class CapturaVista extends ApplicationAdapter {
             int indice = Integer.parseInt(partes[1]);
             float zoom = partes.length > 2 ? Float.parseFloat(partes[2]) : 1.25f;
             Circuito circuito = circuitos.computeIfAbsent(nombre, n ->
-                CargadorCircuito.cargar(Gdx.files.absolute(carpetaCircuitos + "/" + n + ".json"), 5));
+                CargadorCircuito.cargar(Gdx.files.absolute(carpetaCircuitos + "/" + n + ".json"), Config.MAX_JUGADORES));
             VistaCircuito vista = vistas.computeIfAbsent(nombre, n -> new VistaCircuito(circuito, recursos.skin.getRegion("blanco")));
             Circuito.Geometria g = circuito.geometria();
             OrthographicCamera camara = new OrthographicCamera(640, 360);

@@ -9,9 +9,11 @@ import ar.edu.et35.racing.red.SesionRed;
 import ar.edu.et35.racing.red.cliente.ClientePartida;
 import ar.edu.et35.racing.red.servidor.ServidorPartida;
 import ar.edu.et35.racing.util.Config;
+import ar.edu.et35.racing.util.Paleta;
 import ar.edu.et35.racing.util.Recursos;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import java.io.IOException;
@@ -23,14 +25,15 @@ import java.util.concurrent.TimeUnit;
  * hace en segundo plano; esta pantalla espera la respuesta del servidor y, si sale bien, pasa al lobby.
  */
 public class UnirsePartida extends PantallaBase {
-    private static final float ANCHO_CAMPO = 240f;
-    private static final float ALTO_CAMPO = 26f;
+    private static final float ANCHO_COLUMNA = 560f;
+    private static final float ALTO_CAMPO = 48f;
+    private static final float ALTO_BOTON = 52f;
 
     private final boolean crear;
     private final TextField campoNombre;
     private final TextField campoIp;
     private final TextButton botonAccion;
-    private final Label estado = new Label("", skin, "gris");
+    private final Label estado = textoLargo("", "suave");
 
     /** La partida que se está creando o a la que nos estamos conectando; null si no hay ningún intento en curso. */
     private SesionRed pendiente;
@@ -42,7 +45,7 @@ public class UnirsePartida extends PantallaBase {
         this.crear = crear;
 
         campoNombre = new TextField("", skin);
-        campoNombre.setMessageText("Tu nombre (hasta " + Config.LARGO_MAXIMO_NOMBRE + " letras)");
+        campoNombre.setMessageText("Hasta " + Config.LARGO_MAXIMO_NOMBRE + " letras");
         campoNombre.setMaxLength(Config.LARGO_MAXIMO_NOMBRE);
         campoNombre.setTextFieldListener((campo, tecla) -> {
             if (tecla == '\r' || tecla == '\n') {
@@ -50,22 +53,27 @@ public class UnirsePartida extends PantallaBase {
             }
         });
         campoIp = new TextField("", skin);
-        campoIp.setMessageText("IP del anfitrión (ej. 192.168.0.12)");
+        campoIp.setMessageText("Por ejemplo, 192.168.0.12");
         campoIp.setTextFieldListener((campo, tecla) -> {
             if (tecla == '\r' || tecla == '\n') {
                 intentar();
             }
         });
-        botonAccion = boton(crear ? "CREAR" : "CONECTAR", this::intentar);
+        botonAccion = botonPrimario(crear ? "CREAR" : "CONECTAR", this::intentar);
 
-        contenido.add(new Label(crear ? "CREAR PARTIDA" : "UNIRSE", skin, "titulo")).padBottom(12).row();
-        contenido.add(campoNombre).width(ANCHO_CAMPO).height(ALTO_CAMPO).pad(3).row();
+        Table formulario = tarjeta(Paleta.SECUNDARIO);
+        formulario.add(new Label("TU NOMBRE", skin, "etiqueta")).left().padBottom(6).row();
+        formulario.add(campoNombre).growX().height(ALTO_CAMPO).padBottom(14).row();
         if (!crear) {
-            contenido.add(campoIp).width(ANCHO_CAMPO).height(ALTO_CAMPO).pad(3).row();
+            formulario.add(new Label("IP DEL ANFITRIÓN", skin, "etiqueta")).left().padBottom(6).row();
+            formulario.add(campoIp).growX().height(ALTO_CAMPO).padBottom(14).row();
         }
-        contenido.add(botonAccion).width(ANCHO_CAMPO).height(30).padTop(8).row();
-        contenido.add(estado).padTop(8).row();
-        contenido.add(new Label("ESC para volver", skin, "gris")).padTop(4);
+        formulario.add(botonAccion).growX().height(ALTO_BOTON);
+
+        contenido.add(titular("MULTIJUGADOR  ·  RED LOCAL", crear ? "CREAR PARTIDA" : "UNIRSE A UNA PARTIDA")).left().padBottom(16).row();
+        contenido.add(formulario).width(ANCHO_COLUMNA).row();
+        contenido.add(estado).width(ANCHO_COLUMNA).padTop(12).row();
+        contenido.add(new Label("ESC PARA VOLVER", skin, "etiqueta")).left().padTop(8);
 
         escena.setKeyboardFocus(campoNombre);
     }
@@ -135,12 +143,12 @@ public class UnirsePartida extends PantallaBase {
         pendiente = sesion;
         esperando = 0f;
         botonAccion.setDisabled(true);
-        estado.setStyle(skin.get("gris", Label.LabelStyle.class));
+        estado.setStyle(skin.get("suave", Label.LabelStyle.class));
         estado.setText(texto);
     }
 
     private void mostrarError(String texto) {
-        estado.setStyle(skin.get("rojo", Label.LabelStyle.class));
+        estado.setStyle(skin.get("alerta", Label.LabelStyle.class));
         estado.setText(texto);
     }
 

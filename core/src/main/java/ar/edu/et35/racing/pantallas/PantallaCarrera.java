@@ -10,6 +10,7 @@ import ar.edu.et35.racing.juego.FotoAuto;
 import ar.edu.et35.racing.juego.FotoCarrera;
 import ar.edu.et35.racing.juego.FuenteCarrera;
 import ar.edu.et35.racing.juego.SimulacionLocal;
+import ar.edu.et35.racing.red.EstadoTorneo;
 import ar.edu.et35.racing.red.PerdidaSimulada;
 import ar.edu.et35.racing.red.Protocolo;
 import ar.edu.et35.racing.red.Protocolo.Mensaje;
@@ -21,6 +22,7 @@ import ar.edu.et35.racing.util.Paleta;
 import ar.edu.et35.racing.util.Recursos;
 import ar.edu.et35.racing.util.Tiempo;
 import ar.edu.et35.racing.vista.CamaraSeguimiento;
+import ar.edu.et35.racing.vista.MiniMapa;
 import ar.edu.et35.racing.vista.TorreHud;
 import ar.edu.et35.racing.vista.VistaAuto;
 import ar.edu.et35.racing.vista.VistaCircuito;
@@ -49,13 +51,14 @@ import java.util.Map;
  */
 public class PantallaCarrera extends PantallaBase {
     private static final int MAX_JUGADORES_LOCALES = 2;
-    private static final Color FONDO_HUD = new Color(0f, 0f, 0f, 0.55f);
-    private static final float ANCHO_FRANJA_COLOR = 4f;
+    private static final float ANCHO_FRANJA_COLOR = 5f;
     private static final float ANCHO_DIVISOR = 2f;
     private static final float SEGUNDOS_AVISO = 3f;
-    private static final float MARGEN_TORRE = 8f;
+    private static final float MARGEN_HUD = 16f;
+    private static final float ESCALA_CARTEL_FIN = 0.7f;
+    private static final float ANCHO_PANEL = 320f;
     /** Lo que ocupan arriba el margen y el panel de los jugadores, antes de que empiece la torre de tiempos. */
-    private static final float DESDE_ARRIBA_TORRE = 58f;
+    private static final float DESDE_ARRIBA_TORRE = 94f;
 
     /** Teclas de un esquema de control. */
     private record Controles(int acelerar, int frenar, int izquierda, int derecha) {
@@ -66,6 +69,10 @@ public class PantallaCarrera extends PantallaBase {
 
     /** Nombre del archivo del circuito; en la prueba local sirve para volver a la pantalla de elección con ese circuito. */
     private final String nombreCircuito;
+    /** En la clasificación solo se ven los autos de esta PC: en la pista y en el HUD, cada uno corre solo. */
+    private final boolean clasificacion;
+    /** "CARRERA 2 DE 5" en un torneo; vacío si no es un torneo. */
+    private final String textoTorneo;
     private final Circuito circuito;
     private final FuenteCarrera fuente;
     /** La misma fuente si la carrera es en red; null en la prueba local. */
@@ -75,21 +82,22 @@ public class PantallaCarrera extends PantallaBase {
     private final Map<Integer, EntradaAuto> entradas = new HashMap<>();
 
     // Solo se usa para saber dónde queda la zona de juego (con las barras del FitViewport) dentro de la ventana.
-    private final FitViewport viewportMundo = new FitViewport(Config.ANCHO_VIRTUAL, Config.ALTO_VIRTUAL);
+    private final FitViewport viewportMundo = new FitViewport(Config.ANCHO_MUNDO, Config.ALTO_MUNDO);
     // Una cámara por jugador local, siempre con el mismo zoom. Con 2 jugadores la pantalla queda dividida en dos mitades.
     private final List<OrthographicCamera> camaras = new ArrayList<>();
     private final List<CamaraSeguimiento> seguimientos = new ArrayList<>();
-    private final Image divisor = new Image(recursos.color(Paleta.BLANCO));
+    private final Image divisor = new Image(recursos.color(Paleta.FONDO));
     private final VistaCircuito vistaCircuito;
     private final VistaAuto vistaAuto = new VistaAuto();
 
     private final List<PanelHud> paneles = new ArrayList<>();
     private final TorreHud torre;
-    private final Label cartel = new Label("", skin, "titulo");
-    private final Label subcartel = new Label("", skin);
+    private final MiniMapa miniMapa;
+    private final Label cartel = new Label("", skin, "cartel");
+    private final Label subcartel = new Label("", skin, "subtitulo");
     private final Label aviso = new Label("", skin);
-    private final Label indicadorPerdida = new Label("", skin, "rojo");
-    private final Label alertaRed = new Label("", skin, "rojo");
+    private final Label indicadorPerdida = new Label("", skin, "alerta");
+    private final Label alertaRed = new Label("", skin, "alerta");
 
     private float tiempoTerminada;
     private float tiempoAviso;
@@ -102,28 +110,30 @@ public class PantallaCarrera extends PantallaBase {
      * (J1 con WASD y J2 con flechas).
      */
     public PantallaCarrera(Main juego, int jugadoresLocales, String nombreCircuito) {
-        this(juego, nombreCircuito, null, jugadoresLocales, 0);
+        this(juego, nombreCircuito, null, jugadoresLocales, null);
     }
 
     /**
-     * Carrera en red, al recibir CUENTA_REGRESIVA en el lobby. Usa el lobby del cliente para saber nombres, colores y
-     * el orden de la grilla.
+     * Carrera o clasificación en red, al recibir CUENTA_REGRESIVA. Usa el lobby del cliente para saber nombres y colores.
      */
-    public PantallaCarrera(Main juego, String nombreCircuito, int vueltas) {
-        this(juego, nombreCircuito, juego.sesion(), 1, vueltas);
+    public static PantallaCarrera desde(Main juego, Protocolo.Cuenta cuenta) {
+        return new PantallaCarrera(juego, cuenta.circuito(), juego.sesion(), 1, cuenta);
     }
 
-    private PantallaCarrera(Main juego, String nombreCircuito, SesionRed sesion, int jugadoresLocales, int vueltasRed) {
+    private PantallaCarrera(Main juego, String nombreCircuito, SesionRed sesion, int jugadoresLocales, Protocolo.Cuenta cuenta) {
         super(juego, false);
         if (jugadoresLocales < 1 || jugadoresLocales > MAX_JUGADORES_LOCALES) {
             throw new IllegalArgumentException("Jugadores locales: de 1 a " + MAX_JUGADORES_LOCALES);
         }
         this.nombreCircuito = nombreCircuito;
+        this.clasificacion = cuenta != null && cuenta.clasificacion();
+        EstadoTorneo torneo = sesion != null ? sesion.cliente().torneo() : null;
+        this.textoTorneo = torneo != null ? "CARRERA " + torneo.carrera() + " DE " + torneo.total() : "";
         circuito = CargadorCircuito.cargar(Gdx.files.internal(Recursos.rutaCircuito(nombreCircuito)), Config.MAX_JUGADORES);
         if (sesion != null) {
             ClientePartida cliente = sesion.cliente();
             cliente.descartarEstadosPendientes();
-            red = new CarreraEnRed(cliente, cliente.lobby(), vueltasRed);
+            red = new CarreraEnRed(cliente, cliente.lobby(), cuenta.vueltas(), cuenta.grilla());
             fuente = red;
         } else {
             red = null;
@@ -138,21 +148,22 @@ public class PantallaCarrera extends PantallaBase {
             entradas.put(id, new EntradaAuto());
             // Hasta que llegue la primera foto, la cámara mira el lugar de largada del auto.
             Vector2 largada = circuito.posicionesLargada().get(fuente.lugarDeLargada(id));
-            OrthographicCamera camara = new OrthographicCamera(Config.ANCHO_VIRTUAL / (float) idsLocales.size(), Config.ALTO_VIRTUAL);
+            OrthographicCamera camara = new OrthographicCamera(Config.ANCHO_MUNDO / (float) idsLocales.size(), Config.ALTO_MUNDO);
             camaras.add(camara);
             seguimientos.add(new CamaraSeguimiento(camara, circuito, largada.x, largada.y, Config.ZOOM_CAMARA));
         }
         vistaCircuito = new VistaCircuito(circuito, skin.getRegion("blanco"));
-        torre = new TorreHud(recursos, fuente);
+        torre = new TorreHud(recursos, fuente, clasificacion);
+        miniMapa = new MiniMapa(circuito, fuente, skin.getRegion("blanco"), skin.getRegion("punto"), clasificacion);
         armarInterfaz();
     }
 
     private void armarInterfaz() {
-        raiz.top().pad(6);
+        raiz.top().pad(MARGEN_HUD);
         for (int id : idsLocales) {
             PanelHud panel = new PanelHud(id);
             paneles.add(panel);
-            raiz.add(panel.tabla).growX().pad(2);
+            raiz.add(panel.tabla).width(ANCHO_PANEL).left().expandX().uniformX();
         }
         raiz.row();
         raiz.add(indicadorPerdida).colspan(idsLocales.size()).left().padLeft(4).row();
@@ -160,14 +171,14 @@ public class PantallaCarrera extends PantallaBase {
         // Los avisos van arriba y no en el centro, que es donde la cámara pone al auto propio.
         raiz.add(aviso).colspan(idsLocales.size()).padTop(4).row();
         Table ayuda = new Table();
-        ayuda.setBackground(recursos.color(FONDO_HUD));
-        ayuda.pad(3);
+        ayuda.setBackground(recursos.color(Paleta.FONDO_HUD));
+        ayuda.pad(5f, 10f, 5f, 10f);
         String teclas = idsLocales.size() == 1 ? "Flechas o WASD" : "J1: WASD   J2: flechas";
         if (red != null && Config.DEBUG_RED) {
             teclas += "   F8: pérdida UDP simulada";
         }
-        ayuda.add(new Label(teclas + "  -  ESC: menú", skin, "gris"));
-        raiz.add(ayuda).colspan(idsLocales.size()).expand().bottom().left().padBottom(2);
+        ayuda.add(new Label(teclas + "  ·  ESC: menú", skin, "suave"));
+        raiz.add(ayuda).colspan(idsLocales.size()).expand().bottom().left();
 
         // Cartel central (cuenta regresiva, ¡YA!, fin). El Table no captura clics: solo lo hacen sus hijos.
         cartel.setAlignment(Align.center);
@@ -182,7 +193,12 @@ public class PantallaCarrera extends PantallaBase {
         torre.setTouchable(Touchable.disabled);
         escena.addActor(torre);
 
-        divisor.setBounds(Config.ANCHO_VIRTUAL / 2f - ANCHO_DIVISOR / 2f, 0f, ANCHO_DIVISOR, Config.ALTO_VIRTUAL);
+        // Arriba a la derecha: no se cruza con el panel de ningún jugador, ni con la pantalla dividida.
+        miniMapa.setPosition(Config.ANCHO_INTERFAZ - MARGEN_HUD - miniMapa.getWidth(),
+            Config.ALTO_INTERFAZ - MARGEN_HUD - miniMapa.getHeight());
+        escena.addActor(miniMapa);
+
+        divisor.setBounds(Config.ANCHO_INTERFAZ / 2f - ANCHO_DIVISOR / 2f, 0f, ANCHO_DIVISOR, Config.ALTO_INTERFAZ);
         divisor.setTouchable(Touchable.disabled);
         divisor.setVisible(idsLocales.size() > 1);
         escena.addActor(divisor);
@@ -218,8 +234,13 @@ public class PantallaCarrera extends PantallaBase {
         while ((mensaje = cliente.sondear()) != null) {
             switch (mensaje.nombre()) {
                 case Protocolo.RESULTADOS:
+                case Protocolo.GRILLA:
                     red.fijarResultados(Protocolo.leerResultados(mensaje));
                     break;
+                case Protocolo.CUENTA_REGRESIVA:
+                    // Solo si esta pantalla se atrasó tanto que la grilla ya pasó entera.
+                    irA(desde(juego, Protocolo.leerCuenta(mensaje)));
+                    return;
                 case Protocolo.SALIO:
                     mostrarAviso(red.nombre(mensaje.entero(0, -1)) + " abandonó la carrera");
                     break;
@@ -319,7 +340,7 @@ public class PantallaCarrera extends PantallaBase {
         List<FotoAuto> autos = foto.autos();
         for (int i = autos.size() - 1; i >= 0; i--) {
             FotoAuto a = autos.get(i);
-            if (!a.desconectado()) {
+            if (!a.desconectado() && (!clasificacion || idsLocales.contains(a.id()))) {
                 vistaAuto.dibujar(a.x(), a.y(), a.angulo(), colorDe(a.id()), camara);
             }
         }
@@ -347,7 +368,8 @@ public class PantallaCarrera extends PantallaBase {
             panel.actualizar(foto);
         }
         torre.actualizar(foto);
-        torre.setPosition(MARGEN_TORRE, Config.ALTO_VIRTUAL - DESDE_ARRIBA_TORRE - torre.getHeight());
+        torre.setPosition(MARGEN_HUD, Config.ALTO_INTERFAZ - DESDE_ARRIBA_TORRE - torre.getHeight());
+        miniMapa.actualizar(foto);
         tiempoAviso -= delta;
         if (tiempoAviso <= 0f) {
             aviso.setText("");
@@ -358,20 +380,27 @@ public class PantallaCarrera extends PantallaBase {
         subcartel.setText("");
         boolean terminada = fuente.resultados() != null || (foto != null && foto.estado() == EstadoCarrera.TERMINADA);
         if (terminada) {
-            cartel.setText("CARRERA FINALIZADA");
+            // Más chico que la cuenta regresiva: si no, este texto largo se pisa con la torre de tiempos.
+            cartel.setFontScale(ESCALA_CARTEL_FIN);
+            cartel.setText(clasificacion ? "FIN DE LA CLASIFICACIÓN" : "CARRERA FINALIZADA");
             tiempoTerminada += delta;
             // En red, los resultados llegan por TCP: se espera a tenerlos antes de cambiar de pantalla.
             if (tiempoTerminada >= Config.SEGUNDOS_FIN_A_RESULTADOS && fuente.resultados() != null && !salio) {
-                irA(new Resultados(juego, fuente.resultados()));
+                irA(clasificacion ? new PantallaGrilla(juego, fuente.resultados()) : new Resultados(juego, fuente.resultados()));
             }
         } else if (foto == null) {
             cartel.setText("");
             subcartel.setText("Esperando al servidor...");
         } else if (foto.estado() == EstadoCarrera.CUENTA_REGRESIVA) {
             cartel.setText(String.valueOf(Math.max(1, foto.segundosCuentaRegresiva())));
+            String detalle = clasificacion ? "CLASIFICACIÓN: UNA VUELTA" : "";
+            subcartel.setText(textoTorneo.isEmpty() || detalle.isEmpty() ? textoTorneo + detalle : textoTorneo + "  ·  " + detalle);
         } else {
             cartel.setText(foto.mostrarYa() ? "¡YA!" : "");
-            if (foto.cierreActivo()) {
+            FotoAuto propio = foto.auto(idsLocales.get(0));
+            if (clasificacion && propio != null && propio.terminado()) {
+                subcartel.setText("TU VUELTA: " + Tiempo.formato(propio.tiempo()) + "   ESPERANDO A LOS DEMÁS");
+            } else if (foto.cierreActivo()) {
                 subcartel.setText("CIERRE EN " + (int) Math.ceil(foto.cierreRestante()) + " s");
             }
         }
@@ -401,14 +430,15 @@ public class PantallaCarrera extends PantallaBase {
         private final int id;
         private final String codigo;
         private final Table tabla = new Table();
-        private final Label cabecera = new Label("", skin);
-        private final Label tiempos = new Label("", skin, "gris");
+        private final Label cabecera = new Label("", skin, "subtitulo");
+        private final Label tiempos = new Label("", skin, "numeros");
 
         PanelHud(int id) {
             this.id = id;
-            tabla.setBackground(recursos.color(FONDO_HUD));
-            tabla.pad(4);
-            tabla.add(new Image(recursos.color(colorDe(id)))).width(ANCHO_FRANJA_COLOR).growY().padRight(6);
+            tabla.setBackground(recursos.color(Paleta.FONDO_HUD));
+            tabla.pad(8f, 10f, 8f, 10f);
+            tiempos.setColor(Paleta.TEXTO_SUAVE);
+            tabla.add(new Image(recursos.color(colorDe(id)))).width(ANCHO_FRANJA_COLOR).growY().padRight(10);
             codigo = Catalogo.piloto(fuente.piloto(id)).codigo();
             Table textos = new Table();
             textos.add(cabecera).left().row();

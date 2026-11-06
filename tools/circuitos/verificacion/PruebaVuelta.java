@@ -1,6 +1,7 @@
 import ar.edu.et35.racing.juego.Auto;
 import ar.edu.et35.racing.juego.CargadorCircuito;
 import ar.edu.et35.racing.juego.Circuito;
+import ar.edu.et35.racing.util.Config;
 import ar.edu.et35.racing.juego.EntradaAuto;
 import ar.edu.et35.racing.juego.ParametrosAuto;
 import com.badlogic.gdx.math.Vector2;
@@ -27,7 +28,7 @@ public class PruebaVuelta {
         float suma = 0;
         int contados = 0;
         for (Path p : archivos) {
-            Circuito c = CargadorCircuito.cargarDesdeTexto(Files.readString(p), 5);
+            Circuito c = CargadorCircuito.cargarDesdeTexto(Files.readString(p), Config.MAX_JUGADORES);
             Circuito.Geometria g = c.geometria();
             int n = g.muestras();
             Vector2 l = c.posicionesLargada().get(0);

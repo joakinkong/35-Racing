@@ -4,10 +4,12 @@ import ar.edu.et35.racing.Main;
 import ar.edu.et35.racing.juego.Catalogo;
 import ar.edu.et35.racing.juego.InfoCircuito;
 import ar.edu.et35.racing.util.Config;
+import ar.edu.et35.racing.util.Paleta;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.utils.Align;
 
 /**
  * Prueba local (sin red, dos jugadores en el mismo teclado): se elige el circuito entre los del catálogo, con los
@@ -15,14 +17,14 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
  */
 public class PruebaLocal extends PantallaBase {
     private static final int JUGADORES_LOCALES = 2;
-    private static final float ANCHO_FLECHA = 30f;
-    private static final float ANCHO_ETIQUETA = 120f;
-    private static final float ANCHO_BOTON = 220f;
-    private static final float ALTO_BOTON = 30f;
+    private static final float ANCHO_COLUMNA = 620f;
+    private static final float ANCHO_FLECHA = 56f;
+    private static final float ANCHO_POSICION = 90f;
+    private static final float ALTO_BOTON = 48f;
 
-    private final Label gp = new Label("", skin);
-    private final Label datos = new Label("", skin, "gris");
-    private final Label posicion = new Label("", skin);
+    private final Label gp = new Label("", skin, "subtitulo");
+    private final Label datos = new Label("", skin, "suave");
+    private final Label posicion = new Label("", skin, "numeros");
     private int indice;
 
     public PruebaLocal(Main juego) {
@@ -33,24 +35,31 @@ public class PruebaLocal extends PantallaBase {
     public PruebaLocal(Main juego, String archivo) {
         super(juego);
         indice = Math.max(0, Catalogo.indiceDeCircuito(archivo));
+        posicion.setAlignment(Align.center);
 
-        contenido.add(new Label("PRUEBA LOCAL", skin, "titulo")).padBottom(2).row();
-        contenido.add(new Label("2 JUGADORES  ·  J1: WASD  ·  J2: FLECHAS", skin, "gris")).padBottom(10).row();
-        contenido.add(gp).row();
-        contenido.add(datos).padBottom(8).row();
-        contenido.add(selector()).padBottom(10).row();
-        contenido.add(boton("CORRER", this::correr)).width(ANCHO_BOTON).height(ALTO_BOTON).pad(3).row();
-        contenido.add(boton("VOLVER", this::volver)).width(ANCHO_BOTON).height(ALTO_BOTON).pad(3).row();
+        Table circuito = tarjeta(Paleta.SECUNDARIO);
+        circuito.add(new Label("CIRCUITO", skin, "etiqueta")).colspan(2).left().padBottom(8).row();
+        circuito.add(gp).left().expandX().padBottom(2);
+        circuito.add(selector()).right().padLeft(12f).row();
+        circuito.add(datos).colspan(2).left();
+
+        Table botones = new Table();
+        botones.add(botonPrimario("CORRER", this::correr)).growX().uniformX().height(ALTO_BOTON).padRight(8);
+        botones.add(boton("VOLVER", this::volver)).growX().uniformX().height(ALTO_BOTON);
+
+        contenido.add(titular("SIN RED  ·  2 JUGADORES", "PRUEBA LOCAL")).left().padBottom(16).row();
+        contenido.add(circuito).width(ANCHO_COLUMNA).padBottom(12).row();
+        contenido.add(botones).width(ANCHO_COLUMNA).padBottom(14).row();
+        contenido.add(new Label("J1: WASD   ·   J2: FLECHAS", skin, "etiqueta")).left();
         actualizarTextos();
     }
 
     private Table selector() {
         int total = Catalogo.CIRCUITOS.size();
         Table fila = new Table();
-        fila.add(new Label("CIRCUITO", skin, "gris")).width(ANCHO_ETIQUETA).left();
-        fila.add(boton("<", () -> cambiar(Math.floorMod(indice - 1, total)))).width(ANCHO_FLECHA).height(ALTO_BOTON);
-        fila.add(posicion).width(ANCHO_ETIQUETA / 2f);
-        fila.add(boton(">", () -> cambiar(Math.floorMod(indice + 1, total)))).width(ANCHO_FLECHA).height(ALTO_BOTON);
+        fila.add(boton("<", () -> cambiar(Math.floorMod(indice - 1, total)))).size(ANCHO_FLECHA, ALTO_BOTON);
+        fila.add(posicion).width(ANCHO_POSICION);
+        fila.add(boton(">", () -> cambiar(Math.floorMod(indice + 1, total)))).size(ANCHO_FLECHA, ALTO_BOTON);
         return fila;
     }
 

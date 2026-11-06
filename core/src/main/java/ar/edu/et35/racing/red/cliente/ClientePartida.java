@@ -1,8 +1,10 @@
 package ar.edu.et35.racing.red.cliente;
 
 import ar.edu.et35.racing.juego.EntradaAuto;
+import ar.edu.et35.racing.juego.NivelBot;
 import ar.edu.et35.racing.red.ConexionTcp;
 import ar.edu.et35.racing.red.EstadoLobby;
+import ar.edu.et35.racing.red.EstadoTorneo;
 import ar.edu.et35.racing.red.PaquetesUdp;
 import ar.edu.et35.racing.red.PerdidaSimulada;
 import ar.edu.et35.racing.red.Protocolo;
@@ -47,6 +49,8 @@ public class ClientePartida {
     private int token;
     private boolean esHost;
     private EstadoLobby lobby = EstadoLobby.vacio();
+    /** La última foto del torneo en curso; null si no hay torneo. */
+    private EstadoTorneo torneo;
     private long ultimoPingNanos = System.nanoTime();
     /** Secuencia de las ENTRADA: sube de a 1 y nunca vuelve atrás, ni entre carreras. */
     private int secuenciaEntrada;
@@ -150,6 +154,9 @@ public class ClientePartida {
             abrirUdp(mensaje.entero(3, Config.PUERTO_UDP));
         } else if (mensaje.es(Protocolo.LOBBY)) {
             lobby = EstadoLobby.desde(mensaje);
+            torneo = null; // durante un torneo no se manda LOBBY: si llega, se volvió a la sala
+        } else if (mensaje.es(Protocolo.TORNEO)) {
+            torneo = EstadoTorneo.desde(mensaje);
         }
     }
 
@@ -268,6 +275,46 @@ public class ClientePartida {
         enviar(Protocolo.armar(Protocolo.ELEGIR_VUELTAS, vueltas));
     }
 
+    /** Solo lo acepta el servidor si lo manda el host. */
+    public void elegirClasificacion(boolean hay) {
+        enviar(Protocolo.armar(Protocolo.ELEGIR_CLASIFICACION, hay ? 1 : 0));
+    }
+
+    /** Solo lo acepta el servidor si lo manda el host. */
+    public void elegirTorneo(boolean torneo) {
+        enviar(Protocolo.armar(Protocolo.ELEGIR_MODO, torneo ? 1 : 0));
+    }
+
+    /** Suma un circuito al final del calendario. Solo lo acepta el servidor si lo manda el host. */
+    public void agregarCircuito(int circuito) {
+        enviar(Protocolo.armar(Protocolo.AGREGAR_CIRCUITO, circuito));
+    }
+
+    /** Saca del calendario la carrera de ese lugar (desde 0). Solo lo acepta el servidor si lo manda el host. */
+    public void quitarCircuito(int lugar) {
+        enviar(Protocolo.armar(Protocolo.QUITAR_CIRCUITO, lugar));
+    }
+
+    /** Larga la próxima carrera del torneo. Solo lo acepta el servidor si lo manda el host. */
+    public void siguienteCarrera() {
+        enviar(Protocolo.armar(Protocolo.SIGUIENTE_CARRERA));
+    }
+
+    /** Solo lo acepta el servidor si lo manda el host. */
+    public void agregarBot(NivelBot nivel) {
+        enviar(Protocolo.armar(Protocolo.AGREGAR_BOT, nivel.ordinal()));
+    }
+
+    /** Solo lo acepta el servidor si lo manda el host. */
+    public void quitarBot(int id) {
+        enviar(Protocolo.armar(Protocolo.QUITAR_BOT, id));
+    }
+
+    /** Solo lo acepta el servidor si lo manda el host. */
+    public void cambiarNivelBot(int id, NivelBot nivel) {
+        enviar(Protocolo.armar(Protocolo.NIVEL_BOT, id, nivel.ordinal()));
+    }
+
     public void marcarListo(boolean listo) {
         enviar(Protocolo.armar(Protocolo.LISTO, listo ? 1 : 0));
     }
@@ -344,6 +391,11 @@ public class ClientePartida {
 
     public EstadoLobby lobby() {
         return lobby;
+    }
+
+    /** La última foto del torneo en curso, o null si no hay torneo. */
+    public EstadoTorneo torneo() {
+        return torneo;
     }
 
     /** El piloto que tiene asignado este jugador según el último LOBBY, o 0 si todavía no llegó. */
