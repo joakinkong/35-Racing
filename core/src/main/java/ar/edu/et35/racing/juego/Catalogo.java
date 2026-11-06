@@ -14,17 +14,17 @@ public final class Catalogo {
     }
 
     public static final List<Escuderia> ESCUDERIAS = List.of(
-        new Escuderia("Mercedes", 0x27F4D2, 0x9AA0A6),
-        new Escuderia("Red Bull", 0x3671C6, 0xDB0A40),
-        new Escuderia("Ferrari", 0xE8002D, 0xFFEB00),
-        new Escuderia("McLaren", 0xFF8700, 0x47C7FC),
-        new Escuderia("Alpine", 0x0093CC, 0xFF87BC),
-        new Escuderia("Aston Martin", 0x006F62, 0xCEDC00),
-        new Escuderia("Williams", 0x64C4FF, 0x041E42),
-        new Escuderia("Racing Bulls", 0x6692FF, 0xFFFFFF),
-        new Escuderia("Audi", 0x900000, 0xDDDDDD),
-        new Escuderia("Haas", 0xB6BABD, 0xE6002B),
-        new Escuderia("Cadillac", 0xE8E8E8, 0x1A1A1A));
+        new Escuderia("Mercedes", 0x27F4D2, 0x23272C, 0x27F4D2),
+        new Escuderia("Red Bull", 0x3671C6, 0x1E2A72, 0xFFB000),
+        new Escuderia("Ferrari", 0xE8002D, 0xE10600, 0xF4F4F4),
+        new Escuderia("McLaren", 0xFF8700, 0xFF8700, 0x17171A),
+        new Escuderia("Alpine", 0x0093CC, 0x0F4FA8, 0xFF78B8),
+        new Escuderia("Aston Martin", 0x006F62, 0x0B6B57, 0xCEDC00),
+        new Escuderia("Williams", 0x64C4FF, 0x1E9FE6, 0x0A1538),
+        new Escuderia("Racing Bulls", 0x6692FF, 0xF2F3F7, 0x1F35A8),
+        new Escuderia("Audi", 0x900000, 0x8F9296, 0xE8321E),
+        new Escuderia("Haas", 0xB6BABD, 0xF4F4F4, 0xE6002B),
+        new Escuderia("Cadillac", 0xE8E8E8, 0xE4E4E6, 0x111114));
 
     public static final List<Piloto> PILOTOS = List.of(
         new Piloto("George Russell", "RUS", 63, "gb", 0),

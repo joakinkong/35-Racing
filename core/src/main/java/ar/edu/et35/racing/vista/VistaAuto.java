@@ -21,7 +21,9 @@ public class VistaAuto implements Disposable {
     private static final float[][] CUERPO = {
         {-14f, 2f}, {-10f, 3.6f}, {-5f, 4.8f}, {0f, 4.8f}, {3f, 3f}, {8f, 2f}, {14f, 1.4f}, {16f, 0.9f}};
     /** La franja de acento sobre la trompa. */
-    private static final float[][] FRANJA = {{3f, 1f}, {8f, 0.9f}, {15.5f, 0.6f}};
+    private static final float[][] FRANJA = {{3f, 0.9f}, {8f, 0.8f}, {15.5f, 0.5f}};
+    /** La cubierta del motor, de la cola a la cabina. */
+    private static final float[][] CUBIERTA = {{-14f, 0.7f}, {-5.5f, 1f}};
     private static final int LADOS_CASCO = 10;
 
     private final ShapeRenderer formas = new ShapeRenderer();
@@ -50,13 +52,17 @@ public class VistaAuto implements Disposable {
         rectangulo(7.8f, -4f, 9.2f, 4f, CARBONO);
         rectangulo(-10.2f, -5f, -8.8f, 5f, CARBONO);
         // Alerones
-        rectangulo(-16.5f, -7f, -14f, 7f, detalle);
+        rectangulo(-16.5f, -7f, -14f, 7f, color);
         rectangulo(-16.5f, 7f, -14f, 7.8f, NEGRO);
         rectangulo(-16.5f, -7.8f, -14f, -7f, NEGRO);
         rectangulo(14.5f, -7.8f, 16.5f, 7.8f, detalle);
         // Cuerpo, franja y cabina
         tira(CUERPO, color);
         tira(FRANJA, detalle);
+        tira(CUBIERTA, detalle);
+        // Pontones: es lo que más se ve de arriba, y lo que separa a dos equipos de la misma carrocería
+        rectangulo(-8f, 3.5f, -1.5f, 4.8f, detalle);
+        rectangulo(-8f, -4.8f, -1.5f, -3.5f, detalle);
         rectangulo(-5.5f, -1.9f, 2.5f, 1.9f, NEGRO);
         circulo(-1.5f, 0f, 1.5f, CASCO);
         formas.end();

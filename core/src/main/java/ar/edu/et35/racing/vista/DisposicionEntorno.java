@@ -13,8 +13,8 @@ import java.util.TreeMap;
  * menos de {@link #MARGEN_PISTA} px del muro, así que no cambia lo que se ve de la pista ni cómo se maneja. Depende solo de
  * la línea central: en todas las PC y en todas las carreras el mismo circuito queda igual.
  *
- * Los permanentes llevan pasto, tribunas, ambulancias, neumáticos, vallas, muros y árboles. Los callejeros, una grilla de
- * calles con edificios, autos estacionados, faroles, carteles, barreras y tribunas en la meta.
+ * Los permanentes llevan pasto, tribunas en todos los bordes, ambulancias, neumáticos, vallas, muros y árboles. Los callejeros, una grilla de
+ * calles con edificios, autos estacionados, faroles, carteles, barreras y tribunas donde entren.
  */
 public final class DisposicionEntorno {
     /** Una decoración: esquina inferior izquierda y tamaño en px de mundo. */
@@ -32,13 +32,10 @@ public final class DisposicionEntorno {
 
     private static final float CELDA = 8f;
     private static final int PASO_CURVAS = 6;
-    /** Cada cuántas muestras se prueba poner una tribuna: si ya no entra por la anterior, sigue probando, y quedan seguidas. */
-    private static final int PASO_TRIBUNAS = 2;
-    private static final float SEPARACION_PROTECCION = 12f;
-    private static final int MAX_GRUPOS_TRIBUNAS = 10;
-    /** Muestras antes y después de la meta en las que se busca lugar para la tribuna principal. */
-    private static final int MUESTRAS_META = 50;
-    private static final float SEPARACION_TRIBUNA = 26f;
+    /** Cada cuántas muestras se prueba poner una tribuna: si no entra por la anterior, se sigue probando, y quedan seguidas. */
+    private static final int PASO_TRIBUNAS = 1;
+    private static final float SEPARACION_PROTECCION = 10f;
+    private static final float SEPARACION_TRIBUNA = 36f;
     private static final float SEPARACION_AMBULANCIA = 40f;
     /** Una curva de cada tantas lleva ambulancia. */
     private static final int CURVAS_POR_AMBULANCIA = 4;
@@ -87,15 +84,14 @@ public final class DisposicionEntorno {
         marcarPista();
         if (g.callejero()) {
             armarCalles();
-            tribunasDeLaMeta();
             autosEstacionados();
             detallesDeCurvas("barrera_", "cartel_");
+            tribunasEnLosBordes();
             manzanas();
             vegetacion(0.12f, 0.2f);
         } else {
-            tribunasDeLaMeta();
             detallesDeCurvas("neumatico_", null);
-            tribunasDeCurvas();
+            tribunasEnLosBordes();
             vallasYMuros();
             vegetacion(0.5f, 0.3f);
         }
@@ -195,16 +191,20 @@ public final class DisposicionEntorno {
         return poner(nombre, g.linea()[2 * i] + nx * distancia - ancho / 2f, g.linea()[2 * i + 1] + ny * distancia - alto / 2f, false);
     }
 
-    /** La tribuna que mira a la pista: acostada si la pista pasa por arriba o por abajo, parada si pasa al costado. */
-    private String tribunaPara(int muestra) {
+    /** La tribuna que mira a la pista desde ese lado de la muestra: la gente siempre queda de frente a los autos. */
+    private String tribunaPara(int muestra, int lado) {
         float[] t = tangente(muestra);
-        return Math.abs(t[0]) > Math.abs(t[1]) ? "tribuna_h" : "tribuna_v";
+        if (Math.abs(t[0]) > Math.abs(t[1])) {
+            return t[0] * lado > 0 ? "tribuna_abajo" : "tribuna_arriba";
+        }
+        return -t[1] * lado > 0 ? "tribuna_izq" : "tribuna_der";
     }
 
-    private void tribunasDeLaMeta() {
+    /** Tribunas a ambos lados de toda la pista, donde entren. Se prueba en cada muestra para que queden seguidas. */
+    private void tribunasEnLosBordes() {
         for (int lado : new int[] {1, -1}) {
-            for (int k = -MUESTRAS_META; k <= MUESTRAS_META; k += PASO_TRIBUNAS) {
-                ponerAlLado(tribunaPara(k), k, lado, SEPARACION_TRIBUNA);
+            for (int i = 0; i < g.muestras(); i += PASO_TRIBUNAS) {
+                ponerAlLado(tribunaPara(i, lado), i, lado, SEPARACION_TRIBUNA);
             }
         }
     }
@@ -225,18 +225,6 @@ public final class DisposicionEntorno {
             }
         }
         return lista;
-    }
-
-    private void tribunasDeCurvas() {
-        List<int[]> lista = listaDeCurvas();
-        int cada = Math.max(1, lista.size() / MAX_GRUPOS_TRIBUNAS);
-        for (int c = 0; c < lista.size(); c += cada) {
-            int medio = lista.get(c)[0];
-            int afuera = -lista.get(c)[1];
-            for (int k = -PASO_CURVAS; k <= PASO_CURVAS; k += PASO_TRIBUNAS) {
-                ponerAlLado(tribunaPara(medio + k), medio + k, afuera, SEPARACION_TRIBUNA);
-            }
-        }
     }
 
     /** Del lado de afuera de cada curva: una pila de protecciones contra el muro y, cada tanto, una ambulancia. */

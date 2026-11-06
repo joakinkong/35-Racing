@@ -3,6 +3,7 @@ package ar.edu.et35.racing.util;
 import ar.edu.et35.racing.juego.Catalogo;
 import ar.edu.et35.racing.juego.Escuderia;
 import com.badlogic.gdx.graphics.Color;
+import java.util.function.ToIntFunction;
 
 /** Colores de la interfaz: los mismos de PIT WALL, para que el juego pueda integrarse a esa página como minijuego. */
 public final class Paleta {
@@ -45,15 +46,17 @@ public final class Paleta {
     public static final Color PISTA_PIANO_BLANCO = TEXTO;
 
     /** Color principal de cada escudería, en el orden de {@link Catalogo#ESCUDERIAS}. */
-    private static final Color[] COLORES_ESCUDERIAS = colores(false);
+    private static final Color[] COLORES_ESCUDERIAS = colores(Escuderia::color);
     /** Color de acento de cada escudería, en el mismo orden. */
-    private static final Color[] DETALLES_ESCUDERIAS = colores(true);
+    private static final Color[] DETALLES_ESCUDERIAS = colores(Escuderia::colorDetalle);
+    /** Color de la carrocería de cada escudería. */
+    private static final Color[] AUTOS_ESCUDERIAS = colores(Escuderia::colorAuto);
 
-    private static Color[] colores(boolean detalle) {
+    private static Color[] colores(ToIntFunction<Escuderia> campo) {
         Color[] colores = new Color[Catalogo.ESCUDERIAS.size()];
         for (int i = 0; i < colores.length; i++) {
             Escuderia e = Catalogo.ESCUDERIAS.get(i);
-            colores[i] = new Color((detalle ? e.colorDetalle() : e.color()) << 8 | 0xFF);
+            colores[i] = new Color(campo.applyAsInt(e) << 8 | 0xFF);
         }
         return colores;
     }
@@ -61,6 +64,11 @@ public final class Paleta {
     /** Color principal de la escudería de ese piloto. No modificar el Color devuelto: es compartido. */
     public static Color colorDePiloto(int piloto) {
         return COLORES_ESCUDERIAS[Catalogo.piloto(piloto).escuderia()];
+    }
+
+    /** Color de la carrocería de ese piloto. No modificar el Color devuelto: es compartido. */
+    public static Color autoDePiloto(int piloto) {
+        return AUTOS_ESCUDERIAS[Catalogo.piloto(piloto).escuderia()];
     }
 
     /** Color de acento de la escudería de ese piloto. No modificar el Color devuelto: es compartido. */

@@ -20,6 +20,10 @@ javac -cp $cp -d build\verificacion tools\circuitos\verificacion\PruebaCircuitos
 | `PruebaCruce` | En Suzuka, un auto queda en su nivel al recorrer cada tramo, dos autos en niveles distintos no se chocan y dos en el mismo sí; los otros 23 circuitos no tienen zona de cruce. Sale con error si algo falla | `java -cp "$cp;build\verificacion" PruebaCruce assets\circuitos` |
 | `PruebaEntorno` | En los 24 circuitos, ninguna decoración toca la pista ni su muro, se sale del mapa o pisa a otra, y cada tipo de circuito tiene lo suyo. Sale con error si algo falla | `java -cp "$cp;build\verificacion" PruebaEntorno assets\circuitos` |
 
+`CapturaAutos` guarda un auto de cada escudería, grande y a la escala de la carrera. Se compila y se corre como `CapturaVista`, con la carpeta de salida como único argumento.
+
+Si cambió algo en `assets`, antes de capturar corré `.\gradlew lwjgl3:classes`: el classpath de abajo lee la copia de `lwjgl3\build\resources`.
+
 `CapturaVista` abre la ventana del juego oculta (con antialiasing) y guarda una captura de la `VistaCircuito` real
 centrada en un punto de la línea central. Necesita el classpath completo del módulo `lwjgl3`:
 

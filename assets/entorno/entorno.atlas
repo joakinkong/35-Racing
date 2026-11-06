@@ -12,83 +12,83 @@ ambulancia_der
 ambulancia_izq
   bounds: 175, 647, 171, 100
 arbol_1
-  bounds: 1125, 647, 70, 82
+  bounds: 1175, 647, 70, 82
 arbol_2
   bounds: 348, 647, 102, 93
 arbol_3
   bounds: 1580, 377, 133, 118
 arbusto_1
-  bounds: 951, 749, 45, 40
+  bounds: 1137, 749, 45, 40
 arbusto_2
-  bounds: 904, 749, 45, 42
+  bounds: 1090, 749, 45, 42
 arbusto_3
-  bounds: 839, 749, 63, 45
+  bounds: 1025, 749, 63, 45
 auto_aba_1
-  bounds: 575, 647, 48, 85
+  bounds: 625, 647, 48, 85
 auto_aba_2
-  bounds: 675, 647, 48, 85
+  bounds: 725, 647, 48, 85
 auto_aba_3
-  bounds: 775, 647, 48, 85
+  bounds: 825, 647, 48, 85
 auto_aba_4
-  bounds: 875, 647, 48, 85
+  bounds: 925, 647, 48, 85
 auto_aba_5
-  bounds: 975, 647, 48, 85
+  bounds: 1025, 647, 48, 85
 auto_aba_6
-  bounds: 1075, 647, 48, 85
+  bounds: 1125, 647, 48, 85
 auto_aba_7
   bounds: 1829, 377, 55, 106
 auto_aba_8
   bounds: 1886, 377, 55, 106
 auto_arr_1
-  bounds: 525, 647, 48, 85
+  bounds: 575, 647, 48, 85
 auto_arr_2
-  bounds: 625, 647, 48, 85
+  bounds: 675, 647, 48, 85
 auto_arr_3
-  bounds: 725, 647, 48, 85
+  bounds: 775, 647, 48, 85
 auto_arr_4
-  bounds: 825, 647, 48, 85
+  bounds: 875, 647, 48, 85
 auto_arr_5
-  bounds: 925, 647, 48, 85
+  bounds: 975, 647, 48, 85
 auto_arr_6
-  bounds: 1025, 647, 48, 85
+  bounds: 1075, 647, 48, 85
 auto_arr_7
   bounds: 1715, 377, 55, 108
 auto_arr_8
   bounds: 1772, 377, 55, 108
 auto_der_1
-  bounds: 1763, 647, 91, 55
+  bounds: 1911, 647, 91, 55
 auto_der_2
-  bounds: 1949, 647, 91, 55
-auto_der_3
   bounds: 95, 749, 91, 55
-auto_der_4
+auto_der_3
   bounds: 281, 749, 91, 55
-auto_der_5
+auto_der_4
   bounds: 467, 749, 91, 55
-auto_der_6
+auto_der_5
   bounds: 653, 749, 91, 55
+auto_der_6
+  bounds: 839, 749, 91, 55
 auto_der_7
-  bounds: 1295, 647, 115, 60
+  bounds: 1443, 647, 115, 60
 auto_der_8
-  bounds: 1529, 647, 115, 60
+  bounds: 1677, 647, 115, 60
 auto_izq_1
-  bounds: 1856, 647, 91, 55
-auto_izq_2
   bounds: 2, 749, 91, 55
-auto_izq_3
+auto_izq_2
   bounds: 188, 749, 91, 55
-auto_izq_4
+auto_izq_3
   bounds: 374, 749, 91, 55
-auto_izq_5
+auto_izq_4
   bounds: 560, 749, 91, 55
-auto_izq_6
+auto_izq_5
   bounds: 746, 749, 91, 55
+auto_izq_6
+  bounds: 932, 749, 91, 55
 auto_izq_7
-  bounds: 1412, 647, 115, 60
+  bounds: 1560, 647, 115, 60
 auto_izq_8
-  bounds: 1646, 647, 115, 60
+  bounds: 1794, 647, 115, 60
 barrera_1
-  bounds: 1058, 749, 45, 22
+  bounds: 1244, 749, 45, 22
 cartel_1
   bounds: 1354, 377, 111, 136
 cartel_2
@@ -126,16 +126,20 @@ edificio_villa2
 farol_1
   bounds: 452, 647, 21, 91
 muro_h
-  bounds: 1006, 749, 24, 24
+  bounds: 1192, 749, 24, 24
 muro_v
-  bounds: 1032, 749, 24, 24
+  bounds: 1218, 749, 24, 24
 neumatico_1
-  bounds: 1105, 749, 24, 21
-tribuna_h
-  bounds: 1197, 647, 96, 61
-tribuna_v
+  bounds: 1291, 749, 24, 21
+tribuna_abajo
+  bounds: 1247, 647, 96, 61
+tribuna_arriba
+  bounds: 1345, 647, 96, 61
+tribuna_der
+  bounds: 525, 647, 48, 88
+tribuna_izq
   bounds: 475, 647, 48, 88
 valla_h
-  bounds: 1131, 749, 24, 21
+  bounds: 1317, 749, 24, 21
 valla_v
-  bounds: 998, 749, 6, 24
+  bounds: 1184, 749, 6, 24

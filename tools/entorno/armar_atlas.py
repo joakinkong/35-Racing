@@ -62,8 +62,10 @@ for nombre, carpeta, archivo in [
     ('cartel_2', PRO, 'ME_Singles_City_Props_48x48_Billboard_3'),
     ('farol_1', PRO, 'ME_Singles_City_Props_48x48_Street_Lamp_5'),
     ('barrera_1', PRO, 'ME_Singles_City_Props_48x48_Traffic_Barrier_1'),
-    ('tribuna_h', ESC, 'ME_Singles_School_48x48_Stands_1'),
-    ('tribuna_v', ESC, 'ME_Singles_School_48x48_Stands_2'),
+    ('tribuna_abajo', ESC, 'ME_Singles_School_48x48_Stands_1'),
+    ('tribuna_arriba', ESC, 'ME_Singles_School_48x48_Stands_1'),
+    ('tribuna_izq', ESC, 'ME_Singles_School_48x48_Stands_2'),
+    ('tribuna_der', ESC, 'ME_Singles_School_48x48_Stands_3'),
     ('neumatico_1', CAM, 'ME_Singles_Camping_48x48_Tire_1'),
     ('ambulancia_der', VEH, 'ME_Singles_Vehicles_48x48_Ambulance_Right_1'),
     ('ambulancia_izq', VEH, 'ME_Singles_Vehicles_48x48_Ambulance_Left_1'),
@@ -78,6 +80,9 @@ for nombre, carpeta, archivo in [
 for i in range(1, 9):
     for sentido, en_ingles in (('der', 'Right'), ('izq', 'Left'), ('arr', 'Up'), ('aba', 'Down')):
         SPRITES[f'auto_{sentido}_{i}'] = (VEH, f'ME_Singles_Vehicles_48x48_Car_{en_ingles}_{i}')
+
+# El pack trae gradas que miran abajo, a la izquierda y a la derecha. Las que miran arriba se sacan dando vuelta las primeras.
+VOLTEAR_VERTICAL = {'tribuna_arriba'}
 
 BALDOSAS = {
     'fondo_pasto': (TER, 'ME_Singles_Terrains_and_Fences_48x48_Grass_1_22'),
@@ -96,6 +101,8 @@ def main():
     imagenes = {}
     for nombre, (carpeta, archivo) in SPRITES.items():
         im = abrir(pack_dir, carpeta, archivo)
+        if nombre in VOLTEAR_VERTICAL:
+            im = im.transpose(Image.FLIP_TOP_BOTTOM)
         # Se recorta lo transparente: el tamaño del sprite tiene que ser lo que se ve, para que no queden huecos al ubicarlo.
         im = im.crop(im.getbbox())
         imagenes[nombre] = im.resize((max(1, im.width // 2), max(1, im.height // 2)), Image.LANCZOS)
