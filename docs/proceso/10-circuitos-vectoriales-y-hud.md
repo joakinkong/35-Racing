@@ -89,4 +89,4 @@ El trabajo se hizo con Claude Code a partir de pedidos del grupo, con planes apr
 - [`a0985f0`](https://github.com/joakinkong/35-Racing/commit/a0985f0): Refactor: Eliminar los mapas de Tiled y sus tilesets.
 - [`17441e5`](https://github.com/joakinkong/35-Racing/commit/17441e5): Docs: Etapa 10, skill de circuitos y verificación.
 
-El pull request a `develop` todavía no se abrió.
+Entró a `main` con el PR [#14](https://github.com/joakinkong/35-Racing/pull/14) y a `develop` con el [#17](https://github.com/joakinkong/35-Racing/pull/17).
