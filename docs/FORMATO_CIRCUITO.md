@@ -52,8 +52,12 @@ nada: ahí un tramo pasa por encima del otro.
 
 Tres capas de círculos apilados sobre cada muestra de `linea`, de afuera hacia adentro: el muro (la franja de grosor
 `muro` justo después del pasto), el pasto y el asfalto. Es la misma forma que usa la colisión, así que lo que se ve es
-lo que se choca. Con antialiasing de 4 muestras los bordes salen lisos. Pendientes: los pianos en las curvas y el
-dibujo del `puente` encima del `tunel` en los `cruces`.
+lo que se choca. Con antialiasing de 4 muestras los bordes salen lisos.
+
+Los pianos no están en el archivo: la vista los calcula al cargar a partir de la línea central (`vista/Pianos`) y son
+solo dibujo. En los `cruces`, el tramo `puente` se dibuja encima de los autos que van por el `tunel`, como una cinta sin
+pasto (`juego/ZonaCruce`). La grilla de colisión no cambia: el muro del puente tampoco es sólido, y solo los autos en
+niveles distintos dejan de chocarse.
 
 ## Parámetros del generador
 

@@ -8,6 +8,9 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ### Agregado
 
+- Pianos rojos y blancos en las curvas cerradas (`vista/Pianos`). Son solo dibujo: no cambian la física ni los JSON.
+- Puente en el cruce de Suzuka: los autos de abajo pasan tapados por el puente y los de distintos niveles no se chocan ni se esquivan. El muro del puente es solo dibujo. No cambia el protocolo.
+- `PruebaCruce`, en `tools/circuitos/verificacion`, comprueba los niveles y los choques en el cruce.
 - Torneos, a elegir en la sala: un calendario con los circuitos que quiera el host, repetidos o no, y puntos acumulados, con el último siempre sumando 1. Con 8 autos se reparten 15, 12, 10, 8, 6, 4, 2 y 1. Protocolo versión 7.
 - Clasificación opcional, a elegir en la sala: una vuelta, todos a la vez, cada uno sin ver a los demás; el orden de los tiempos arma la grilla y la carrera arranca sola. Protocolo versión 6.
 - Bots: el host completa la grilla hasta 8 autos eligiendo la dificultad de cada uno (fácil, medio o difícil). Corren en el servidor, con los mismos controles que una persona. Se puede jugar una persona contra bots. Protocolo versión 5.

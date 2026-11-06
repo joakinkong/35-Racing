@@ -1,5 +1,7 @@
 package ar.edu.et35.racing.juego;
 
+import java.util.List;
+
 /**
  * Un auto dentro de una carrera, con su progreso: vueltas, próximo checkpoint y tiempos.
  *
@@ -19,6 +21,7 @@ public class Participante {
     private float tiempoTotal = Float.NaN;
     private boolean terminado;
     private boolean desconectado;
+    private NivelCruce nivelCruce = NivelCruce.FUERA;
 
     Participante(int id, String nombre, Auto auto, int cantidadCheckpoints) {
         this.id = id;
@@ -26,6 +29,15 @@ public class Participante {
         this.auto = auto;
         this.cantidadCheckpoints = cantidadCheckpoints;
         this.siguienteCheckpoint = 1 % cantidadCheckpoints;
+    }
+
+    void actualizarNivelCruce(List<ZonaCruce> zonas) {
+        nivelCruce = ZonaCruce.nivel(zonas, nivelCruce, auto.x(), auto.y());
+    }
+
+    /** En qué nivel de un cruce va el auto; FUERA casi siempre. */
+    public NivelCruce nivelCruce() {
+        return nivelCruce;
     }
 
     /** Suma tiempo a la vuelta en curso. Después de terminar el reloj se detiene. */
