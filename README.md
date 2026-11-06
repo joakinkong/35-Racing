@@ -56,9 +56,16 @@ O en PowerShell:
 
 ## Estado actual
 
-Etapa 10 completada: circuitos vectoriales, física más exigente y HUD estilo Fórmula 1. La etapa 8 había dejado lista la red: la carrera se juega en red y las fallas de red se avisan con mensajes claros. Se crea una partida, los demás se unen por IP, esperan en un lobby en vivo y corren una carrera sincronizada (el servidor la simula y cada PC dibuja lo que recibe), con resultados y revancha. Hay menú y pantallas navegables con estética de Fórmula 1, un auto con física arcade sobre un circuito provisorio y las reglas de una carrera completa (cuenta regresiva, vueltas por checkpoints, posiciones, choques y resultados). Se puede probar con 2 jugadores en el mismo teclado desde "Prueba local" (J1 con WASD y J2 con flechas).
+Etapa 16 completada. Se crea una partida, los demás se unen por IP, esperan en una sala en vivo y corren una carrera sincronizada: el servidor la simula y cada PC dibuja lo que recibe. La carrera termina con resultados y revancha. También se puede probar sin red desde "Prueba local", con 1 jugador o con 2 en el mismo teclado (J1 con WASD y J2 con flechas).
 
-El protocolo de red ya está diseñado en [docs/PROTOCOLO.md](docs/PROTOCOLO.md). Los 24 circuitos de la temporada 2026 ya son definitivos (archivos vectoriales generados desde trazados SVG, ver la [etapa 10](docs/proceso/10-circuitos-vectoriales-y-hud.md)). Lo que falta: las pruebas en varias PC de la red del colegio y los sprites. La red ya avisa con un mensaje claro de cada falla (ver la [etapa 8](docs/proceso/08-robustez-de-red.md)). El detalle de cada etapa está en [docs/proceso](docs/proceso/README.md).
+- **Hasta 8 autos**, con grilla escalonada como en la F1.
+- **Bots** en tres niveles (fácil, medio y difícil) para completar la grilla. Se puede jugar una persona contra bots.
+- **Clasificación opcional** de una vuelta: todos corren a la vez, cada uno sin ver a los demás, y los tiempos arman la grilla.
+- **Torneos** con el calendario que elija el host y puntos acumulados. El último de cada carrera siempre suma 1.
+- **24 circuitos** de la temporada 2026, con torre de tiempos y mapa en vivo.
+- **Estética de PIT WALL** en toda la interfaz.
+
+Falta probar la clasificación, los bots y los torneos entre varias PC y con personas de verdad, y ajustar el nivel difícil con esos tiempos. El protocolo está en [docs/PROTOCOLO.md](docs/PROTOCOLO.md) y el detalle de cada etapa, en [docs/proceso](docs/proceso/README.md).
 
 ## Licencia
 
