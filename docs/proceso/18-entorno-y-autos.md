@@ -71,4 +71,4 @@ El código y esta documentación los escribió Claude (Claude Code) a pedido de 
 
 ## Commits y PR
 
-Rama `feature/entorno-y-autos`.
+Rama `feature/entorno-y-autos`: `b8bc515` y `78d68d8`. Entró a `main` con el PR [#23](https://github.com/joakinkong/35-Racing/pull/23).
