@@ -30,7 +30,7 @@ Lo genera `tools/circuitos/generar_circuitos.py` a partir de los trazados SVG de
 | `escapes` | `[número, ...]` | Pasto de escape (px) a **cada lado** de la pista en cada muestra. |
 | `cruces` | `[{tunel, puente}, ...]` | Lugares donde la pista pasa por encima de sí misma. `tunel` y `puente` son índices de `linea`: el tramo `tunel` va por debajo y el `puente` por arriba. Puede estar vacío. |
 | `checkpoints` | `[{orden, x, y, ancho, alto}, ...]` | Rectángulos (esquina inferior izquierda más tamaño). `orden` va de 0 a N-1 sin saltos; el 0 es la meta. |
-| `largada` | `[{posicion, x, y}, ...]` | Centro de cada lugar, con `posicion` de 1 a 5. |
+| `largada` | `[{posicion, x, y}, ...]` | Centro de cada lugar, con `posicion` de 1 a 8, escalonados como en la F1: cada auto, 40 px de pista más atrás que el anterior. |
 
 `linea`, `anchos` y `escapes` tienen siempre la misma cantidad de elementos.
 

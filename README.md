@@ -1,6 +1,6 @@
 # 35 Racing
 
-Videojuego de carreras 2D multijugador en red local. Entre 2 y 5 jugadores compiten simultáneamente desde sus propias computadoras, cada uno controlando su auto mediante un servidor autoritativo con sincronización por TCP/UDP. Estética arcade retro con vista cenital (top-down).
+Videojuego de carreras 2D multijugador en red local. Entre 2 y 8 jugadores compiten simultáneamente desde sus propias computadoras, cada uno controlando su auto mediante un servidor autoritativo con sincronización por TCP/UDP. Vista cenital (top-down), con la estética de PIT WALL, la página de estadísticas de Fórmula 1 del proyecto.
 
 **Integrantes:** Joaquin Barreira, Madai Andacaba, Antonella Vivacqua, Joaquin Rodrigues, Mateo Guinsburg
 

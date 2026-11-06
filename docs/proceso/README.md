@@ -35,13 +35,21 @@ Las etapas 0 a 4 se hicieron el 28/09/2026, entre las 21:16 y las 23:45 (hora lo
 | [8. Robustez de red](08-robustez-de-red.md) | Aviso y vuelta al menú si dejan de llegar datos UDP, fallas del servidor que cierran la partida con motivo, y cierre de ventana limpio desde cualquier pantalla | [#12](https://github.com/joakinkong/35-Racing/pull/12) |
 | [9. Pruebas en LAN real](09-pruebas-lan-real.md) | Carrera completa con revancha entre 2 notebooks en el hotspot de un celular, y pérdida de paquetes simulada. En la red del colegio no se pudo unir nadie (firewall sin permisos de administrador) | Solo documentación |
 | [10. Circuitos vectoriales y HUD](10-circuitos-vectoriales-y-hud.md) | Los 24 circuitos de 2026 como geometría (sin tiles ni pixel art), dibujados con antialiasing; física más exigente; elección de circuito en la prueba local; torre de tiempos estilo Fórmula 1 | Todavía sin abrir (rama `feature/estetica-f1`) |
+| [11. Estética de PIT WALL](11-estetica-pit-wall.md) | Interfaz a 1280x720 con los colores, las tarjetas y las fuentes de PIT WALL; los colores de la pista también cambian | Pendiente |
+| [12. Hasta 8 jugadores](12-hasta-ocho-jugadores.md) | Partidas de hasta 8, con 8 lugares de largada en los 24 circuitos sin tocar los trazados; protocolo versión 4 | Pendiente |
+| [13. Mapa en vivo](13-mapa-en-vivo.md) | Mapa del circuito arriba a la derecha, con un punto del color de cada auto; no cambia el protocolo | Pendiente |
+| [14. Bots](14-bots.md) | El host agrega bots de tres niveles hasta completar 8 autos; corren en el servidor con los mismos controles que una persona; protocolo versión 5 | Pendiente |
+| [15. Clasificación](15-clasificacion.md) | Clasificación opcional de una vuelta, todos a la vez y sin verse, que arma la grilla; grilla de largada escalonada; protocolo versión 6 | Pendiente |
+| [16. Torneos](16-torneos.md) | Torneos con calendario a elección y puntos acumulados, con la tabla de la F1 al revés; protocolo versión 7 | Pendiente |
 
 Estado del repositorio al cerrar la etapa 9: `main` tiene todo hasta la etapa 8; la documentación de la etapa 9 está en la rama `docs/pruebas-lan`.
 
 ## Lo que sigue
 
+- **Próxima etapa:** probar la clasificación, los bots y los torneos entre varias PC y con personas de verdad, y ajustar el nivel difícil con esos tiempos.
+- **Más adelante:** las gradas alrededor de los circuitos y la integración con PIT WALL.
 - **Antes de seguir:** que los cinco integrantes lean [docs/PROTOCOLO.md](../PROTOCOLO.md), porque es lo que tienen que poder explicar.
-- **Pendiente de la etapa 9:** probar con 3 y con 5 jugadores, y conseguir que abran los puertos TCP 7777 y UDP 7778 en las PC del colegio (hace falta un administrador). Mientras tanto, la demo en red se puede hacer con el hotspot de un celular.
+- **Pendiente de la etapa 9:** probar con 3 y hasta 8 jugadores, y conseguir que abran los puertos TCP 7777 y UDP 7778 en las PC del colegio (hace falta un administrador). Mientras tanto, la demo en red se puede hacer con el hotspot de un celular.
 - **Pendiente de arte:** los sprites. Los circuitos ya son definitivos desde la [etapa 10](10-circuitos-vectoriales-y-hud.md), pero los autos siguen siendo los provisorios (ver [etapa 3](03-auto-y-circuito.md)).
 - **Pendiente de la etapa 10:** los pianos en las curvas, el puente de Suzuka y repetir la prueba en LAN con los circuitos nuevos.
 
