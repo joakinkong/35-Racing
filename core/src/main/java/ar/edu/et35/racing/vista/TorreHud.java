@@ -7,7 +7,6 @@ import ar.edu.et35.racing.juego.FuenteCarrera;
 import ar.edu.et35.racing.util.Paleta;
 import ar.edu.et35.racing.util.Recursos;
 import ar.edu.et35.racing.util.Tiempo;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
@@ -20,24 +19,22 @@ import java.util.Set;
 
 /**
  * Torre de tiempos al estilo de las transmisiones de Fórmula 1: arriba el nombre del juego y la vuelta en que va el
- * puntero, y abajo una fila por auto, en orden de posición, con el número de posición (rojo el primero), la franja de
+ * puntero, y abajo una fila por auto, en orden de posición, con el número de posición (dorado el primero), la franja de
  * color de su escudería, las tres letras del piloto y su mejor vuelta. Los autos de esta PC se resaltan.
  *
- * Es una tabla de Scene2D: no toca nada de la simulación, solo lee la {@link FotoCarrera} que le pasan.
+ * Es una tabla de Scene2D: no toca nada de la simulación, solo lee la {@link FotoCarrera} que le pasan. En la clasificación
+ * muestra solo los autos de esta PC: cada uno corre sin saber cómo les va a los demás.
  */
 public class TorreHud extends Table {
-    private static final float ANCHO_POSICION = 18f;
-    private static final float ANCHO_FRANJA = 4f;
-    private static final float ANCHO_CODIGO = 34f;
-    private static final float ANCHO_TIEMPO = 62f;
-    private static final float ALTO_FILA = 17f;
-    private static final float ALTO_ENCABEZADO = 18f;
-    private static final float SEPARACION = 1f;
-    private static final float ANCHO_TORRE = ANCHO_POSICION + ANCHO_FRANJA + ANCHO_CODIGO + ANCHO_TIEMPO + 4 * SEPARACION;
-
-    private static final Color FONDO = new Color(0.08f, 0.08f, 0.11f, 0.9f);
-    private static final Color FONDO_PROPIO = new Color(0.24f, 0.24f, 0.31f, 0.95f);
-    private static final Color FONDO_POSICION = new Color(0.16f, 0.16f, 0.2f, 0.95f);
+    private static final int SIN_POSICION = 0;
+    private static final float ANCHO_POSICION = 36f;
+    private static final float ANCHO_FRANJA = 5f;
+    private static final float ANCHO_CODIGO = 62f;
+    private static final float ANCHO_TIEMPO = 104f;
+    private static final float ALTO_FILA = 30f;
+    private static final float ALTO_ENCABEZADO = 32f;
+    private static final float SEPARACION = 2f;
+    private static final float ANCHO_TORRE = ANCHO_POSICION + ANCHO_FRANJA + ANCHO_CODIGO + ANCHO_TIEMPO + 16f;
 
     private final Recursos recursos;
     private final Skin skin;
@@ -45,24 +42,26 @@ public class TorreHud extends Table {
     private final Set<Integer> idsLocales;
     private final Drawable fondo;
     private final Drawable fondoPropio;
-    private final Drawable fondoPosicion;
-    private final Drawable fondoPuntero;
     /** Un Drawable por piloto, creados la primera vez que hacen falta (crear uno por cuadro llenaría la memoria). */
     private final Drawable[] colorPiloto = new Drawable[Catalogo.PILOTOS.size()];
     private final Label vuelta;
+    private final boolean clasificacion;
     private final List<Fila> filas = new ArrayList<>();
 
     public TorreHud(Recursos recursos, FuenteCarrera fuente) {
+        this(recursos, fuente, false);
+    }
+
+    public TorreHud(Recursos recursos, FuenteCarrera fuente, boolean clasificacion) {
+        this.clasificacion = clasificacion;
         this.recursos = recursos;
         this.skin = recursos.skin;
         this.fuente = fuente;
         this.idsLocales = Set.copyOf(fuente.idsLocales());
-        fondo = recursos.color(FONDO);
-        fondoPropio = recursos.color(FONDO_PROPIO);
-        fondoPosicion = recursos.color(FONDO_POSICION);
-        fondoPuntero = recursos.color(Paleta.ROJO);
+        fondo = recursos.color(Paleta.FONDO_HUD);
+        fondoPropio = recursos.color(Paleta.FONDO_HUD_PROPIO);
 
-        vuelta = new Label("", skin, "gris");
+        vuelta = new Label("", skin, "etiquetaSuave");
         vuelta.setAlignment(Align.right);
         agregarEncabezado();
         pack();
@@ -72,8 +71,8 @@ public class TorreHud extends Table {
     private void agregarEncabezado() {
         Table encabezado = new Table();
         encabezado.setBackground(fondo);
-        encabezado.pad(0f, 5f, 0f, 5f);
-        encabezado.add(new Label("35 RACING", skin)).left().expandX();
+        encabezado.pad(0f, 10f, 0f, 10f);
+        encabezado.add(new Label(clasificacion ? "CLASIFICACIÓN" : "35 RACING", skin, "marcaChica")).left().expandX();
         encabezado.add(vuelta).right();
         add(encabezado).width(ANCHO_TORRE).height(ALTO_ENCABEZADO).padBottom(SEPARACION).row();
     }
@@ -88,16 +87,30 @@ public class TorreHud extends Table {
         if (foto == null || foto.autos().isEmpty()) {
             return;
         }
-        if (filas.size() != foto.autos().size()) {
-            armarFilas(foto.autos().size());
+        List<FotoAuto> autos = clasificacion ? autosPropios(foto) : foto.autos();
+        if (autos.isEmpty()) {
+            return;
         }
-        FotoAuto puntero = foto.autos().get(0);
+        if (filas.size() != autos.size()) {
+            armarFilas(autos.size());
+        }
+        FotoAuto puntero = autos.get(0);
         int total = fuente.vueltasTotales();
-        vuelta.setText(puntero.terminado() ? "FIN" : "V " + Math.min(puntero.vueltas() + 1, total) + "/" + total);
+        vuelta.setText(clasificacion ? "" : puntero.terminado() ? "FIN" : "V " + Math.min(puntero.vueltas() + 1, total) + "/" + total);
         for (int i = 0; i < filas.size(); i++) {
-            FotoAuto auto = foto.autos().get(i);
-            filas.get(i).actualizar(auto, i + 1, idsLocales.contains(auto.id()));
+            FotoAuto auto = autos.get(i);
+            filas.get(i).actualizar(auto, clasificacion ? SIN_POSICION : i + 1, idsLocales.contains(auto.id()));
         }
+    }
+
+    private List<FotoAuto> autosPropios(FotoCarrera foto) {
+        List<FotoAuto> propios = new ArrayList<>();
+        for (FotoAuto auto : foto.autos()) {
+            if (idsLocales.contains(auto.id())) {
+                propios.add(auto);
+            }
+        }
+        return propios;
     }
 
     private void armarFilas(int cantidad) {
@@ -123,39 +136,37 @@ public class TorreHud extends Table {
     /** Una fila de la torre: posición, franja de escudería, código y tiempo. */
     private class Fila {
         private final Table tabla = new Table();
-        private final Table casillaPosicion = new Table();
-        private final Label posicion = new Label("", skin);
+        private final Label posicion = new Label("", skin, "numeros");
         private final Image franja = new Image();
-        private final Label codigo = new Label("", skin);
-        private final Label tiempo = new Label("", skin);
+        private final Label codigo = new Label("", skin, "numeros");
+        private final Label tiempo = new Label("", skin, "numeros");
 
         Fila() {
             posicion.setAlignment(Align.center);
             tiempo.setAlignment(Align.right);
-            casillaPosicion.add(posicion).center();
             tabla.setBackground(fondo);
-            tabla.add(casillaPosicion).width(ANCHO_POSICION).growY().padRight(SEPARACION);
-            tabla.add(franja).width(ANCHO_FRANJA).growY().padRight(SEPARACION);
-            tabla.add(codigo).width(ANCHO_CODIGO).padLeft(3f).left();
-            tabla.add(tiempo).width(ANCHO_TIEMPO).padRight(3f).right();
+            tabla.add(posicion).width(ANCHO_POSICION);
+            tabla.add(franja).width(ANCHO_FRANJA).height(ALTO_FILA - 10f);
+            tabla.add(codigo).width(ANCHO_CODIGO).padLeft(8f).left();
+            tabla.add(tiempo).width(ANCHO_TIEMPO).padRight(8f).right();
         }
 
         void actualizar(FotoAuto auto, int lugar, boolean propio) {
             tabla.setBackground(propio ? fondoPropio : fondo);
-            casillaPosicion.setBackground(lugar == 1 ? fondoPuntero : fondoPosicion);
-            posicion.setText(String.valueOf(lugar));
+            posicion.setText(lugar == SIN_POSICION ? "–" : String.valueOf(lugar));
+            posicion.setColor(lugar == 1 ? Paleta.DORADO : Paleta.TEXTO);
             franja.setDrawable(colorDe(fuente.piloto(auto.id())));
             codigo.setText(Catalogo.piloto(fuente.piloto(auto.id())).codigo());
-            codigo.setColor(auto.desconectado() ? Paleta.GRIS_CLARO : Paleta.BLANCO);
+            codigo.setColor(auto.desconectado() ? Paleta.TEXTO_APAGADO : Paleta.TEXTO);
             if (auto.desconectado()) {
                 tiempo.setText("SALIÓ");
-                tiempo.setColor(Paleta.GRIS_CLARO);
+                tiempo.setColor(Paleta.TEXTO_APAGADO);
             } else if (auto.terminado()) {
                 tiempo.setText("FIN");
-                tiempo.setColor(Paleta.VERDE);
+                tiempo.setColor(Paleta.SECUNDARIO);
             } else {
                 tiempo.setText(Tiempo.formato(auto.mejorVuelta()));
-                tiempo.setColor(Paleta.BLANCO);
+                tiempo.setColor(Paleta.TEXTO);
             }
         }
     }

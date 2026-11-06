@@ -7,7 +7,7 @@ description: Crear, regenerar, ajustar y verificar los circuitos de 35 Racing (J
 
 Los circuitos son archivos JSON vectoriales, no mapas de tiles. El formato está en `docs/FORMATO_CIRCUITO.md`: léelo
 antes de tocar nada. Resumen: una línea central cerrada (un punto cada 8 px), el ancho de asfalto y el de pasto en cada
-punto, los checkpoints y los 5 lugares de largada. El juego los dibuja con círculos apilados (`VistaCircuito`) y rasteriza
+punto, los checkpoints y los 8 lugares de largada. El juego los dibuja con círculos apilados (`VistaCircuito`) y rasteriza
 una grilla de colisión de 4 px al cargarlos (`CargadorCircuito`). Ya no se usa Tiled.
 
 ## Regla de trabajo

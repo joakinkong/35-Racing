@@ -8,6 +8,24 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ### Agregado
 
+- Torneos, a elegir en la sala: un calendario con los circuitos que quiera el host, repetidos o no, y puntos acumulados, con el último siempre sumando 1. Con 8 autos se reparten 15, 12, 10, 8, 6, 4, 2 y 1. Protocolo versión 7.
+- Clasificación opcional, a elegir en la sala: una vuelta, todos a la vez, cada uno sin ver a los demás; el orden de los tiempos arma la grilla y la carrera arranca sola. Protocolo versión 6.
+- Bots: el host completa la grilla hasta 8 autos eligiendo la dificultad de cada uno (fácil, medio o difícil). Corren en el servidor, con los mismos controles que una persona. Se puede jugar una persona contra bots. Protocolo versión 5.
+- `tools/bots`: `PruebaBots` mide los niveles sin red y `PruebaSalaBots` prueba las reglas de la sala contra el servidor real.
+- Mapa del circuito en tiempo real, arriba a la derecha (`vista/MiniMapa`): el trazado, la meta y un punto del color de cada auto, con los de esta PC más grandes y con borde blanco. No cambia el protocolo.
+
+### Cambiado
+
+- La grilla de largada es escalonada, como en la F1: cada auto, 40 px más atrás que el anterior. No cambia ningún trazado.
+- Hasta 8 jugadores por partida (`Config.MAX_JUGADORES`). Los 24 circuitos tienen 8 lugares de largada, sin cambios en el trazado ni en los 5 lugares que ya existían. El `ESTADO` con 8 autos ocupa 204 bytes. Protocolo versión 4.
+- El pasto es de un verde un poco más fuerte.
+- Toda la interfaz copia la estética de PIT WALL: colores, tarjetas, esquinas rectas y las fuentes Space Grotesk e Inter. Los colores de la pista también salen de esa paleta (la forma y la colisión no cambian).
+- La interfaz pasa a 1280x720 (`Config.ANCHO_INTERFAZ`) para que el texto se vea nítido; el mundo sigue en 640x360 (`Config.ANCHO_MUNDO`, antes `ANCHO_VIRTUAL`).
+
+### Agregado
+
+- Fuentes generadas en `assets/fuentes` con `tools/fuentes/generar_fuentes.py`, sin dependencias nuevas, y sus licencias OFL.
+- `tools/interfaz/CapturaPantallas`: recorre las pantallas del juego real y guarda una captura de cada una.
 - `VistaCircuito` arma una sola vez la malla del circuito (círculos apilados sobre cada punto de la línea central, en tres capas: muro, pasto y asfalto) con la misma forma que usa la colisión, y dibuja solo los bloques que entran en la cámara. El lanzador activa antialiasing de 4 muestras (`Config.MUESTRAS_ANTIALIASING`).
 - `CargadorCircuito` lee el JSON y rasteriza una grilla de colisión de 4 px (`Config.CELDA_COLISION`): pista, pasto y, todo lo demás, muro.
 - HUD estilo Fórmula 1: `TorreHud` muestra una fila por auto con la posición (el puntero en rojo), la franja de su escudería, las tres letras del piloto y su mejor vuelta, más la vuelta del puntero; el panel de cada jugador queda con su vuelta y su tiempo.

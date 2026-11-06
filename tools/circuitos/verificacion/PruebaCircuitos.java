@@ -1,5 +1,6 @@
 import ar.edu.et35.racing.juego.CargadorCircuito;
 import ar.edu.et35.racing.juego.Circuito;
+import ar.edu.et35.racing.util.Config;
 import ar.edu.et35.racing.juego.Superficie;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
@@ -21,16 +22,22 @@ public class PruebaCircuitos {
         for (Path p : archivos) {
             String texto = Files.readString(p);
             long t0 = System.nanoTime();
-            Circuito c = CargadorCircuito.cargarDesdeTexto(texto, 5);
+            Circuito c = CargadorCircuito.cargarDesdeTexto(texto, Config.MAX_JUGADORES);
             long ms = (System.nanoTime() - t0) / 1_000_000;
             Circuito.Geometria g = c.geometria();
             int n = g.muestras();
             StringBuilder problemas = new StringBuilder();
 
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < Config.MAX_JUGADORES; i++) {
                 Vector2 l = c.posicionesLargada().get(i);
                 if (c.superficieEn(l.x, l.y) != Superficie.PISTA || c.chocaConMuro(l.x, l.y, RADIO)) {
                     problemas.append(" largada").append(i + 1);
+                }
+                // Dos autos no pueden arrancar encimados: el choque entre autos los separaría de golpe en la largada.
+                for (int j = 0; j < i; j++) {
+                    if (l.dst(c.posicionesLargada().get(j)) < 2 * RADIO) {
+                        problemas.append(" largadasEncimadas").append(j + 1).append('-').append(i + 1);
+                    }
                 }
             }
             int ckMalos = 0;

@@ -1,7 +1,7 @@
 package ar.edu.et35.racing.vista;
 
 import ar.edu.et35.racing.juego.Circuito;
-import com.badlogic.gdx.graphics.Color;
+import ar.edu.et35.racing.util.Paleta;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.PolygonRegion;
 import com.badlogic.gdx.graphics.g2d.PolygonSpriteBatch;
@@ -20,12 +20,6 @@ import java.util.List;
  * Como cada capa es de un solo color, alcanza con teñir una textura blanca de 1 x 1 con el color del batch.
  */
 public class VistaCircuito implements Disposable {
-    private static final Color COLOR_FONDO = new Color(40 / 255f, 105 / 255f, 45 / 255f, 1f);
-    private static final Color COLOR_MURO = new Color(205 / 255f, 55 / 255f, 55 / 255f, 1f);
-    private static final Color COLOR_PASTO = new Color(76 / 255f, 150 / 255f, 70 / 255f, 1f);
-    private static final Color COLOR_ASFALTO = new Color(62 / 255f, 62 / 255f, 72 / 255f, 1f);
-    private static final Color COLOR_META = new Color(245 / 255f, 245 / 255f, 245 / 255f, 1f);
-
     /** Lados de cada círculo: con 24 el borde se aparta de un círculo perfecto menos de 1 px en el radio máximo. */
     private static final int LADOS = 24;
     /** Puntos de la línea central por bloque: con 24 vértices por círculo son unos 6.400 vértices, lejos del tope del batch. */
@@ -109,10 +103,10 @@ public class VistaCircuito implements Disposable {
 
         batch.setProjectionMatrix(camara.combined);
         batch.begin();
-        batch.setColor(COLOR_FONDO);
+        batch.setColor(Paleta.PISTA_FONDO);
         batch.draw(blanco, izquierda, abajo, mitadAncho * 2f, mitadAlto * 2f);
         for (int capa = 0; capa < 3; capa++) {
-            batch.setColor(capa == 0 ? COLOR_MURO : capa == 1 ? COLOR_PASTO : COLOR_ASFALTO);
+            batch.setColor(capa == 0 ? Paleta.PISTA_MURO : capa == 1 ? Paleta.PISTA_PASTO : Paleta.PISTA_ASFALTO);
             for (Bloque bloque : capas.get(capa)) {
                 if (bloque.derecha() >= izquierda && bloque.izquierda() <= derecha
                     && bloque.arriba() >= abajo && bloque.abajo() <= arriba) {
@@ -134,7 +128,7 @@ public class VistaCircuito implements Disposable {
         float largo = g.anchos()[0];
         // La tira va a lo ancho de la pista: su lado largo es perpendicular al sentido de la carrera.
         float grados = (float) Math.toDegrees(Math.atan2(y2 - y, x2 - x));
-        batch.setColor(COLOR_META);
+        batch.setColor(Paleta.PISTA_META);
         batch.draw(blanco, x - GROSOR_META / 2f, y - largo / 2f, GROSOR_META / 2f, largo / 2f, GROSOR_META, largo, 1f, 1f, grados);
     }
 

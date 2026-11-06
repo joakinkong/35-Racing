@@ -14,7 +14,7 @@ javac -cp $cp -d build\verificacion tools\circuitos\verificacion\PruebaCircuitos
 
 | Programa | Qué comprueba | Cómo se corre |
 |---|---|---|
-| `PruebaCircuitos` | Los circuitos cargan; los 5 lugares de largada y toda la línea central caen sobre pista y sin tocar muro; los centros de los checkpoints caen en pista | `java -cp "$cp;build\verificacion" PruebaCircuitos assets\circuitos` |
+| `PruebaCircuitos` | Los circuitos cargan; los lugares de largada (`Config.MAX_JUGADORES`) y toda la línea central caen sobre pista y sin tocar muro, y dos lugares no se encima; los centros de los checkpoints caen en pista | `java -cp "$cp;build\verificacion" PruebaCircuitos assets\circuitos` |
 | `PruebaAtajos` | Con un auto (círculo de radio 10) y la grilla de colisión, la distancia más corta desde la largada a cada punto no es mucho menor que la que hay por la pista. Solo Suzuka da atajos, por el cruce | `java -cp "$cp;build\verificacion" PruebaAtajos assets\circuitos` |
 | `PruebaVuelta` | Un bot sigue la línea central con la física real de `Auto` y mide cuánto tarda una vuelta; sirve para calibrar el largo de los circuitos (`SEGUNDOS_VUELTA` en el generador). Un segundo argumento (nombre de un circuito) muestra dónde choca | `java -cp "$cp;build\verificacion" PruebaVuelta assets\circuitos` |
 
