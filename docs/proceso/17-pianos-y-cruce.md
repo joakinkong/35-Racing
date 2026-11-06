@@ -59,4 +59,4 @@ El código y esta documentación los escribió Claude (Claude Code) a pedido de 
 
 ## Commits y PR
 
-Rama `feature/pianos-y-cruce`.
+Rama `feature/pianos-y-cruce`: `426f3f1` (código, pruebas y documentación). Entró a `develop` con el PR [#20](https://github.com/joakinkong/35-Racing/pull/20) y a `main` con el [#21](https://github.com/joakinkong/35-Racing/pull/21).
