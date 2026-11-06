@@ -27,7 +27,7 @@ import java.util.StringJoiner;
 
 /**
  * Sala de espera en vivo. Muestra los jugadores que informa el servidor, deja elegir piloto (una escudería por
- * jugador), marcar "listo" y, al host, elegir el circuito y las vueltas e iniciar. Los mensajes de la red se procesan
+ * jugador), marcar "listo" y, al host, elegir modo, circuito o calendario, vueltas, clasificación y bots, e iniciar. Los mensajes de la red se procesan
  * acá, en el hilo de render.
  *
  * <p>Dos columnas de tarjetas: a la izquierda los jugadores y la carrera (modo, circuito y vueltas); a la derecha la grilla de
