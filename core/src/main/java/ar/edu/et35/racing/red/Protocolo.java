@@ -17,7 +17,17 @@ public final class Protocolo {
 
     // Cliente -> servidor
     public static final String UNIRSE = "UNIRSE";
-    public static final String ELEGIR_AUTO = "ELEGIR_AUTO";
+    public static final String ELEGIR_PILOTO = "ELEGIR_PILOTO";
+    public static final String ELEGIR_CIRCUITO = "ELEGIR_CIRCUITO";
+    public static final String ELEGIR_VUELTAS = "ELEGIR_VUELTAS";
+    public static final String ELEGIR_CLASIFICACION = "ELEGIR_CLASIFICACION";
+    public static final String ELEGIR_MODO = "ELEGIR_MODO";
+    public static final String AGREGAR_CIRCUITO = "AGREGAR_CIRCUITO";
+    public static final String QUITAR_CIRCUITO = "QUITAR_CIRCUITO";
+    public static final String SIGUIENTE_CARRERA = "SIGUIENTE_CARRERA";
+    public static final String AGREGAR_BOT = "AGREGAR_BOT";
+    public static final String QUITAR_BOT = "QUITAR_BOT";
+    public static final String NIVEL_BOT = "NIVEL_BOT";
     public static final String LISTO = "LISTO";
     public static final String INICIAR = "INICIAR";
     public static final String REVANCHA = "REVANCHA";
@@ -28,6 +38,8 @@ public final class Protocolo {
     public static final String BIENVENIDA = "BIENVENIDA";
     public static final String LOBBY = "LOBBY";
     public static final String CUENTA_REGRESIVA = "CUENTA_REGRESIVA";
+    public static final String GRILLA = "GRILLA";
+    public static final String TORNEO = "TORNEO";
     public static final String LARGADA = "LARGADA";
     public static final String SALIO = "SALIO";
     public static final String RESULTADOS = "RESULTADOS";
@@ -46,9 +58,10 @@ public final class Protocolo {
     public static final String NOMBRE_REPETIDO = "NOMBRE_REPETIDO";
     public static final String VERSION_DISTINTA = "VERSION_DISTINTA";
     public static final String NOMBRE_INVALIDO = "NOMBRE_INVALIDO";
-    public static final String AUTO_OCUPADO = "AUTO_OCUPADO";
+    public static final String ESCUDERIA_OCUPADA = "ESCUDERIA_OCUPADA";
     public static final String NO_PERMITIDO = "NO_PERMITIDO";
     public static final String FALTAN_JUGADORES = "FALTAN_JUGADORES";
+    public static final String CIRCUITO_NO_CARGO = "CIRCUITO_NO_CARGO";
 
     /** Solo letras (con acentos y ñ), números y espacios: así el nombre nunca trae ";" ni saltos de línea. */
     private static final Pattern NOMBRE = Pattern.compile("[\\p{L}\\p{N} ]+");
@@ -102,7 +115,16 @@ public final class Protocolo {
      * -1 si no terminó o no completó ninguna vuelta.
      */
     public static String armarResultados(List<ResultadoJugador> resultados) {
-        StringBuilder linea = new StringBuilder(armar(RESULTADOS, resultados.size()));
+        return armarTabla(RESULTADOS, resultados);
+    }
+
+    /** El mensaje GRILLA, con el resultado de la clasificación: el mismo formato que RESULTADOS. */
+    public static String armarGrilla(List<ResultadoJugador> clasificacion) {
+        return armarTabla(GRILLA, clasificacion);
+    }
+
+    private static String armarTabla(String nombre, List<ResultadoJugador> resultados) {
+        StringBuilder linea = new StringBuilder(armar(nombre, resultados.size()));
         for (ResultadoJugador r : resultados) {
             linea.append(';').append(r.posicion()).append(';').append(r.id()).append(';').append(r.nombre())
                 .append(';').append(aMilisegundos(r.tiempoTotal())).append(';').append(aMilisegundos(r.mejorVuelta()));
@@ -110,7 +132,32 @@ public final class Protocolo {
         return linea.toString();
     }
 
-    /** Lee un mensaje RESULTADOS; los tiempos vuelven a segundos (NaN donde venía -1). */
+    /**
+     * Lo que trae CUENTA_REGRESIVA: {@code CUENTA_REGRESIVA;circuito;vueltas;segundos;clasificacion;cantidad;id...}.
+     *
+     * @param grilla ids en el orden de largada; vacía en una clasificación, donde todos salen del mismo lugar
+     */
+    public record Cuenta(String circuito, int vueltas, boolean clasificacion, List<Integer> grilla) {
+    }
+
+    public static String armarCuenta(String circuito, int vueltas, int segundos, boolean clasificacion, List<Integer> grilla) {
+        StringBuilder linea = new StringBuilder(armar(CUENTA_REGRESIVA, circuito, vueltas, segundos, clasificacion ? 1 : 0, grilla.size()));
+        for (int id : grilla) {
+            linea.append(';').append(id);
+        }
+        return linea.toString();
+    }
+
+    public static Cuenta leerCuenta(Mensaje mensaje) {
+        int cantidad = Math.min(mensaje.entero(4, 0), Config.MAX_JUGADORES);
+        List<Integer> grilla = new ArrayList<>();
+        for (int i = 0; i < cantidad; i++) {
+            grilla.add(mensaje.entero(5 + i, -1));
+        }
+        return new Cuenta(mensaje.campo(0), mensaje.entero(1, Config.VUELTAS), mensaje.campo(3).equals("1"), List.copyOf(grilla));
+    }
+
+    /** Lee un mensaje RESULTADOS o GRILLA; los tiempos vuelven a segundos (NaN donde venía -1). */
     public static List<ResultadoJugador> leerResultados(Mensaje mensaje) {
         int cantidad = Math.min(mensaje.entero(0, 0), Config.MAX_JUGADORES);
         List<ResultadoJugador> lista = new ArrayList<>();

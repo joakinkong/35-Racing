@@ -45,17 +45,24 @@ public class Auto {
         vAdelante = aplicarRozamiento(entrada, vAdelante, enPasto, dt);
         vLateral *= Math.max(0f, 1f - ParametrosAuto.AGARRE * dt);
 
+        // Girar cuesta velocidad: las gomas que doblan no empujan. Pierde más cuanto más gira y más rápido va.
+        float giro = velocidadDeGiro(entrada, vAdelante);
+        vAdelante -= vAdelante * ParametrosAuto.PERDIDA_POR_GIRO * Math.abs(giro) * MathUtils.degreesToRadians * dt;
+
         // La velocidad se reconstruye con el ángulo viejo; al girar, parte de ella pasa a ser lateral.
         velocidad.set(adelanteX * vAdelante + lateralX * vLateral, adelanteY * vAdelante + lateralY * vLateral);
 
-        angulo += velocidadDeGiro(entrada, vAdelante) * dt;
+        angulo += giro * dt;
 
         mover(circuito, dt);
     }
 
     private float aplicarPedales(EntradaAuto entrada, float vAdelante, float velocidadMaxima, float dt) {
         if (entrada.acelerar && vAdelante < velocidadMaxima) {
-            vAdelante = Math.min(velocidadMaxima, vAdelante + ParametrosAuto.ACELERACION * dt);
+            // El motor empuja menos a medida que se acerca a la velocidad máxima.
+            float fraccion = MathUtils.clamp(vAdelante / ParametrosAuto.VELOCIDAD_MAX, 0f, 1f);
+            float aceleracion = ParametrosAuto.ACELERACION * (1f - ParametrosAuto.PERDIDA_ACELERACION * fraccion);
+            vAdelante = Math.min(velocidadMaxima, vAdelante + aceleracion * dt);
         }
         if (entrada.frenar) {
             if (vAdelante > ParametrosAuto.UMBRAL_PARADO) {
@@ -89,11 +96,19 @@ public class Auto {
         return vAdelante - Math.signum(vAdelante) * perdida;
     }
 
-    /** Grados por segundo. Parado no gira; en reversa gira al revés. */
+    /**
+     * Grados por segundo. Parado no gira; en reversa gira al revés. A poca velocidad gira todo lo que puede; a mucha,
+     * el agarre lo limita (aceleración lateral = velocidad × giro), así que cuanto más rápido, más abierta la curva.
+     */
     private float velocidadDeGiro(EntradaAuto entrada, float vAdelante) {
-        float factor = MathUtils.clamp(Math.abs(vAdelante) / ParametrosAuto.VELOCIDAD_GIRO_COMPLETO, 0f, 1f);
+        float velocidad = Math.abs(vAdelante);
+        float factor = MathUtils.clamp(velocidad / ParametrosAuto.VELOCIDAD_GIRO_COMPLETO, 0f, 1f);
+        float giro = ParametrosAuto.GIRO_MAX * factor;
+        if (velocidad > 0f) {
+            giro = Math.min(giro, ParametrosAuto.ACELERACION_LATERAL / velocidad * MathUtils.radiansToDegrees);
+        }
         float sentido = vAdelante >= 0f ? 1f : -1f;
-        return entrada.giro * ParametrosAuto.GIRO_MAX * factor * sentido;
+        return entrada.giro * giro * sentido;
     }
 
     /**
