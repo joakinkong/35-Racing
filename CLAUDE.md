@@ -1,6 +1,6 @@
 # 35 Racing
 
-Proyecto final de Programación sobre Redes (grupo de 5). Juego de carreras 2D estilo F1 arcade, vista cenital, con la estética de PIT WALL (la página de F1 de Joaquín, donde se piensa sumar como minijuego). Multijugador por LAN: de 2 a 8 jugadores (Config.MAX_JUGADORES = 8), cada uno en su PC. Uno crea la partida (host: servidor + jugador) y el resto se une por IP.
+Proyecto final de Programación sobre Redes (grupo de 5). Juego de carreras 2D estilo F1 arcade, vista cenital, con la estética de PIT WALL (la página de F1 de Joaquín, donde se piensa sumar como minijuego). Multijugador por LAN: de 2 a 22 autos (Config.MAX_JUGADORES = 22): hasta 8 personas (Config.MAX_PERSONAS), cada una en su PC, y el resto bots. El host elige la capacidad de la sala al crearla. Uno crea la partida (host: servidor + jugador) y el resto se une por IP.
 
 ## Stack (obligatorio por las pautas de la materia)
 - Java 17 + LibGDX (proyecto de gdx-liftoff), Gradle, Eclipse. Módulos: core (todo el juego) y lwjgl3 (lanzador de escritorio).

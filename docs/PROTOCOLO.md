@@ -2,7 +2,7 @@
 
 Especificación de la comunicación en red del juego. Es la referencia para implementar las etapas 6 a 8 y lo que el grupo tiene que poder explicar. Si el código y este documento no coinciden, se corrige uno de los dos: no se deja la diferencia.
 
-**Condiciones de partida:** red local (LAN), de 2 a 8 jugadores, cada uno en su PC, conexión por la IP del host, solo `java.net` (`Socket`, `ServerSocket`, `DatagramSocket`), sin bibliotecas de red de terceros. Versión del protocolo: **7**.
+**Condiciones de partida:** red local (LAN), de 2 a 22 autos (hasta 8 personas, cada una en su PC; el resto, bots), conexión por la IP del host, solo `java.net` (`Socket`, `ServerSocket`, `DatagramSocket`), sin bibliotecas de red de terceros. Versión del protocolo: **9**.
 
 **Criterio general:** se elige lo más simple que funcione bien en una LAN. Las técnicas pensadas para jugar por Internet (predicción, compensación de latencia, compresión) quedan afuera mientras no hagan falta.
 
@@ -96,12 +96,14 @@ Reglas para que ambos lados se entiendan igual:
 | `ELEGIR_PILOTO;<piloto>` | índice del piloto en `Catalogo.PILOTOS`, de 0 a 21 (11 escuderías, 2 pilotos cada una; el piloto `i` es de la escudería `i / 2`) | En el lobby, al elegir otro piloto |
 | `ELEGIR_CIRCUITO;<circuito>` | índice del circuito en `Catalogo.CIRCUITOS`, de 0 a 23 | Solo el host, en el lobby |
 | `ELEGIR_VUELTAS;<vueltas>` | cantidad de vueltas, de `MIN_VUELTAS` (1) a `MAX_VUELTAS` (10) | Solo el host, en el lobby |
-| `ELEGIR_CLASIFICACION;<hay>` | `1` si hay clasificación, `0` si no | Solo el host, en el lobby |
+| `ELEGIR_GRILLA;<modo>` | `0` a mano (sin clasificación, se larga con el orden que armó el host), `1` clasificación, `2` al azar (sin clasificación, la grilla se sortea antes de cada carrera) | Solo el host, en el lobby |
+| `MOVER_GRILLA;<id>;<lugares>` | id del auto y `-1` (sube un lugar) o `1` (baja uno) | Solo el host, en el lobby y con la grilla a mano |
+| `GRILLA_AL_AZAR` | (sin campos) | Solo el host, en el lobby y con la grilla a mano: mezcla el orden ahora |
 | `ELEGIR_MODO;<torneo>` | `1` para torneo, `0` para carrera única. Si el calendario está vacío, arranca con el circuito elegido | Solo el host, en el lobby |
 | `AGREGAR_CIRCUITO;<circuito>` | índice del circuito que se suma al final del calendario; se puede repetir, hasta `MAX_CARRERAS_TORNEO` (32) | Solo el host, en el lobby |
 | `QUITAR_CIRCUITO;<lugar>` | lugar en el calendario, desde 0. La última carrera que queda no se puede sacar | Solo el host, en el lobby |
 | `SIGUIENTE_CARRERA` | (ninguno) | Solo el host, en resultados y si quedan carreras en el torneo |
-| `AGREGAR_BOT;<nivel>` | 0 fácil, 1 medio, 2 difícil | Solo el host, en el lobby |
+| `AGREGAR_BOT;<nivel>;<piloto>` | `nivel`: 0 fácil, 1 medio, 2 difícil. `piloto`: índice del piloto que se suma, o `-1` para que el servidor dé el primero libre | Solo el host, en el lobby |
 | `QUITAR_BOT;<id>` | id de un bot; si es el de una persona, se ignora | Solo el host, en el lobby |
 | `NIVEL_BOT;<id>;<nivel>` | id de un bot y su nivel nuevo | Solo el host, en el lobby |
 | `LISTO;<valor>` | `1` = listo, `0` = no listo | En el lobby |
@@ -115,7 +117,7 @@ Reglas para que ambos lados se entiendan igual:
 | Mensaje | Campos | Cuándo se envía |
 |---|---|---|
 | `BIENVENIDA;<id>;<token>;<esHost>;<puertoUdp>` | id asignado (0 a 7); token para los paquetes UDP (entero al azar); `1` si es el host; puerto UDP del servidor | Respuesta a un `UNIRSE` aceptado |
-| `LOBBY;<idHost>;<circuito>;<vueltas>;<clasificacion>;<torneo>;<calendario>;<cantidad>;` y, por cada auto, `<id>;<nombre>;<piloto>;<listo>;<nivelBot>` | quién es el host; circuito y vueltas elegidos; `1` si hay clasificación; `1` si es un torneo; los circuitos del calendario, separados por comas; cantidad de autos; los datos de cada uno (`nivelBot` es -1 en una persona y el nivel en un bot) | A todos, cada vez que cambia algo del lobby (entra o sale alguien, elige piloto, circuito o vueltas, marca listo, revancha) |
+| `LOBBY;<idHost>;<circuito>;<vueltas>;<modoGrilla>;<torneo>;<calendario>;<capacidad>;<cantidad>;` y, por cada auto, **en el orden de la grilla**, `<id>;<nombre>;<piloto>;<listo>;<nivelBot>` | quién es el host; circuito y vueltas elegidos; `modoGrilla`: 0 a mano, 1 clasificación, 2 al azar; `1` si es un torneo; los circuitos del calendario, separados por comas; `capacidad`: máximo de autos de la sala, que el host eligió al crearla (de 2 a 22); cantidad de autos; los datos de cada uno (`nivelBot` es -1 en una persona y el nivel en un bot) | A todos, cada vez que cambia algo del lobby (entra o sale alguien, elige piloto, circuito o vueltas, marca listo, revancha) |
 | `CUENTA_REGRESIVA;<circuito>;<vueltas>;<segundos>;<clasificacion>;<cantidad>;<id>...` | nombre del archivo del circuito elegido (por ejemplo `monza`; es `archivo` en `Catalogo.CIRCUITOS`); vueltas (1 en la clasificación); duración de la cuenta (3); `1` si es la clasificación; los ids en el orden de largada (ninguno en la clasificación, donde todos salen del mismo lugar) | A todos, al aceptar `INICIAR` y al terminar la grilla |
 | `TORNEO;<carrera>;<total>;<siguiente>;<cantidad>;` y, por cada auto, `<id>;<nombre>;<puntos>;<puntosCarrera>;<victorias>` | número de la carrera actual y total; índice del circuito que sigue, o -1 si es la última; la tabla, ya ordenada | A todos, en un torneo: antes de cada `CUENTA_REGRESIVA` que abre una carrera y antes de cada `RESULTADOS` |
 | `GRILLA;<cantidad>;` y, por cada auto, `<posicion>;<id>;<nombre>;<totalMs>;<mejorVueltaMs>` | el resultado de la clasificación, con el mismo formato que `RESULTADOS` | A todos, cuando termina la clasificación |
@@ -126,24 +128,24 @@ Reglas para que ambos lados se entiendan igual:
 | `CERRADA;<motivo>` | texto para mostrar | A todos, cuando el host cierra la partida |
 | `PONG;<marca>` | la misma marca del `PING` | Respuesta a cada `PING` |
 
-Al unirse, el servidor le asigna al jugador el **primer piloto de la primera escudería libre**, así nadie queda sin piloto; `ELEGIR_PILOTO` lo cambia si nadie más corre para esa escudería (se puede cambiar al compañero de equipo propio). Cada escudería tiene su color, así que dos jugadores nunca comparten escudería. El circuito arranca en `Config.CIRCUITO` y las vueltas en `Config.VUELTAS`; solo el host los cambia, y la revancha conserva lo elegido. Los índices de piloto y de circuito son los de `Catalogo` (paquete `juego`): todas las PC tienen que tener el mismo catálogo, y si cambia el orden de sus listas hay que subir `VERSION_PROTOCOLO`. Sin clasificación, el orden en la grilla de largada es el orden de llegada al lobby; con clasificación, el de los tiempos. **El host es el primer jugador que se une**: es el que crea la partida y su cliente se conecta a su propio servidor enseguida. Una conexión que no manda `UNIRSE` (ni nada) queda sin datos, y a los 6 s el servidor la cierra por timeout.
+Al unirse, el servidor le asigna al jugador el **primer piloto de la primera escudería libre**, así nadie queda sin piloto; `ELEGIR_PILOTO` lo cambia si ese piloto no lo tiene otra persona. Cada piloto lo tiene un solo auto, pero los dos de una misma escudería pueden correr a la vez; el segundo de cada escudería lleva un cuadradito verde fluo en el techo para distinguirlos. Si el piloto elegido lo tiene un bot, se intercambian: el bot pasa a tener el piloto que dejó la persona. El circuito arranca en `Config.CIRCUITO` y las vueltas en `Config.VUELTAS`; solo el host los cambia, y la revancha conserva lo elegido. Los índices de piloto y de circuito son los de `Catalogo` (paquete `juego`): todas las PC tienen que tener el mismo catálogo, y si cambia el orden de sus listas hay que subir `VERSION_PROTOCOLO`. Sin clasificación, el orden en la grilla de largada es el orden de llegada al lobby; con clasificación, el de los tiempos. **El host es el primer jugador que se une**: es el que crea la partida y su cliente se conecta a su propio servidor enseguida. Una conexión que no manda `UNIRSE` (ni nada) queda sin datos, y a los 6 s el servidor la cierra por timeout.
 
-Ejemplo de `LOBBY` con el circuito 14 (Monza), 3 vueltas y dos jugadores, donde el host (id 0) eligió el piloto 0 (George Russell, Mercedes) y está listo, y el otro eligió el piloto 9 (Franco Colapinto, Alpine) y no está listo:
+Ejemplo de `LOBBY` con el circuito 14 (Monza), 3 vueltas, una sala de 8 autos y dos jugadores, donde el host (id 0) eligió el piloto 0 (George Russell, Mercedes) y está listo, y el otro eligió el piloto 9 (Franco Colapinto, Alpine) y no está listo:
 
 ```text
-LOBBY;0;14;3;0;0;;2;0;Joaquin;0;1;-1;1;Mateo;9;0;-1
+LOBBY;0;14;3;0;0;;8;2;0;Joaquin;0;1;-1;1;Mateo;9;0;-1
 ```
 
 ### Errores
 
 | Código | Cuándo | ¿Cierra la conexión? |
 |---|---|---|
-| `PARTIDA_LLENA` | Ya hay `MAX_JUGADORES` (8) personas, o el host pide un bot con los 8 autos completos (a él no se le cierra la conexión) | Sí |
+| `PARTIDA_LLENA` | Ya hay `MAX_PERSONAS` (8) personas, o tantas como la capacidad de la sala si es menor; o el host pide un bot con todos los autos de la sala completos (a él no se le cierra la conexión) | Sí |
 | `CARRERA_EN_CURSO` | Alguien intenta unirse fuera del lobby | Sí |
 | `NOMBRE_REPETIDO` | Otro jugador ya usa ese nombre (sin distinguir mayúsculas) | Sí |
 | `VERSION_DISTINTA` | La versión del `UNIRSE` no es la del servidor | Sí |
 | `NOMBRE_INVALIDO` | Nombre vacío, de más de 12 caracteres o con caracteres no permitidos | Sí |
-| `ESCUDERIA_OCUPADA` | `ELEGIR_PILOTO` de un piloto cuya escudería ya tiene otro jugador | No |
+| `PILOTO_OCUPADO` | `ELEGIR_PILOTO` de un piloto que ya tiene otra persona, o `AGREGAR_BOT` de un piloto que ya está en la sala | No |
 | `NO_PERMITIDO` | `INICIAR`, `REVANCHA`, `ELEGIR_CIRCUITO`, `ELEGIR_VUELTAS`, `SIGUIENTE_CARRERA`, los del calendario o los de bots de alguien que no es el host, o en un estado en que no corresponde (por ejemplo, `ELEGIR_PILOTO` con la carrera empezada) | No |
 | `CIRCUITO_NO_CARGO` | `INICIAR` cuando el host no pudo cargar el circuito elegido (el servidor lo carga recién al iniciar) | No |
 | `FALTAN_JUGADORES` | `INICIAR` con menos de 2 jugadores o con alguno que no está listo | No |
@@ -152,11 +154,11 @@ Cuando el error cierra la conexión, el servidor manda el `ERROR` y después cie
 
 ---
 
-**Torneo.** Si el host lo eligió, `INICIAR` corre la primera carrera del calendario y, después de cada `RESULTADOS`, el host manda `SIGUIENTE_CARRERA`. Las vueltas y la clasificación son las mismas en todas. El servidor manda `TORNEO` antes de `RESULTADOS` porque TCP entrega en orden: cuando el cliente pasa a los resultados, ya tiene la tabla. Durante el torneo no se manda `LOBBY`, así que recibir uno significa que se volvió a la sala. Los puntos los calcula solo el servidor, en `juego/Torneo`: por cada carrera, según los autos que largaron y contando desde el último, 1, 2, 4, 6, 8, 10, 12 y 15 (`Config.PUNTOS_DESDE_EL_ULTIMO`). El que se va sin terminar no suma en esa carrera y conserva lo que tenía. Los empates se definen por las llegadas: más victorias, si no más segundos puestos, si no más terceros, y así; iguales en todo, va adelante el que entró antes a la sala.
+**Torneo.** Si el host lo eligió, `INICIAR` corre la primera carrera del calendario y, después de cada `RESULTADOS`, el host manda `SIGUIENTE_CARRERA`. Las vueltas y la clasificación son las mismas en todas. El servidor manda `TORNEO` antes de `RESULTADOS` porque TCP entrega en orden: cuando el cliente pasa a los resultados, ya tiene la tabla. Durante el torneo no se manda `LOBBY`, así que recibir uno significa que se volvió a la sala. Los puntos los calcula solo el servidor, en `juego/Torneo`: por cada carrera, según los autos que largaron y contando desde el último, 1, 2, 4, 6, 8, 10, 12 y 15 (`Config.PUNTOS_DESDE_EL_ULTIMO`) hasta 8 autos; con más, la tabla de la F1: 25, 18, 15, 12, 10, 8, 6, 4, 2 y 1 para los diez primeros y 0 para el resto (`Config.PUNTOS_F1`). El que se va sin terminar no suma en esa carrera y conserva lo que tenía. Los empates se definen por las llegadas: más victorias, si no más segundos puestos, si no más terceros, y así; iguales en todo, va adelante el que entró antes a la sala.
 
 **Clasificación.** Si el host la activó, `INICIAR` arranca primero una carrera de una vuelta en que todos salen del primer lugar de la grilla y los autos no se chocan. El `ESTADO` sigue trayendo a todos; cada cliente solo dibuja el suyo, en la pista, en el mapa y en la torre de tiempos. El cierre es de `TIEMPO_CIERRE_CLASIFICACION` (60 s).
 
-**Bots.** Un bot es un jugador sin conexión: el servidor calcula sus entradas en el hilo de simulación (`PilotoBot`), así que no manda ni recibe nada por la red, y su auto viaja en el `ESTADO` como cualquier otro. Los bots siempre están listos, y en el `LOBBY` y en la grilla van después de las personas. Si entra una persona con los 8 autos completos, sale el último bot; si una persona elige la escudería de un bot, el bot se pasa a la primera libre.
+**Bots.** Un bot es un jugador sin conexión: el servidor calcula sus entradas en el hilo de simulación (`PilotoBot`), así que no manda ni recibe nada por la red, y su auto viaja en el `ESTADO` como cualquier otro. Los bots siempre están listos, y en el `LOBBY` y en la grilla van después de las personas. Si entra una persona con todos los autos de la sala completos, sale el último bot. El host elige qué piloto suma como bot (`AGREGAR_BOT` con el piloto) y puede sumar a los dos de una misma escudería; si una persona elige el piloto de un bot, se intercambian.
 
 ---
 
@@ -182,7 +184,7 @@ La entrada es un **estado** (qué botones están apretados ahora) y no un evento
 
 ### `ESTADO` (servidor → todos): 12 + 24 × cantidad de autos bytes
 
-Un solo datagrama lleva todos los autos. Con 8 autos son **204 bytes**, muy por debajo de los 1.472 bytes que entran en un paquete de Ethernet sin fragmentarse.
+Un solo datagrama lleva todos los autos. Con 22 autos son **540 bytes** (con 8 son 204), muy por debajo de los 1.472 bytes que entran en un paquete de Ethernet sin fragmentarse.
 
 Cabecera (12 bytes):
 
@@ -193,7 +195,7 @@ Cabecera (12 bytes):
 | 5 | 1 | estado de la carrera | `byte` | 0 cuenta regresiva, 1 en curso, 2 terminada |
 | 6 a 9 | 4 | reloj | `float` | segundos de carrera; negativo durante la cuenta regresiva (-2,4 = faltan 2,4 s) |
 | 10 | 1 | cierre | `byte` | segundos que quedan de cierre, redondeados hacia arriba; 255 = no hay cierre |
-| 11 | 1 | cantidad de autos | `byte` | N, de 1 a 8 |
+| 11 | 1 | cantidad de autos | `byte` | N, de 1 a 22 |
 
 Después, un bloque de 24 bytes por auto (los desconectados también van, con su bandera):
 
@@ -204,7 +206,7 @@ Después, un bloque de 24 bytes por auto (los desconectados también van, con su
 | 5 a 8 | 4 | y | `float` | píxeles de mundo |
 | 9 a 12 | 4 | ángulo | `float` | grados (0 = derecha, 90 = arriba) |
 | 13 | 1 | vueltas completadas | `byte` | 0 a `MAX_VUELTAS` (10) |
-| 14 | 1 | posición en carrera | `byte` | 1 a 8 |
+| 14 | 1 | posición en carrera | `byte` | 1 a 22 |
 | 15 | 1 | banderas | `byte` | bit 0 terminó, bit 1 desconectado |
 | 16 a 19 | 4 | tiempo | `float` | segundos de la vuelta actual; si terminó, el tiempo total |
 | 20 a 23 | 4 | mejor vuelta | `float` | segundos; `NaN` si todavía no completó ninguna |
@@ -243,17 +245,17 @@ Como el servidor le contesta a la misma dirección desde la que el cliente le es
 | `ESTADO`, del servidor a cada cliente | 30 por segundo (uno cada 2 ticks) | `ENVIOS_ESTADO_POR_SEGUNDO` |
 | `PING` por TCP | cada 2 s | `INTERVALO_PING` |
 
-### Cuenta del ancho de banda con 8 jugadores
+### Cuenta del ancho de banda con 22 autos y 8 personas
 
 A cada datagrama se le suman 28 bytes de cabeceras (20 de IP y 8 de UDP). No se cuenta la trama Ethernet.
 
 | Flujo | Tamaño con cabeceras | Por cliente | En la placa de red del host |
 |---|---|---|---|
-| `ESTADO` | 204 + 28 = 232 bytes | 232 × 30 = **6.960 bytes/s** que recibe cada cliente | Salen 7 × 6.960 = **48.720 bytes/s** hacia los 7 remotos (el octavo, el propio host, va por `127.0.0.1` y no pasa por la red) |
+| `ESTADO` | 540 + 28 = 568 bytes | 568 × 30 = **17.040 bytes/s** que recibe cada cliente | Salen 7 × 17.040 = **119.280 bytes/s** hacia los 7 remotos (el octavo, el propio host, va por `127.0.0.1` y no pasa por la red); los bots no reciben nada |
 | `ENTRADA` | 11 + 28 = 39 bytes | 39 × 60 = **2.340 bytes/s** que envía cada cliente | Entran 7 × 2.340 = **16.380 bytes/s** |
 | TCP | Unos pocos mensajes por segundo en el lobby y un `PING` cada 2 s | Despreciable | Despreciable |
 
-Total en la placa del host: 48.720 + 16.380 = **65.100 bytes/s, unos 0,52 Mbit/s**, el 0,52 % de una red de 100 Mbit/s. En paquetes: salen 210 y entran 420 por segundo. Ni la red cableada ni una Wi-Fi común tienen problema con eso.
+Total en la placa del host: 119.280 + 16.380 = **135.660 bytes/s, unos 1,09 Mbit/s**, el 1,09 % de una red de 100 Mbit/s (con 8 autos eran 0,52 Mbit/s). En paquetes: salen 210 y entran 420 por segundo. Ni la red cableada ni una Wi-Fi común tienen problema con eso.
 
 Si hiciera falta mandar los estados a 60 Hz (sección 6), serían 13.920 bytes/s por cliente y 0,91 Mbit/s en el host: sigue siendo muy poco.
 
@@ -311,7 +313,7 @@ Casi toda la demora es el retraso de interpolación, no la red. En un juego de c
 
 **Regla principal: el estado de la partida (jugadores, lobby, `Carrera`) lo toca un solo hilo, el de simulación.** Así no hacen falta `synchronized` en el modelo ni pueden aparecer condiciones de carrera en él. Los otros hilos solo le pasan datos por dos vías:
 
-- **Cola de eventos** (`ConcurrentLinkedQueue`): para lo que llega por TCP (`UNIRSE`, `ELEGIR_PILOTO`, `ELEGIR_CIRCUITO`, `ELEGIR_VUELTAS`, `ELEGIR_CLASIFICACION`, `ELEGIR_MODO`, `AGREGAR_CIRCUITO`, `QUITAR_CIRCUITO`, `SIGUIENTE_CARRERA`, `AGREGAR_BOT`, `QUITAR_BOT`, `NIVEL_BOT`, `LISTO`, `INICIAR`, `REVANCHA`, `SALIR`, desconexiones). Son eventos: ninguno se puede perder, y se procesan en el orden en que llegaron.
+- **Cola de eventos** (`ConcurrentLinkedQueue`): para lo que llega por TCP (`UNIRSE`, `ELEGIR_PILOTO`, `ELEGIR_CIRCUITO`, `ELEGIR_VUELTAS`, `ELEGIR_GRILLA`, `MOVER_GRILLA`, `GRILLA_AL_AZAR`, `ELEGIR_MODO`, `AGREGAR_CIRCUITO`, `QUITAR_CIRCUITO`, `SIGUIENTE_CARRERA`, `AGREGAR_BOT`, `QUITAR_BOT`, `NIVEL_BOT`, `LISTO`, `INICIAR`, `REVANCHA`, `SALIR`, desconexiones). Son eventos: ninguno se puede perder, y se procesan en el orden en que llegaron.
 - **Última entrada por jugador** (un campo `volatile int` con los bits de los botones, y otro con el momento en que llegó): para lo que llega por UDP. Solo importa el valor más reciente, así que no hace falta cola. Hay un solo hilo que escribe (el receptor UDP) y uno solo que lee (el de simulación), y con `volatile` alcanza para que el lector vea el último valor.
 
 Es la misma lógica que TCP y UDP (sección 9): lo que no se puede perder va en cola; lo que se reemplaza constantemente, en un solo lugar que se sobrescribe.
@@ -437,7 +439,7 @@ Las que ya existen (`MAX_JUGADORES`, `VUELTAS`, `TICKS_POR_SEGUNDO`, `PUERTO_TCP
 
 | Constante | Valor | Para qué |
 |---|---|---|
-| `VERSION_PROTOCOLO` | 7 | Se manda en `UNIRSE`; si cambia el formato de algún mensaje o el orden del catálogo, se sube. La 2 agregó el circuito al `LOBBY` y cambió el auto (0 a 4) por el piloto (0 a 21); la 3 agregó las vueltas; la 4 sube el máximo a 8 jugadores; la 5 agrega los bots; la 6, la clasificación; la 7, los torneos |
+| `VERSION_PROTOCOLO` | 9 | Se manda en `UNIRSE`; si cambia el formato de algún mensaje o el orden del catálogo, se sube. La 2 agregó el circuito al `LOBBY` y cambió el auto (0 a 4) por el piloto (0 a 21); la 3 agregó las vueltas; la 4 sube el máximo a 8 jugadores; la 5 agrega los bots; la 6, la clasificación; la 7, los torneos; la 8, la capacidad de la sala en el `LOBBY`, el piloto en `AGREGAR_BOT`, hasta 22 autos y el error `PILOTO_OCUPADO` en lugar de `ESCUDERIA_OCUPADA`; la 9, los tres modos de grilla (`ELEGIR_GRILLA` reemplaza a `ELEGIR_CLASIFICACION`, y el `LOBBY` trae el modo en lugar de un 0 o 1), `MOVER_GRILLA` y `GRILLA_AL_AZAR` |
 | `MIN_VUELTAS` / `MAX_VUELTAS` | 1 / 10 | Rango de vueltas que puede elegir el host (`VUELTAS` = 3 es el valor inicial) |
 | `MIN_JUGADORES` | 2 | Mínimo de autos, contando bots, para `INICIAR` |
 | `LARGO_MAXIMO_NOMBRE` | 12 | Validación del nombre |
