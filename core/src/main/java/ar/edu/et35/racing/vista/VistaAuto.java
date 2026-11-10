@@ -16,6 +16,8 @@ public class VistaAuto implements Disposable {
     private static final Color NEGRO = new Color(0.06f, 0.06f, 0.08f, 1f);
     private static final Color CARBONO = new Color(0.15f, 0.15f, 0.17f, 1f);
     private static final Color CASCO = Color.WHITE;
+    /** La marca del segundo piloto de cada escudería: verde fluo, sobre el techo (la toma de aire). */
+    private static final Color VERDE_FLUO = new Color(0.22f, 1f, 0.08f, 1f);
 
     /** El cuerpo, de la cola a la trompa: x y medio ancho en cada estación. */
     private static final float[][] CUERPO = {
@@ -36,7 +38,7 @@ public class VistaAuto implements Disposable {
      * Dibuja un auto en esa posición y ángulo (grados). Recibe datos simples y no un {@code Auto}, porque en red el
      * cliente no tiene la física del auto: solo lo que le manda el servidor.
      */
-    public void dibujar(float x, float y, float grados, Color color, Color detalle, OrthographicCamera camara) {
+    public void dibujar(float x, float y, float grados, Color color, Color detalle, boolean segundoPiloto, OrthographicCamera camara) {
         cos = MathUtils.cosDeg(grados);
         sen = MathUtils.sinDeg(grados);
         origenX = x;
@@ -65,6 +67,9 @@ public class VistaAuto implements Disposable {
         rectangulo(-8f, -4.8f, -1.5f, -3.5f, detalle);
         rectangulo(-5.5f, -1.9f, 2.5f, 1.9f, NEGRO);
         circulo(-1.5f, 0f, 1.5f, CASCO);
+        if (segundoPiloto) {
+            rectangulo(-8.5f, -1.6f, -5.3f, 1.6f, VERDE_FLUO);
+        }
         formas.end();
     }
 

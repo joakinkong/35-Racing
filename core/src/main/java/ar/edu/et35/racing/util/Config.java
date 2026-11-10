@@ -6,7 +6,10 @@ public final class Config {
     }
 
     // Reglas de la partida
-    public static final int MAX_JUGADORES = 8;
+    /** Máximo de autos en pista (personas y bots): los 22 pilotos de la grilla. */
+    public static final int MAX_JUGADORES = 22;
+    /** Máximo de personas conectadas a la vez; el resto de los autos son bots. */
+    public static final int MAX_PERSONAS = 8;
     /** Vueltas por defecto; el host puede cambiarlas en el lobby entre MIN_VUELTAS y MAX_VUELTAS. */
     public static final int VUELTAS = 3;
     public static final int MIN_VUELTAS = 1;
@@ -21,9 +24,12 @@ public final class Config {
     public static final int SEGUNDOS_CUENTA_REGRESIVA = 3;
     /**
      * Puntos del torneo contados desde el último: el último suma 1, el anteúltimo 2, y así. Es la tabla de la F1 al revés,
-     * hasta donde alcanzan los autos: con 8, el ganador suma 15. Tiene que tener MAX_JUGADORES valores.
+     * hasta donde alcanzan los autos: con 8, el ganador suma 15. Se usa con hasta MAX_AUTOS_TABLA_INVERSA autos.
      */
     public static final int[] PUNTOS_DESDE_EL_ULTIMO = {1, 2, 4, 6, 8, 10, 12, 15};
+    public static final int MAX_AUTOS_TABLA_INVERSA = PUNTOS_DESDE_EL_ULTIMO.length;
+    /** Con más autos que MAX_AUTOS_TABLA_INVERSA se usa la tabla de la F1: los primeros diez puntúan, el resto no. */
+    public static final int[] PUNTOS_F1 = {25, 18, 15, 12, 10, 8, 6, 4, 2, 1};
     /** Tope del calendario de un torneo. Solo acota el mensaje LOBBY y lo que entra en la sala. */
     public static final int MAX_CARRERAS_TORNEO = 32;
     /** Cuánto se muestra el cartel "¡YA!" después de largar. */
@@ -39,7 +45,7 @@ public final class Config {
     public static final int PUERTO_UDP = 7778;
     public static final boolean DEBUG_RED = true;
     /** Versión del formato de los mensajes; se manda en UNIRSE y si no coincide el servidor rechaza al cliente. */
-    public static final int VERSION_PROTOCOLO = 7;
+    public static final int VERSION_PROTOCOLO = 9;
     /** Autos mínimos (jugadores más bots) para que el host pueda iniciar la carrera. */
     public static final int MIN_JUGADORES = 2;
     public static final int LARGO_MAXIMO_NOMBRE = 12;

@@ -77,6 +77,11 @@ public final class Catalogo {
         new InfoCircuito("lusail", "GP de Catar", "Lusail International Circuit", "Lusail", "qa", 5.419f, 16),
         new InfoCircuito("yas_marina", "GP de Abu Dabi", "Yas Marina Circuit", "Abu Dabi", "ae", 5.281f, 16));
 
+    /** Si es el segundo piloto de su escudería: en pista lleva un cuadradito verde fluo en el techo, como en la F1. */
+    public static boolean esSegundoPiloto(int piloto) {
+        return pilotoValido(piloto) && piloto % 2 == 1;
+    }
+
     public static boolean pilotoValido(int piloto) {
         return piloto >= 0 && piloto < PILOTOS.size();
     }

@@ -5,6 +5,7 @@ import ar.edu.et35.racing.juego.Catalogo;
 import ar.edu.et35.racing.juego.Circuito;
 import ar.edu.et35.racing.juego.EntradaAuto;
 import ar.edu.et35.racing.juego.EstadoCarrera;
+import ar.edu.et35.racing.juego.ModoGrilla;
 import ar.edu.et35.racing.juego.NivelBot;
 import ar.edu.et35.racing.juego.Participante;
 import ar.edu.et35.racing.juego.PilotoBot;
@@ -30,6 +31,7 @@ import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -193,8 +195,10 @@ public class ServidorPartida {
     private int circuitoElegido;
     /** Vueltas elegidas por el host en el lobby. */
     private int vueltasElegidas = Config.VUELTAS;
-    /** Si el host pidió clasificación antes de la carrera. */
-    private boolean hayClasificacion;
+    /** Cómo se arma la grilla: a mano, con clasificación o al azar. */
+    private ModoGrilla modoGrilla = ModoGrilla.MANUAL;
+    /** Ids de los autos en el orden de la grilla sin clasificación; lo arma el host o el sorteo (ver {@link #sincronizarGrilla}). */
+    private final List<Integer> ordenGrilla = new ArrayList<>();
     /** Si el host eligió torneo en lugar de carrera única. */
     private boolean modoTorneo;
     /** Los circuitos del torneo en orden. Se conserva si el host vuelve a carrera única o después de una revancha. */
@@ -214,7 +218,11 @@ public class ServidorPartida {
     /** Número de tick de la simulación: nunca vuelve atrás, ni entre carreras. Es la secuencia del ESTADO. */
     private int tick;
 
-    private ServidorPartida(ServerSocket socketTcp, DatagramSocket socketUdp, ProveedorCircuitos proveedor) {
+    /** Máximo de autos (personas y bots) de esta sala; lo elige el host al crearla y no cambia. */
+    private final int capacidad;
+
+    private ServidorPartida(ServerSocket socketTcp, DatagramSocket socketUdp, ProveedorCircuitos proveedor, int capacidad) {
+        this.capacidad = capacidad;
         this.socketTcp = socketTcp;
         this.socketUdp = socketUdp;
         this.proveedor = proveedor;
@@ -227,11 +235,13 @@ public class ServidorPartida {
      *
      * @param puertoTcp puerto TCP; 0 deja que el sistema elija uno libre (se usa en las pruebas)
      * @param puertoUdp puerto UDP; 0 igual
+     * @param capacidad máximo de autos de la sala (personas más bots), de MIN_JUGADORES a MAX_JUGADORES; las personas
+     *                  no pasan de MAX_PERSONAS
      * @param proveedor carga el circuito elegido cuando el host inicia la carrera. Se pide recién ahí y no al crear la
      *                  partida porque los mapas son grandes y el host puede elegir cualquiera de los 24
      * @throws IOException si alguno de los puertos ya está ocupado (por ejemplo, otra partida creada en esta PC)
      */
-    public static ServidorPartida crear(int puertoTcp, int puertoUdp, ProveedorCircuitos proveedor) throws IOException {
+    public static ServidorPartida crear(int puertoTcp, int puertoUdp, int capacidad, ProveedorCircuitos proveedor) throws IOException {
         ServerSocket tcp = new ServerSocket(puertoTcp);
         DatagramSocket udp;
         try {
@@ -240,10 +250,16 @@ public class ServidorPartida {
             tcp.close();
             throw e;
         }
-        ServidorPartida servidor = new ServidorPartida(tcp, udp, proveedor);
+        ServidorPartida servidor = new ServidorPartida(tcp, udp, proveedor,
+            Math.max(Config.MIN_JUGADORES, Math.min(Config.MAX_JUGADORES, capacidad)));
         servidor.iniciarHilos();
         RegistroRed.log(ORIGEN, "Escuchando TCP en el puerto " + servidor.puerto() + " y UDP en el " + servidor.puertoUdp());
         return servidor;
+    }
+
+    /** Sala con la capacidad máxima (los 22 autos); la usan las pruebas. */
+    public static ServidorPartida crear(int puertoTcp, int puertoUdp, ProveedorCircuitos proveedor) throws IOException {
+        return crear(puertoTcp, puertoUdp, Config.MAX_JUGADORES, proveedor);
     }
 
     public int puerto() {
@@ -569,8 +585,14 @@ public class ServidorPartida {
             case Protocolo.ELEGIR_VUELTAS:
                 elegirVueltas(jugador, mensaje);
                 break;
-            case Protocolo.ELEGIR_CLASIFICACION:
-                elegirClasificacion(jugador, mensaje);
+            case Protocolo.ELEGIR_GRILLA:
+                elegirGrilla(jugador, mensaje);
+                break;
+            case Protocolo.MOVER_GRILLA:
+                moverEnGrilla(jugador, mensaje);
+                break;
+            case Protocolo.GRILLA_AL_AZAR:
+                sortearGrilla(jugador);
                 break;
             case Protocolo.ELEGIR_MODO:
                 elegirModo(jugador, mensaje);
@@ -619,7 +641,7 @@ public class ServidorPartida {
                 "Tu juego es de otra versión (" + version + ", la de la partida es " + Config.VERSION_PROTOCOLO + ")");
         } else if (fase != Fase.LOBBY) {
             rechazar(cliente, Protocolo.CARRERA_EN_CURSO, "La carrera ya empezó");
-        } else if (cantidadDePersonas() >= Config.MAX_JUGADORES) {
+        } else if (cantidadDePersonas() >= Math.min(capacidad, Config.MAX_PERSONAS)) {
             // Los bots no cuentan: una persona siempre tiene prioridad y, si hace falta, le saca el lugar a uno.
             rechazar(cliente, Protocolo.PARTIDA_LLENA, "La partida está llena");
         } else if (!Protocolo.nombreValido(nombre)) {
@@ -634,7 +656,7 @@ public class ServidorPartida {
 
     private void aceptar(Cliente cliente, String nombre) {
         boolean esHost = jugadores.isEmpty();
-        if (jugadores.size() >= Config.MAX_JUGADORES) {
+        if (jugadores.size() >= capacidad) {
             sacarUltimoBot();
         }
         int id = primerIdLibre();
@@ -651,7 +673,11 @@ public class ServidorPartida {
         difundirLobby();
     }
 
-    /** Un piloto solo se puede elegir si nadie más corre para su escudería (cada escudería tiene un color). */
+    /**
+     * Cada piloto lo tiene un solo auto, pero los dos de una misma escudería pueden correr a la vez. Si el piloto
+     * elegido lo tiene otra persona se rechaza; si lo tiene un bot, se intercambian: el bot pasa a tener el piloto que
+     * dejó la persona, así ninguno se queda sin piloto.
+     */
     private void elegirPiloto(Jugador jugador, Mensaje mensaje) {
         if (fase != Fase.LOBBY) {
             error(jugador.cliente, Protocolo.NO_PERMITIDO, "Ya no se puede cambiar de piloto");
@@ -662,21 +688,18 @@ public class ServidorPartida {
             RegistroRed.log(ORIGEN, "Piloto inválido de " + jugador.nombre + ": " + mensaje.campo(0));
             return;
         }
-        int escuderia = Catalogo.piloto(piloto).escuderia();
-        Jugador botEnEsaEscuderia = null;
-        for (Jugador otro : jugadores.values()) {
-            if (otro != jugador && Catalogo.piloto(otro.piloto).escuderia() == escuderia) {
-                if (!otro.esBot()) {
-                    error(jugador.cliente, Protocolo.ESCUDERIA_OCUPADA, "Esa escudería ya la eligió otro jugador");
-                    return;
-                }
-                botEnEsaEscuderia = otro;
-            }
+        Jugador duenio = duenioDelPiloto(piloto);
+        if (duenio == jugador) {
+            return;
         }
+        if (duenio != null && !duenio.esBot()) {
+            error(jugador.cliente, Protocolo.PILOTO_OCUPADO, "Ese piloto ya lo eligió otro jugador");
+            return;
+        }
+        int anterior = jugador.piloto;
         jugador.piloto = piloto;
-        // Una persona le gana a un bot: el bot se pasa a la primera escudería libre.
-        if (botEnEsaEscuderia != null) {
-            botEnEsaEscuderia.cambiarPiloto(primerPilotoLibre());
+        if (duenio != null) {
+            duenio.cambiarPiloto(anterior);
         }
         difundirLobby();
     }
@@ -711,12 +734,77 @@ public class ServidorPartida {
         difundirLobby();
     }
 
-    private void elegirClasificacion(Jugador jugador, Mensaje mensaje) {
-        if (!esHostEnLobby(jugador, "elegir si hay clasificación")) {
+    private void elegirGrilla(Jugador jugador, Mensaje mensaje) {
+        if (!esHostEnLobby(jugador, "elegir cómo se arma la grilla")) {
             return;
         }
-        hayClasificacion = mensaje.campo(0).equals("1");
+        int numero = mensaje.entero(0, -1);
+        if (numero < 0 || numero >= ModoGrilla.values().length) {
+            RegistroRed.log(ORIGEN, "Modo de grilla inválido de " + jugador.nombre + ": " + mensaje.campo(0));
+            return;
+        }
+        modoGrilla = ModoGrilla.desde(numero);
         difundirLobby();
+    }
+
+    /**
+     * Sube (-1) o baja (+1) un lugar a un auto de la grilla. Solo con la grilla a mano: con clasificación o al azar el orden
+     * no lo decide el host.
+     */
+    private void moverEnGrilla(Jugador jugador, Mensaje mensaje) {
+        if (!esHostEnLobby(jugador, "mover la grilla") || !grillaAMano(jugador)) {
+            return;
+        }
+        sincronizarGrilla();
+        int desde = ordenGrilla.indexOf(mensaje.entero(0, -1));
+        int lugares = mensaje.entero(1, 0);
+        int hasta = desde + lugares;
+        if (desde < 0 || Math.abs(lugares) != 1 || hasta < 0 || hasta >= ordenGrilla.size()) {
+            RegistroRed.log(ORIGEN, "MOVER_GRILLA inválido de " + jugador.nombre + ": " + mensaje.campo(0) + ", " + mensaje.campo(1));
+            return;
+        }
+        Collections.swap(ordenGrilla, desde, hasta);
+        difundirLobby();
+    }
+
+    /** Mezcla la grilla ahora; el host puede seguir moviendo lugares después. */
+    private void sortearGrilla(Jugador jugador) {
+        if (!esHostEnLobby(jugador, "sortear la grilla") || !grillaAMano(jugador)) {
+            return;
+        }
+        sincronizarGrilla();
+        Collections.shuffle(ordenGrilla, azar);
+        difundirLobby();
+    }
+
+    private boolean grillaAMano(Jugador jugador) {
+        if (modoGrilla != ModoGrilla.MANUAL) {
+            error(jugador.cliente, Protocolo.NO_PERMITIDO, "La grilla solo se arma a mano cuando no hay clasificación ni sorteo");
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Deja {@link #ordenGrilla} con exactamente los autos de la partida: saca los que se fueron y suma los nuevos. Una persona
+     * nueva queda después de la última persona (las personas van antes que los bots, como siempre) y un bot, al final. Lo que
+     * el host ya movió se respeta.
+     */
+    private void sincronizarGrilla() {
+        ordenGrilla.removeIf(id -> !jugadores.containsKey(id));
+        for (Jugador j : jugadores.values()) {
+            if (ordenGrilla.contains(j.id)) {
+                continue;
+            }
+            int lugar = ordenGrilla.size();
+            if (!j.esBot()) {
+                lugar = 0;
+                for (int i = 0; i < ordenGrilla.size(); i++) {
+                    lugar = jugadores.get(ordenGrilla.get(i)).esBot() ? lugar : i + 1;
+                }
+            }
+            ordenGrilla.add(lugar, j.id);
+        }
     }
 
     /** Al pasar a torneo por primera vez, el calendario arranca con el circuito elegido: nunca queda vacío. */
@@ -763,6 +851,7 @@ public class ServidorPartida {
         difundirLobby();
     }
 
+    /** AGREGAR_BOT;nivel;piloto. El host elige qué piloto suma; con -1 se le da el primero libre. */
     private void agregarBot(Jugador jugador, Mensaje mensaje) {
         if (!esHostEnLobby(jugador, "agregar bots")) {
             return;
@@ -772,11 +861,18 @@ public class ServidorPartida {
             RegistroRed.log(ORIGEN, "Nivel de bot inválido: " + mensaje.campo(0));
             return;
         }
-        if (jugadores.size() >= Config.MAX_JUGADORES) {
-            error(jugador.cliente, Protocolo.PARTIDA_LLENA, "Ya están los " + Config.MAX_JUGADORES + " autos");
+        if (jugadores.size() >= capacidad) {
+            error(jugador.cliente, Protocolo.PARTIDA_LLENA, "La sala es de " + capacidad + " autos y ya están todos");
             return;
         }
-        Jugador bot = Jugador.bot(primerIdLibre(), primerPilotoLibre(), nivel);
+        int piloto = mensaje.entero(1, -1);
+        if (piloto == -1) {
+            piloto = primerPilotoLibre();
+        } else if (!Catalogo.pilotoValido(piloto) || duenioDelPiloto(piloto) != null) {
+            error(jugador.cliente, Protocolo.PILOTO_OCUPADO, "Ese piloto ya está en la sala");
+            return;
+        }
+        Jugador bot = Jugador.bot(primerIdLibre(), piloto, nivel);
         jugadores.put(bot.id, bot);
         difundirLobby();
     }
@@ -837,10 +933,13 @@ public class ServidorPartida {
         return personas;
     }
 
-    /** Primero las personas y después los bots: es el orden del lobby y, si no hay clasificación, el de la largada. */
+    /** Los autos en el orden de la grilla sin clasificación: el que armó el host, o el sorteo. Es también el orden del lobby. */
     private List<Jugador> enOrdenDeGrilla() {
-        List<Jugador> orden = new ArrayList<>(jugadores.values());
-        orden.sort(Comparator.comparing(Jugador::esBot));
+        sincronizarGrilla();
+        List<Jugador> orden = new ArrayList<>();
+        for (int id : ordenGrilla) {
+            orden.add(jugadores.get(id));
+        }
         return orden;
     }
 
@@ -901,7 +1000,12 @@ public class ServidorPartida {
     private void empezarCarreraEn(int circuito) {
         circuitoEnCurso = circuito;
         ordenClasificacion = List.of();
-        empezar(hayClasificacion);
+        if (modoGrilla == ModoGrilla.AL_AZAR) {
+            // En un torneo se sortea otra vez antes de cada carrera.
+            sincronizarGrilla();
+            Collections.shuffle(ordenGrilla, azar);
+        }
+        empezar(modoGrilla == ModoGrilla.CLASIFICACION);
     }
 
     /**
@@ -1011,7 +1115,7 @@ public class ServidorPartida {
         for (Jugador j : enOrdenDeGrilla()) {
             lista.add(new JugadorLobby(j.id, j.nombre, j.piloto, j.listo, j.esBot() ? j.nivelBot.ordinal() : -1));
         }
-        return new EstadoLobby(idHost, circuitoElegido, vueltasElegidas, hayClasificacion, modoTorneo, List.copyOf(calendario), lista);
+        return new EstadoLobby(idHost, circuitoElegido, vueltasElegidas, modoGrilla, modoTorneo, List.copyOf(calendario), capacidad, lista);
     }
 
     private void difundirLobby() {
@@ -1055,18 +1159,32 @@ public class ServidorPartida {
         return id;
     }
 
-    /** El primer piloto de la primera escudería que nadie eligió, así nadie queda sin piloto. */
-    private int primerPilotoLibre() {
-        for (int escuderia = 0; escuderia < Catalogo.ESCUDERIAS.size(); escuderia++) {
-            boolean libre = true;
-            for (Jugador j : jugadores.values()) {
-                libre &= Catalogo.piloto(j.piloto).escuderia() != escuderia;
-            }
-            if (libre) {
-                return escuderia * 2;
+    /** El jugador (persona o bot) que tiene ese piloto, o null si está libre. */
+    private Jugador duenioDelPiloto(int piloto) {
+        for (Jugador j : jugadores.values()) {
+            if (j.piloto == piloto) {
+                return j;
             }
         }
-        return 0; // no pasa: hay más escuderías que jugadores máximos
+        return null;
+    }
+
+    /**
+     * Un piloto libre para quien entra sin elegir: primero el de una escudería sin ningún piloto, para repartir los
+     * colores; si todas tienen alguno, el primer piloto que quede libre.
+     */
+    private int primerPilotoLibre() {
+        for (int piloto = 0; piloto < Catalogo.PILOTOS.size(); piloto += 2) {
+            if (duenioDelPiloto(piloto) == null && duenioDelPiloto(piloto + 1) == null) {
+                return piloto;
+            }
+        }
+        for (int piloto = 0; piloto < Catalogo.PILOTOS.size(); piloto++) {
+            if (duenioDelPiloto(piloto) == null) {
+                return piloto;
+            }
+        }
+        return 0; // no pasa: hay tantos pilotos como autos máximos
     }
 
     private boolean nombreEnUso(String nombre) {

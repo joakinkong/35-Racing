@@ -32,6 +32,10 @@ public class TorreHud extends Table {
     private static final float ANCHO_CODIGO = 62f;
     private static final float ANCHO_TIEMPO = 104f;
     private static final float ALTO_FILA = 30f;
+    /** Con muchos autos (hasta 22) las filas se achican para que la torre entre en la pantalla. */
+    private static final float ALTO_FILA_COMPACTA = 22f;
+    private static final float ESCALA_TEXTO_COMPACTO = 0.75f;
+    private static final int AUTOS_PARA_COMPACTAR = 12;
     private static final float ALTO_ENCABEZADO = 32f;
     private static final float SEPARACION = 2f;
     private static final float ANCHO_TORRE = ANCHO_POSICION + ANCHO_FRANJA + ANCHO_CODIGO + ANCHO_TIEMPO + 16f;
@@ -47,6 +51,8 @@ public class TorreHud extends Table {
     private final Label vuelta;
     private final boolean clasificacion;
     private final List<Fila> filas = new ArrayList<>();
+    private float altoFila = ALTO_FILA;
+    private float escalaTexto = 1f;
 
     public TorreHud(Recursos recursos, FuenteCarrera fuente) {
         this(recursos, fuente, false);
@@ -116,11 +122,14 @@ public class TorreHud extends Table {
     private void armarFilas(int cantidad) {
         filas.clear();
         clearChildren();
+        boolean compacta = cantidad > AUTOS_PARA_COMPACTAR;
+        altoFila = compacta ? ALTO_FILA_COMPACTA : ALTO_FILA;
+        escalaTexto = compacta ? ESCALA_TEXTO_COMPACTO : 1f;
         agregarEncabezado();
         for (int i = 0; i < cantidad; i++) {
             Fila fila = new Fila();
             filas.add(fila);
-            add(fila.tabla).width(ANCHO_TORRE).height(ALTO_FILA).padBottom(SEPARACION).row();
+            add(fila.tabla).width(ANCHO_TORRE).height(altoFila).padBottom(SEPARACION).row();
         }
         pack();
     }
@@ -146,7 +155,10 @@ public class TorreHud extends Table {
             tiempo.setAlignment(Align.right);
             tabla.setBackground(fondo);
             tabla.add(posicion).width(ANCHO_POSICION);
-            tabla.add(franja).width(ANCHO_FRANJA).height(ALTO_FILA - 10f);
+            posicion.setFontScale(escalaTexto);
+            codigo.setFontScale(escalaTexto);
+            tiempo.setFontScale(escalaTexto);
+            tabla.add(franja).width(ANCHO_FRANJA).height(altoFila - 10f);
             tabla.add(codigo).width(ANCHO_CODIGO).padLeft(8f).left();
             tabla.add(tiempo).width(ANCHO_TIEMPO).padRight(8f).right();
         }

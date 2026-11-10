@@ -20,7 +20,9 @@ public final class Protocolo {
     public static final String ELEGIR_PILOTO = "ELEGIR_PILOTO";
     public static final String ELEGIR_CIRCUITO = "ELEGIR_CIRCUITO";
     public static final String ELEGIR_VUELTAS = "ELEGIR_VUELTAS";
-    public static final String ELEGIR_CLASIFICACION = "ELEGIR_CLASIFICACION";
+    public static final String ELEGIR_GRILLA = "ELEGIR_GRILLA";
+    public static final String MOVER_GRILLA = "MOVER_GRILLA";
+    public static final String GRILLA_AL_AZAR = "GRILLA_AL_AZAR";
     public static final String ELEGIR_MODO = "ELEGIR_MODO";
     public static final String AGREGAR_CIRCUITO = "AGREGAR_CIRCUITO";
     public static final String QUITAR_CIRCUITO = "QUITAR_CIRCUITO";
@@ -58,7 +60,7 @@ public final class Protocolo {
     public static final String NOMBRE_REPETIDO = "NOMBRE_REPETIDO";
     public static final String VERSION_DISTINTA = "VERSION_DISTINTA";
     public static final String NOMBRE_INVALIDO = "NOMBRE_INVALIDO";
-    public static final String ESCUDERIA_OCUPADA = "ESCUDERIA_OCUPADA";
+    public static final String PILOTO_OCUPADO = "PILOTO_OCUPADO";
     public static final String NO_PERMITIDO = "NO_PERMITIDO";
     public static final String FALTAN_JUGADORES = "FALTAN_JUGADORES";
     public static final String CIRCUITO_NO_CARGO = "CIRCUITO_NO_CARGO";

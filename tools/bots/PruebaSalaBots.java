@@ -34,11 +34,11 @@ public class PruebaSalaBots {
         for (int i = 0; i < Config.MAX_JUGADORES - 1; i++) {
             host.agregarBot(NivelBot.values()[i % NivelBot.values().length]);
         }
-        esperar(host, l -> l.jugadores().size() == Config.MAX_JUGADORES, "se agregan 7 bots");
+        esperar(host, l -> l.jugadores().size() == Config.MAX_JUGADORES, "se agregan los bots hasta llenar la sala");
         comprobar(host.lobby().jugadores().stream().filter(JugadorLobby::esBot).allMatch(JugadorLobby::listo), "los bots están siempre listos");
 
         host.agregarBot(NivelBot.FACIL);
-        esperarError(host, Protocolo.PARTIDA_LLENA, "un noveno auto se rechaza");
+        esperarError(host, Protocolo.PARTIDA_LLENA, "un auto de más se rechaza");
 
         ClientePartida invitado = new ClientePartida("Ana");
         invitado.conectar("127.0.0.1", servidor.puerto());
@@ -58,11 +58,12 @@ public class PruebaSalaBots {
         esperar(host, l -> l.jugador(bot.id()).nivelBot() == NivelBot.DIFICIL.ordinal(), "el host cambia el nivel de un bot");
         comprobar(host.lobby().jugador(invitado.miId()) != null, "QUITAR_BOT no echa a una persona");
 
-        int escuderiaDelBot = Catalogo.piloto(bot.piloto()).escuderia();
-        host.elegirPiloto(bot.piloto());
-        esperar(host, l -> Catalogo.piloto(l.jugador(host.miId()).piloto()).escuderia() == escuderiaDelBot, "una persona elige la escudería de un bot");
+        int pilotoDelBot = bot.piloto();
+        int pilotoDelHost = host.lobby().jugador(host.miId()).piloto();
+        host.elegirPiloto(pilotoDelBot);
+        esperar(host, l -> l.jugador(host.miId()).piloto() == pilotoDelBot, "una persona elige el piloto de un bot");
         JugadorLobby movido = host.lobby().jugador(bot.id());
-        comprobar(Catalogo.piloto(movido.piloto()).escuderia() != escuderiaDelBot, "el bot se cambia de escudería");
+        comprobar(movido.piloto() == pilotoDelHost, "el bot toma el piloto que dejó la persona (intercambio)");
         comprobar(movido.nombre().equals(Catalogo.piloto(movido.piloto()).apellido()), "el bot cambia de nombre con el piloto");
 
         for (JugadorLobby j : host.lobby().jugadores()) {

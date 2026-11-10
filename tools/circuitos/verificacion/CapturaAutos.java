@@ -47,7 +47,7 @@ public class CapturaAutos extends ApplicationAdapter {
             Color detalle = new Color(e.colorDetalle() << 8 | 0xFF);
             float x = 45f + (i % 4) * 95f;
             float y = ALTO / 3f - 45f - (i / 4) * 50f;
-            vista.dibujar(x, y, 0f, cuerpo, detalle, camara);
+            vista.dibujar(x, y, 0f, cuerpo, detalle, false, camara);
         }
         // Abajo, en tamaño de carrera: se dibujan a un tercio de la escala de arriba.
         OrthographicCamera chica = new OrthographicCamera(ANCHO / 1.6f, ALTO / 1.6f);
@@ -55,7 +55,7 @@ public class CapturaAutos extends ApplicationAdapter {
         chica.update();
         for (int i = 0; i < escuderias.size(); i++) {
             Escuderia e = escuderias.get(i);
-            vista.dibujar(40f + i * 66f, 40f, 0f, new Color(e.colorAuto() << 8 | 0xFF), new Color(e.colorDetalle() << 8 | 0xFF), chica);
+            vista.dibujar(40f + i * 66f, 40f, 0f, new Color(e.colorAuto() << 8 | 0xFF), new Color(e.colorDetalle() << 8 | 0xFF), false, chica);
         }
         Gdx.gl.glFinish();
         Pixmap leido = Pixmap.createFromFrameBuffer(0, 0, ANCHO, ALTO);

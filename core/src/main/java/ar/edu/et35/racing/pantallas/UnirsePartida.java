@@ -28,12 +28,17 @@ public class UnirsePartida extends PantallaBase {
     private static final float ANCHO_COLUMNA = 560f;
     private static final float ALTO_CAMPO = 48f;
     private static final float ALTO_BOTON = 52f;
+    private static final float ANCHO_FLECHA = 56f;
+    private static final int CAPACIDAD_INICIAL = 8;
 
     private final boolean crear;
     private final TextField campoNombre;
     private final TextField campoIp;
     private final TextButton botonAccion;
     private final Label estado = textoLargo("", "suave");
+    private final Label valorCapacidad = new Label("", skin, "numeros");
+    /** Autos (personas y bots) que entran en la sala que se está creando. */
+    private int capacidad = CAPACIDAD_INICIAL;
 
     /** La partida que se está creando o a la que nos estamos conectando; null si no hay ningún intento en curso. */
     private SesionRed pendiente;
@@ -68,6 +73,12 @@ public class UnirsePartida extends PantallaBase {
             formulario.add(new Label("IP DEL ANFITRIÓN", skin, "etiqueta")).left().padBottom(6).row();
             formulario.add(campoIp).growX().height(ALTO_CAMPO).padBottom(14).row();
         }
+        if (crear) {
+            formulario.add(new Label("AUTOS EN LA SALA", skin, "etiqueta")).left().padBottom(6).row();
+            formulario.add(selectorCapacidad()).growX().height(ALTO_CAMPO).padBottom(4).row();
+            formulario.add(new Label("Personas y bots juntos. Hasta " + Config.MAX_PERSONAS + " personas; el resto, bots.",
+                skin, "apagado")).left().padBottom(14).row();
+        }
         formulario.add(botonAccion).growX().height(ALTO_BOTON);
 
         contenido.add(titular("MULTIJUGADOR  ·  RED LOCAL", crear ? "CREAR PARTIDA" : "UNIRSE A UNA PARTIDA")).left().padBottom(16).row();
@@ -76,6 +87,21 @@ public class UnirsePartida extends PantallaBase {
         contenido.add(new Label("ESC PARA VOLVER", skin, "etiqueta")).left().padTop(8);
 
         escena.setKeyboardFocus(campoNombre);
+    }
+
+    /** "<  8  >": de MIN_JUGADORES a MAX_JUGADORES autos. */
+    private Table selectorCapacidad() {
+        Table fila = new Table();
+        fila.add(boton("<", () -> cambiarCapacidad(capacidad - 1))).size(ANCHO_FLECHA, ALTO_CAMPO);
+        fila.add(valorCapacidad).expandX();
+        fila.add(boton(">", () -> cambiarCapacidad(capacidad + 1))).size(ANCHO_FLECHA, ALTO_CAMPO);
+        cambiarCapacidad(capacidad);
+        return fila;
+    }
+
+    private void cambiarCapacidad(int nueva) {
+        capacidad = Math.max(Config.MIN_JUGADORES, Math.min(Config.MAX_JUGADORES, nueva));
+        valorCapacidad.setText(String.valueOf(capacidad));
     }
 
     private void intentar() {
@@ -104,7 +130,7 @@ public class UnirsePartida extends PantallaBase {
     private void crearPartida(String nombre) {
         ServidorPartida servidor;
         try {
-            servidor = ServidorPartida.crear(Config.PUERTO_TCP, Config.PUERTO_UDP, this::cargarCircuitoEnRender);
+            servidor = ServidorPartida.crear(Config.PUERTO_TCP, Config.PUERTO_UDP, capacidad, this::cargarCircuitoEnRender);
         } catch (IOException e) {
             mostrarError("No se pudo crear la partida: los puertos " + Config.PUERTO_TCP + " y " + Config.PUERTO_UDP
                 + " están ocupados. ¿Ya hay una partida creada en esta PC?");
