@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
+import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane.ScrollPaneStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField.TextFieldStyle;
@@ -30,6 +31,7 @@ public class Recursos implements Disposable {
     private static final float MARGEN_CAMPO = 14f;
     private static final float ANCHO_CURSOR = 2f;
     private static final int LADO_PUNTO = 32;
+    private static final float ANCHO_BARRA = 6f;
 
     public final AssetManager assets = new AssetManager();
     public final SpriteBatch batch = new SpriteBatch();
@@ -151,6 +153,16 @@ public class Recursos implements Disposable {
         campo.messageFont = normal;
         campo.messageFontColor = Paleta.TEXTO_APAGADO;
         skin.add("default", campo);
+
+        // Barra de desplazamiento fina, para las listas largas (por ejemplo los 22 autos del lobby).
+        ScrollPaneStyle desplazamiento = new ScrollPaneStyle();
+        Drawable carril = color(Paleta.SUPERFICIE_BAJA);
+        carril.setMinWidth(ANCHO_BARRA);
+        Drawable perilla = color(Paleta.TEXTO_APAGADO);
+        perilla.setMinWidth(ANCHO_BARRA);
+        desplazamiento.vScroll = carril;
+        desplazamiento.vScrollKnob = perilla;
+        skin.add("default", desplazamiento);
     }
 
     private void estiloTexto(String nombre, String fuente, Color color) {

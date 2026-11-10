@@ -4,6 +4,7 @@ import ar.edu.et35.racing.juego.Catalogo;
 import ar.edu.et35.racing.juego.Circuito;
 import ar.edu.et35.racing.juego.EntradaAuto;
 import ar.edu.et35.racing.juego.NivelBot;
+import ar.edu.et35.racing.juego.PartidaLocal;
 import ar.edu.et35.racing.juego.ResultadoJugador;
 import ar.edu.et35.racing.pantallas.Lobby;
 import ar.edu.et35.racing.pantallas.MenuPrincipal;
@@ -65,10 +66,12 @@ public class CapturaPantallas extends Main {
     /** Con un segundo argumento "clasificacion" o "torneo", solo corre esa partida. */
     private static boolean soloClasificacion;
     private static boolean soloTorneo;
+    private static boolean soloVeintidos;
 
     public static void main(String[] args) {
         soloClasificacion = args.length > 1 && args[1].equals("clasificacion");
         soloTorneo = args.length > 1 && args[1].equals("torneo");
+        soloVeintidos = args.length > 1 && args[1].equals("veintidos");
         Lwjgl3ApplicationConfiguration c = new Lwjgl3ApplicationConfiguration();
         c.setTitle("captura");
         c.setInitialVisible(false);
@@ -86,6 +89,11 @@ public class CapturaPantallas extends Main {
         super.create();
         if (soloClasificacion) {
             pasosDeClasificacion();
+            listo = true;
+            return;
+        }
+        if (soloVeintidos) {
+            pasosDeVeintidos();
             listo = true;
             return;
         }
@@ -156,6 +164,33 @@ public class CapturaPantallas extends Main {
         pasos.add(new Paso(() -> { }, 60 * 12, "clasif_largada"));
     }
 
+    /** Los 22 autos: la sala con el host sumando bots, la prueba local con 2 personas y 20 bots, y una carrera con todos. */
+    private void pasosDeVeintidos() {
+        pasos.add(new Paso(this::crearSalaConBots, 40, null));
+        pasos.add(new Paso(() -> {
+            for (int piloto = 2; piloto < 22; piloto += 2) {
+                sesion().cliente().agregarBot(NivelBot.values()[(piloto / 2) % 3], piloto);
+            }
+            ((Lobby) getScreen()).modoAgregarBots(true);
+        }, 60, "veintidos_sala_modo_bots"));
+        pasos.add(new Paso(() -> {
+            for (int piloto = 3; piloto < 22; piloto += 2) {
+                sesion().cliente().agregarBot(NivelBot.values()[(piloto / 2) % 3], piloto);
+            }
+            sesion().cliente().marcarListo(true);
+            sesion().cliente().elegirVueltas(Config.MIN_VUELTAS);
+            sesion().cliente().elegirCircuito(Catalogo.indiceDeCircuito("spielberg"));
+        }, 60, "veintidos_sala_llena"));
+        pasos.add(new Paso(() -> ((Lobby) getScreen()).modoAgregarBots(false), 20, "veintidos_sala_mi_piloto"));
+        pasos.add(new Paso(() -> sesion().cliente().iniciar(), 60 * 12, "veintidos_carrera"));
+        pasos.add(new Paso(() -> {
+            cerrarSesion();
+            irA(new PruebaLocal(this, "monza", new PartidaLocal(List.of(0, 5), 20, NivelBot.DIFICIL)));
+        }, 20, "veintidos_prueba_local"));
+        pasos.add(new Paso(() -> irA(new PantallaCarrera(this, new PartidaLocal(List.of(0, 5), 20, NivelBot.DIFICIL), "monza")),
+            60 * 14, "veintidos_local_carrera"));
+    }
+
     /** Una persona contra 7 bots, un torneo de 2 carreras: la sala, el calendario y los resultados de cada carrera. */
     private void pasosDeTorneo() {
         pasos.add(new Paso(this::crearSalaConBots, 40, null));
@@ -197,7 +232,7 @@ public class CapturaPantallas extends Main {
             host.conectar("127.0.0.1", servidor.puerto());
             setSesion(new SesionRed(servidor, host));
             irA(new Lobby(this));
-            for (int i = 0; i < Config.MAX_JUGADORES - 1; i++) {
+            for (int i = 0; i < Config.MAX_PERSONAS - 1; i++) {
                 ClientePartida invitado = new ClientePartida(NOMBRES[i]);
                 invitado.conectar("127.0.0.1", servidor.puerto());
                 invitados.add(invitado);

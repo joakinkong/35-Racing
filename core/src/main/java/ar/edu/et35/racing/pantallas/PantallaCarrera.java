@@ -10,6 +10,7 @@ import ar.edu.et35.racing.juego.FotoAuto;
 import ar.edu.et35.racing.juego.FotoCarrera;
 import ar.edu.et35.racing.juego.FuenteCarrera;
 import ar.edu.et35.racing.juego.NivelCruce;
+import ar.edu.et35.racing.juego.PartidaLocal;
 import ar.edu.et35.racing.juego.SimulacionLocal;
 import ar.edu.et35.racing.juego.ZonaCruce;
 import ar.edu.et35.racing.red.EstadoTorneo;
@@ -71,6 +72,8 @@ public class PantallaCarrera extends PantallaBase {
 
     /** Nombre del archivo del circuito; en la prueba local sirve para volver a la pantalla de elección con ese circuito. */
     private final String nombreCircuito;
+    /** Cómo se armó la prueba local, para volver a la pantalla de elección con lo mismo; null en red. */
+    private final PartidaLocal partidaLocal;
     /** En la clasificación solo se ven los autos de esta PC: en la pista y en el HUD, cada uno corre solo. */
     private final boolean clasificacion;
     /** "CARRERA 2 DE 5" en un torneo; vacío si no es un torneo. */
@@ -114,18 +117,25 @@ public class PantallaCarrera extends PantallaBase {
      * (J1 con WASD y J2 con flechas).
      */
     public PantallaCarrera(Main juego, int jugadoresLocales, String nombreCircuito) {
-        this(juego, nombreCircuito, null, jugadoresLocales, null);
+        this(juego, nombreCircuito, null, jugadoresLocales, null, null);
+    }
+
+    /** Prueba local con las personas, los pilotos y los bots que indica la partida. */
+    public PantallaCarrera(Main juego, PartidaLocal partida, String nombreCircuito) {
+        this(juego, nombreCircuito, null, partida.jugadores(), null, partida);
     }
 
     /**
      * Carrera o clasificación en red, al recibir CUENTA_REGRESIVA. Usa el lobby del cliente para saber nombres y colores.
      */
     public static PantallaCarrera desde(Main juego, Protocolo.Cuenta cuenta) {
-        return new PantallaCarrera(juego, cuenta.circuito(), juego.sesion(), 1, cuenta);
+        return new PantallaCarrera(juego, cuenta.circuito(), juego.sesion(), 1, cuenta, null);
     }
 
-    private PantallaCarrera(Main juego, String nombreCircuito, SesionRed sesion, int jugadoresLocales, Protocolo.Cuenta cuenta) {
+    private PantallaCarrera(Main juego, String nombreCircuito, SesionRed sesion, int jugadoresLocales, Protocolo.Cuenta cuenta,
+                            PartidaLocal partida) {
         super(juego, false);
+        this.partidaLocal = partida;
         if (jugadoresLocales < 1 || jugadoresLocales > MAX_JUGADORES_LOCALES) {
             throw new IllegalArgumentException("Jugadores locales: de 1 a " + MAX_JUGADORES_LOCALES);
         }
@@ -141,7 +151,7 @@ public class PantallaCarrera extends PantallaBase {
             fuente = red;
         } else {
             red = null;
-            fuente = new SimulacionLocal(circuito, jugadoresLocales);
+            fuente = partida != null ? new SimulacionLocal(circuito, partida) : new SimulacionLocal(circuito, jugadoresLocales);
         }
         idsLocales = fuente.idsLocales();
 
@@ -358,7 +368,7 @@ public class PantallaCarrera extends PantallaBase {
             if ((nivel == NivelCruce.ABAJO) == losDeAbajo && !a.desconectado()
                 && (!clasificacion || idsLocales.contains(a.id()))) {
                 vistaAuto.dibujar(a.x(), a.y(), a.angulo(), Paleta.autoDePiloto(fuente.piloto(a.id())),
-                    Paleta.detalleDePiloto(fuente.piloto(a.id())), camara);
+                    Paleta.detalleDePiloto(fuente.piloto(a.id())), Catalogo.esSegundoPiloto(fuente.piloto(a.id())), camara);
             }
         }
     }
@@ -432,7 +442,7 @@ public class PantallaCarrera extends PantallaBase {
     @Override
     protected void volver() {
         // En la prueba local se vuelve a elegir circuito; en red, al menú (que además cierra la sesión).
-        irA(red == null ? new PruebaLocal(juego, nombreCircuito) : new MenuPrincipal(juego));
+        irA(red == null ? new PruebaLocal(juego, nombreCircuito, partidaLocal) : new MenuPrincipal(juego));
     }
 
     @Override

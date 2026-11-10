@@ -50,7 +50,10 @@ public final class Torneo {
 
     /** Lo que suma quien termina en esa posición (desde 1) en una carrera que largaron esos autos. */
     public static int puntosPorPosicion(int posicion, int autos) {
-        return Config.PUNTOS_DESDE_EL_ULTIMO[autos - posicion];
+        if (autos <= Config.MAX_AUTOS_TABLA_INVERSA) {
+            return Config.PUNTOS_DESDE_EL_ULTIMO[autos - posicion];
+        }
+        return posicion <= Config.PUNTOS_F1.length ? Config.PUNTOS_F1[posicion - 1] : 0;
     }
 
     /**

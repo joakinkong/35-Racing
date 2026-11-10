@@ -1,6 +1,7 @@
 package ar.edu.et35.racing.red.cliente;
 
 import ar.edu.et35.racing.juego.EntradaAuto;
+import ar.edu.et35.racing.juego.ModoGrilla;
 import ar.edu.et35.racing.juego.NivelBot;
 import ar.edu.et35.racing.red.ConexionTcp;
 import ar.edu.et35.racing.red.EstadoLobby;
@@ -275,9 +276,24 @@ public class ClientePartida {
         enviar(Protocolo.armar(Protocolo.ELEGIR_VUELTAS, vueltas));
     }
 
-    /** Solo lo acepta el servidor si lo manda el host. */
+    /** Cómo se arma la grilla: a mano, por clasificación o al azar. Solo lo acepta el servidor si lo manda el host. */
+    public void elegirGrilla(ModoGrilla modo) {
+        enviar(Protocolo.armar(Protocolo.ELEGIR_GRILLA, modo.ordinal()));
+    }
+
+    /** Con o sin clasificación (a mano). Solo lo acepta el servidor si lo manda el host. */
     public void elegirClasificacion(boolean hay) {
-        enviar(Protocolo.armar(Protocolo.ELEGIR_CLASIFICACION, hay ? 1 : 0));
+        elegirGrilla(hay ? ModoGrilla.CLASIFICACION : ModoGrilla.MANUAL);
+    }
+
+    /** Sube (-1) o baja (+1) un lugar a ese auto en la grilla. Solo con la grilla a mano y si lo manda el host. */
+    public void moverEnGrilla(int id, int lugares) {
+        enviar(Protocolo.armar(Protocolo.MOVER_GRILLA, id, lugares));
+    }
+
+    /** Sortea la grilla ahora. Solo con la grilla a mano y si lo manda el host. */
+    public void sortearGrilla() {
+        enviar(Protocolo.armar(Protocolo.GRILLA_AL_AZAR));
     }
 
     /** Solo lo acepta el servidor si lo manda el host. */
@@ -300,9 +316,14 @@ public class ClientePartida {
         enviar(Protocolo.armar(Protocolo.SIGUIENTE_CARRERA));
     }
 
-    /** Solo lo acepta el servidor si lo manda el host. */
+    /** Suma un bot con el primer piloto libre. Solo lo acepta el servidor si lo manda el host. */
     public void agregarBot(NivelBot nivel) {
-        enviar(Protocolo.armar(Protocolo.AGREGAR_BOT, nivel.ordinal()));
+        agregarBot(nivel, -1);
+    }
+
+    /** Suma un bot con ese piloto (índice del catálogo). Solo lo acepta el servidor si lo manda el host. */
+    public void agregarBot(NivelBot nivel, int piloto) {
+        enviar(Protocolo.armar(Protocolo.AGREGAR_BOT, nivel.ordinal(), piloto));
     }
 
     /** Solo lo acepta el servidor si lo manda el host. */

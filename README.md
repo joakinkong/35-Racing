@@ -56,9 +56,9 @@ O en PowerShell:
 
 ## Estado actual
 
-Etapa 16 completada. Se crea una partida, los demás se unen por IP, esperan en una sala en vivo y corren una carrera sincronizada: el servidor la simula y cada PC dibuja lo que recibe. La carrera termina con resultados y revancha. También se puede probar sin red desde "Prueba local", con 1 jugador o con 2 en el mismo teclado (J1 con WASD y J2 con flechas).
+Etapa 16 completada. Se crea una partida, los demás se unen por IP, esperan en una sala en vivo y corren una carrera sincronizada: el servidor la simula y cada PC dibuja lo que recibe. La carrera termina con resultados y revancha. También se puede probar sin red desde "Prueba local", con 1 jugador o con 2 en el mismo teclado (J1 con WASD y J2 con flechas), eligiendo piloto y cuántos bots hay en pista.
 
-- **Hasta 8 autos**, con grilla escalonada como en la F1.
+- **Hasta 22 autos** (8 personas como máximo, el resto bots), con la capacidad de la sala a elección del host, grilla escalonada como en la F1 y los dos pilotos de cada escudería a la vez.
 - **Bots** en tres niveles (fácil, medio y difícil) para completar la grilla. Se puede jugar una persona contra bots.
 - **Clasificación opcional** de una vuelta: todos corren a la vez, cada uno sin ver a los demás, y los tiempos arman la grilla.
 - **Torneos** con el calendario que elija el host y puntos acumulados. El último de cada carrera siempre suma 1.

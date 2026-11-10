@@ -32,6 +32,8 @@ public class Resultados extends PantallaBase {
     private static final float SEPARACION_FILAS = 4f;
     private static final float PADDING_FILA = 14f;
     private static final float ALTO_BOTON = 48f;
+    /** Alto máximo de una tabla de resultados: con más filas (hasta 22 autos) se desplaza. */
+    private static final float ALTO_MAXIMO_TABLA = 450f;
     private static final String[] ENCABEZADO = {"POS", "PILOTO", "TIEMPO", "MEJOR VUELTA"};
     private static final float[] ANCHOS_TORNEO = {52f, 220f, 130f, 160f, 60f};
     private static final String[] ENCABEZADO_TORNEO = {"POS", "PILOTO", "TIEMPO", "MEJOR VUELTA", "PTS"};
@@ -54,7 +56,7 @@ public class Resultados extends PantallaBase {
         }
 
         contenido.add(titular("CARRERA FINALIZADA", "RESULTADOS")).left().padBottom(14).row();
-        contenido.add(tabla(resultados)).width(ANCHO_COLUMNA).padBottom(14).row();
+        contenido.add(conDesplazamiento(tabla(resultados), ALTO_MAXIMO_TABLA)).width(ANCHO_COLUMNA).padBottom(14).row();
         if (sesion != null && sesion.esAnfitrion()) {
             Table botones = new Table();
             botones.add(botonPrimario("REVANCHA", () -> sesion.cliente().revancha())).growX().uniformX().height(ALTO_BOTON).padRight(8);
@@ -79,8 +81,9 @@ public class Resultados extends PantallaBase {
             .left().padBottom(14).row();
 
         Table tablas = new Table();
-        tablas.add(tablaDeCarrera(resultados, torneo)).width(ANCHO_COLUMNA_TORNEO).top().padRight(SEPARACION_TABLAS);
-        tablas.add(tablaAcumulada(torneo)).width(ANCHO_TABLA_TORNEO).top();
+        tablas.add(conDesplazamiento(tablaDeCarrera(resultados, torneo), ALTO_MAXIMO_TABLA)).width(ANCHO_COLUMNA_TORNEO).top()
+            .padRight(SEPARACION_TABLAS);
+        tablas.add(conDesplazamiento(tablaAcumulada(torneo), ALTO_MAXIMO_TABLA)).width(ANCHO_TABLA_TORNEO).top();
         contenido.add(tablas).padBottom(14).row();
 
         float anchoTotal = ANCHO_COLUMNA_TORNEO + SEPARACION_TABLAS + ANCHO_TABLA_TORNEO;

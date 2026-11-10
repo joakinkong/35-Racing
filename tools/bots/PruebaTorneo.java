@@ -38,7 +38,10 @@ public class PruebaTorneo {
         comprobar(reparto(2).equals(List.of(2, 1)), "con 2 autos: 2 y 1");
         comprobar(reparto(4).equals(List.of(6, 4, 2, 1)), "con 4 autos: 6, 4, 2 y 1");
         comprobar(reparto(8).equals(List.of(15, 12, 10, 8, 6, 4, 2, 1)), "con 8 autos: 15, 12, 10, 8, 6, 4, 2 y 1");
-        comprobar(Config.PUNTOS_DESDE_EL_ULTIMO.length == Config.MAX_JUGADORES, "hay un valor de puntos por cada auto posible");
+        comprobar(Config.PUNTOS_DESDE_EL_ULTIMO.length == Config.MAX_AUTOS_TABLA_INVERSA, "la tabla invertida cubre hasta 8 autos");
+        comprobar(reparto(12).equals(List.of(25, 18, 15, 12, 10, 8, 6, 4, 2, 1, 0, 0)), "con más de 8 autos: tabla de la F1, puntúan los 10 primeros");
+        List<Integer> veintidos = reparto(Config.MAX_JUGADORES);
+        comprobar(veintidos.size() == 22 && veintidos.get(0) == 25 && veintidos.get(21) == 0, "con 22 autos: gana 25 y el último no suma");
     }
 
     private static List<Integer> reparto(int autos) {

@@ -67,11 +67,11 @@ public class CapturaVista extends ApplicationAdapter {
             // Un auto en el centro, para tener una referencia de tamaño. Con "abajo" al final, pasa debajo del puente.
             boolean abajo = partes.length > 3 && partes[3].equals("abajo");
             if (abajo) {
-                auto.dibujar(g.linea()[2 * indice], g.linea()[2 * indice + 1], 0f, Color.valueOf("E8002D"), Color.valueOf("FFEB00"), camara);
+                auto.dibujar(g.linea()[2 * indice], g.linea()[2 * indice + 1], 0f, Color.valueOf("E8002D"), Color.valueOf("FFEB00"), false, camara);
             }
             vista.dibujarPuentes(camara);
             if (!abajo) {
-                auto.dibujar(g.linea()[2 * indice], g.linea()[2 * indice + 1], 0f, Color.valueOf("E8002D"), Color.valueOf("FFEB00"), camara);
+                auto.dibujar(g.linea()[2 * indice], g.linea()[2 * indice + 1], 0f, Color.valueOf("E8002D"), Color.valueOf("FFEB00"), false, camara);
             }
             Gdx.gl.glFinish();
             Pixmap leido = Pixmap.createFromFrameBuffer(0, 0, 1280, 720);

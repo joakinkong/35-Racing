@@ -13,6 +13,7 @@ import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
@@ -108,6 +109,24 @@ public abstract class PantallaBase extends ScreenAdapter {
     }
 
     /** Título de pantalla: arriba la etiqueta de sección en turquesa, abajo el título grande. */
+    /**
+     * La tabla tal cual si entra en {@code altoMaximo}; si no (por ejemplo, con los 22 autos), dentro de un panel con
+     * barra de desplazamiento de ese alto, para que los botones de abajo nunca queden fuera de la pantalla.
+     */
+    protected Table conDesplazamiento(Table tabla, float altoMaximo) {
+        Table envoltorio = new Table();
+        if (tabla.getPrefHeight() <= altoMaximo) {
+            envoltorio.add(tabla).growX().top();
+            return envoltorio;
+        }
+        ScrollPane desplazable = new ScrollPane(tabla, skin);
+        desplazable.setScrollingDisabled(true, false);
+        desplazable.setFadeScrollBars(false);
+        desplazable.setOverscroll(false, false);
+        envoltorio.add(desplazable).grow().height(altoMaximo).top();
+        return envoltorio;
+    }
+
     protected Table titular(String seccion, String titulo) {
         Table bloque = new Table();
         bloque.add(new Label(seccion, skin, "seccion")).left().padBottom(2).row();

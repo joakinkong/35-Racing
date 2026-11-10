@@ -8,6 +8,15 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ### Agregado
 
+- Tres modos de grilla, a elegir en la sala: **a mano** (sin clasificación, se larga con el orden que armó el host: sube y baja a cada auto con las flechas o sortea), **clasificación** (como antes) y **al azar** (sin clasificación, la grilla se sortea antes de cada carrera; en un torneo, en todas). La lista de autos del lobby va en el orden de la grilla y muestra el lugar de cada uno. Protocolo versión 9: `ELEGIR_GRILLA`, `MOVER_GRILLA` y `GRILLA_AL_AZAR`.
+- Capacidad de la sala: el host elige al crearla cuántos autos entran (de 2 a 22, personas y bots juntos), con un tope de 8 personas. El `LOBBY` informa la capacidad.
+- Hasta 22 autos en pista, los 22 pilotos de la grilla. Los 24 circuitos tienen 22 lugares de largada (del noveno en adelante, a 28 px). Puntos del torneo con la tabla de la F1 cuando hay más de 8 autos.
+- Los dos pilotos de una misma escudería pueden correr a la vez; el segundo lleva un cuadradito verde fluo en el techo.
+- El host elige qué piloto suma como bot, tocándolo en la grilla de pilotos de la sala, con el nivel que tenga elegido. `AGREGAR_BOT` lleva el piloto. Protocolo versión 8.
+- La lista de autos de la sala, la torre de tiempos y las tablas de resultados se adaptan a 22 filas (desplazamiento, filas compactas).
+- La prueba local permite 1 o 2 jugadores, elegir el piloto de cada uno, cuántos bots hay en pista (hasta completar 22) y su nivel. `SimulacionLocal` corre los bots con `PilotoBot`, como el servidor.
+- `PruebaCapacidad` y `PruebaLocal22` (en `tools/bots`) comprueban la capacidad, los pilotos y los 22 autos.
+
 - Entorno alrededor de los circuitos, solo de dibujo: calles, edificios, autos estacionados y faroles en los callejeros; pasto, tribunas con público en todos los bordes y mirando a la pista, ambulancias, neumáticos, vallas, muros y árboles en los permanentes. Sprites de Modern Exteriors (LimeZu). No cambia la física, el protocolo ni los JSON.
 - `tools/entorno/armar_atlas.py` arma los sprites y `PruebaEntorno` comprueba su ubicación en los 24 circuitos.
 - Pianos rojos y blancos en las curvas cerradas (`vista/Pianos`). Son solo dibujo: no cambian la física ni los JSON.
@@ -23,7 +32,8 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 - Los autos son monoplazas dibujados con polígonos, con la carrocería y el acento de cada escudería tomados de los autos de 2026. La interfaz conserva sus colores.
 - La grilla de largada es escalonada, como en la F1: cada auto, 40 px más atrás que el anterior. No cambia ningún trazado.
-- Hasta 8 jugadores por partida (`Config.MAX_JUGADORES`). Los 24 circuitos tienen 8 lugares de largada, sin cambios en el trazado ni en los 5 lugares que ya existían. El `ESTADO` con 8 autos ocupa 204 bytes. Protocolo versión 4.
+- Hasta 8 jugadores por partida (`Config.MAX_JUGADORES`; hoy son 22 autos en total, ver arriba). Los 24 circuitos tienen 8 lugares de largada, sin cambios en el trazado ni en los 5 lugares que ya existían. El `ESTADO` con 8 autos ocupa 204 bytes. Protocolo versión 4.
+- `ESCUDERIA_OCUPADA` pasa a `PILOTO_OCUPADO`: ya no hay una escudería por jugador, solo un piloto por auto.
 - El pasto es de un verde un poco más fuerte.
 - Toda la interfaz copia la estética de PIT WALL: colores, tarjetas, esquinas rectas y las fuentes Space Grotesk e Inter. Los colores de la pista también salen de esa paleta (la forma y la colisión no cambian).
 - La interfaz pasa a 1280x720 (`Config.ANCHO_INTERFAZ`) para que el texto se vea nítido; el mundo sigue en 640x360 (`Config.ANCHO_MUNDO`, antes `ANCHO_VIRTUAL`).

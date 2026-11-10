@@ -25,6 +25,8 @@ public class PantallaGrilla extends PantallaBase {
     private static final String[] ENCABEZADO = {"POS", "PILOTO", "VUELTA", "DIFERENCIA"};
     private static final float ANCHO_COLUMNA = 760f;
     private static final float ALTO_FILA = 44f;
+    /** Alto máximo de la tabla: con más filas (hasta 22 autos) se desplaza. */
+    private static final float ALTO_MAXIMO_TABLA = 480f;
     private static final float SEPARACION_FILAS = 4f;
     private static final float PADDING_FILA = 14f;
 
@@ -35,7 +37,7 @@ public class PantallaGrilla extends PantallaBase {
     public PantallaGrilla(Main juego, List<ResultadoJugador> grilla) {
         super(juego);
         contenido.add(titular("CLASIFICACIÓN FINALIZADA", "GRILLA DE LARGADA")).left().padBottom(14).row();
-        contenido.add(tabla(grilla)).width(ANCHO_COLUMNA).padBottom(12).row();
+        contenido.add(conDesplazamiento(tabla(grilla), ALTO_MAXIMO_TABLA)).width(ANCHO_COLUMNA).padBottom(12).row();
         contenido.add(aviso).left();
         actualizarAviso();
     }
