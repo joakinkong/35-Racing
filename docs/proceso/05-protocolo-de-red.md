@@ -4,8 +4,6 @@
 
 Diseñar, sin escribir código, cómo se comunican las computadoras durante una partida. El resultado es [docs/PROTOCOLO.md](../PROTOCOLO.md): la especificación que se va a implementar en las etapas 6 a 8 y lo que el grupo tiene que poder explicar. La guía pedía cubrir la arquitectura, la máquina de estados de la partida, los mensajes TCP y UDP con su formato exacto, las frecuencias con la cuenta del ancho de banda, la interpolación en el cliente, los hilos, las fallas, la justificación de TCP y UDP y un diagrama de secuencia de una partida completa.
 
-Para esta etapa se usó el modelo Claude Opus 5.5, como recomienda la guía para los pasos de diseño.
-
 ## El plan (se mostró y se confirmó antes de escribir)
 
 Antes de redactar el documento se presentaron las decisiones principales, y el grupo confirmó estas tres, que eran las que tenían alternativas:

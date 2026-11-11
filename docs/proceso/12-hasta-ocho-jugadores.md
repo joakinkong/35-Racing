@@ -57,10 +57,6 @@ Es el 0,52 % de una red de 100 Mbit/s. Estos números salen de la cuenta, no de 
 |---|---|
 | ![Sala llena](img/etapa12-lobby.png) | ![Grilla](img/etapa12-grilla.png) |
 
-## Uso de IA
-
-El código y esta documentación los escribió Claude (Claude Code) a pedido de Joaquín, que definió el objetivo y aprobó el plan.
-
 ## Commits y PR
 
 Todo lo de las etapas 11 a 16 quedó junto, en la rama `feature/estetica-pitwall`, porque esas etapas tocan los mismos archivos: `de4678c` (código, recursos y pruebas) y `0d74733` (documentación). Entró a `main` con los PR [#15](https://github.com/joakinkong/35-Racing/pull/15) y [#16](https://github.com/joakinkong/35-Racing/pull/16), y a `develop` con el [#17](https://github.com/joakinkong/35-Racing/pull/17).

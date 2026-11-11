@@ -18,7 +18,7 @@ Completar la documentación mínima de la primera pre-entrega: propuesta en la W
 
 ## Problemas encontrados
 
-- **Lectura del PDF.** La herramienta de lectura de PDF del asistente necesita `poppler`, que no está instalado. Se resolvió extrayendo el texto con la biblioteca `pypdf` de Python, que además hizo falta configurar con codificación UTF-8 para que no fallaran los caracteres especiales.
+- **Lectura del PDF.** La lectura de PDF necesita `poppler`, que no está instalado. Se resolvió extrayendo el texto con la biblioteca `pypdf` de Python, que además hizo falta configurar con codificación UTF-8 para que no fallaran los caracteres especiales.
 - **Link roto en el CHANGELOG.** El CHANGELOG enlazaba al tag `v0.1.0`, que nunca se creó, así que daba error 404. Se quitó el enlace en lugar de crear un tag que nadie había pedido ([`6436374`](https://github.com/joakinkong/35-Racing/commit/6436374)).
 
 ## Checklist de la pre-entrega 1 (estado al cerrar la etapa)

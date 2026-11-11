@@ -29,7 +29,7 @@ public class MenuPrincipal extends PantallaBase {
 
         Table marca = new Table();
         marca.left();
-        marca.add(new Label("F1 ARCADE  ·  RED LOCAL", skin, "seccion")).left().padBottom(6).row();
+        marca.add(new Label("F1 ARCADE", skin, "seccion")).left().padBottom(6).row();
         marca.add(new Label("35 RACING", skin, "titulo")).left().padBottom(18).row();
         marca.add(luces()).left();
 

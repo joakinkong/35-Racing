@@ -24,7 +24,7 @@ El proyecto se importó en Eclipse como *Existing Gradle Project* y `Lwjgl3Launc
 **Documentos del repositorio.**
 - `docs/propuesta/propuesta.pdf`: la propuesta aprobada (versión 2), con un nombre sin espacios para poder referenciarla.
 - `docs/propuesta/img/`: las tres figuras de la propuesta.
-- `CLAUDE.md`: el contexto fijo del proyecto para el asistente (stack, arquitectura, convenciones y forma de trabajo), con el nombre y el paquete ya completados.
+- `CLAUDE.md`: el contexto fijo del proyecto (stack, arquitectura, convenciones y forma de trabajo), con el nombre y el paquete ya completados.
 
 **Repositorio.** [joakinkong/35-Racing](https://github.com/joakinkong/35-Racing), público (necesario para tener Wiki) y con la Wiki activada. Ramas `main` y `develop`. Se invitó como colaboradores a `jasinski1988` (profesor), `JoacoR2007`, `mateoguinsburg35` y `antonellavivacqua`.
 

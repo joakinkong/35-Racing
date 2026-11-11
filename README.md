@@ -17,8 +17,8 @@ Videojuego de carreras 2D multijugador en red local. Entre 2 y 8 jugadores compi
 
 ### Requisitos
 
-- JDK 17 o superior
-- Git
+- JDK 17 o superior: [descargar Eclipse Temurin 17](https://adoptium.net/temurin/releases/?version=17) (elegí tu sistema operativo y el instalador `.msi` en Windows)
+- Git (opcional: sin Git, bajá el repositorio con el botón verde "Code" > "Download ZIP" de GitHub y descomprimilo)
 - Eclipse IDE for Java Developers (o ejecutar por consola con Gradle)
 
 ### En Eclipse

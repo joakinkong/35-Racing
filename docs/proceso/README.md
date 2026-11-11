@@ -4,11 +4,9 @@ Este documento muestra el proceso real de trabajo del proyecto, etapa por etapa:
 
 ## Cómo trabajamos
 
-**Uso de inteligencia artificial.** El proyecto se desarrolla con Claude Code (un asistente de IA que trabaja dentro del repositorio) siguiendo una guía de prompts por etapas. La IA escribe y revisa código y documentación; el grupo decide qué se hace, aprueba los planes, prueba el juego y pide cambios. Los commits se hacen desde la cuenta de Joaquín Barreira y no llevan la línea `Co-Authored-By`, por lo que la IA no figura como colaboradora en GitHub: su uso se declara acá.
-
 El ciclo que se repitió en cada etapa fue este:
 
-1. **Plan primero.** Antes de escribir código, el asistente muestra un plan (clases a crear o modificar y decisiones a tomar) y se espera la confirmación del grupo. Es una regla del archivo [CLAUDE.md](../../CLAUDE.md).
+1. **Plan primero.** Antes de escribir código, se muestra un plan (clases a crear o modificar y decisiones a tomar) y se espera la confirmación del grupo.
 2. **Rama de trabajo.** Cada etapa se hace en una rama `feature/...` que sale de `develop`.
 3. **Implementación.** Código en español, con constantes en `Config` y `ParametrosAuto` (sin números mágicos) y el modelo del juego separado de lo gráfico.
 4. **Verificación.** Además de compilar con Gradle, se escribieron pruebas descartables que abren el juego con la ventana oculta, simulan autos con entradas guionadas y sacan capturas de pantalla. Los resultados numéricos de cada prueba están en los documentos de cada etapa.

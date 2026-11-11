@@ -1,11 +1,15 @@
 package ar.edu.et35.racing.vista;
 
+import ar.edu.et35.racing.util.Config;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Disposable;
+import com.badlogic.gdx.utils.TimeUtils;
 
 /**
  * Dibuja un auto como un monoplaza visto desde arriba, con polígonos y el mismo antialiasing que la pista: el color
@@ -73,6 +77,42 @@ public class VistaAuto implements Disposable {
         formas.end();
     }
 
+    /**
+     * Dibuja la aureola del auto del jugador: un anillo blanco translúcido con un halo más tenue por fuera, que late
+     * despacio. Se llama justo antes de {@link #dibujar}, así queda debajo del auto. Es un círculo, no gira con el auto.
+     */
+    public void dibujarAureola(float x, float y, OrthographicCamera camara) {
+        float latido = MathUtils.sin(TimeUtils.millis() / 1000f * Config.AUREOLA_FRECUENCIA * MathUtils.PI2);
+        float radio = Config.AUREOLA_RADIO + latido * Config.AUREOLA_LATIDO;
+        float grosor = Config.AUREOLA_GROSOR;
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+        formas.setProjectionMatrix(camara.combined);
+        formas.begin(ShapeType.Filled);
+        // Halo: una banda más ancha y más transparente, pegada al borde de afuera del anillo
+        corona(x, y, radio + grosor / 2f, radio + grosor * 2f, Config.AUREOLA_OPACIDAD * Config.AUREOLA_OPACIDAD_HALO);
+        corona(x, y, radio - grosor / 2f, radio + grosor / 2f, Config.AUREOLA_OPACIDAD);
+        formas.end();
+        Gdx.gl.glDisable(GL20.GL_BLEND);
+    }
+
+    /** Una corona circular entre dos radios, armada con cuadriláteros. */
+    private void corona(float cx, float cy, float interior, float exterior, float opacidad) {
+        formas.setColor(1f, 1f, 1f, opacidad);
+        for (int k = 0; k < Config.AUREOLA_LADOS; k++) {
+            float a1 = MathUtils.PI2 * k / Config.AUREOLA_LADOS;
+            float a2 = MathUtils.PI2 * (k + 1) / Config.AUREOLA_LADOS;
+            float c1 = MathUtils.cos(a1);
+            float s1 = MathUtils.sin(a1);
+            float c2 = MathUtils.cos(a2);
+            float s2 = MathUtils.sin(a2);
+            formas.triangle(cx + c1 * interior, cy + s1 * interior, cx + c1 * exterior, cy + s1 * exterior,
+                cx + c2 * exterior, cy + s2 * exterior);
+            formas.triangle(cx + c1 * interior, cy + s1 * interior, cx + c2 * exterior, cy + s2 * exterior,
+                cx + c2 * interior, cy + s2 * interior);
+        }
+    }
+
     private void tira(float[][] estaciones, Color color) {
         for (int i = 0; i + 1 < estaciones.length; i++) {
             cuadrilatero(estaciones[i][0], estaciones[i][1], estaciones[i + 1][0], estaciones[i + 1][1], color);
@@ -107,11 +147,11 @@ public class VistaAuto implements Disposable {
     }
 
     private float mundoX(float x, float y) {
-        return origenX + x * cos - y * sen;
+        return origenX + (x * cos - y * sen) * Config.ESCALA_AUTO;
     }
 
     private float mundoY(float x, float y) {
-        return origenY + x * sen + y * cos;
+        return origenY + (x * sen + y * cos) * Config.ESCALA_AUTO;
     }
 
     @Override
