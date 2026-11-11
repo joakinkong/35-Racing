@@ -64,4 +64,4 @@ Reglas de esta etapa, que pidió Joaquín: como máximo **8 personas** reales, y
 
 ## Commits y pull request
 
-Sin commits todavía al escribir esta etapa.
+Rama `feature/veintidos-autos`: `6affd0f` (código) y `eece4ca` (documentación de las etapas 19 y 20). Entró a `main` con el PR [#25](https://github.com/joakinkong/35-Racing/pull/25).

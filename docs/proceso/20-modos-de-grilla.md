@@ -47,4 +47,6 @@ Que la grilla de largada no dependa siempre de la clasificación ni del orden de
 
 ## Commits y pull request
 
-Sin commits todavía al escribir esta etapa.
+Rama `feature/veintidos-autos`, los mismos commits que la etapa 19: `6affd0f` y `eece4ca`. Entró a `main` con el PR [#25](https://github.com/joakinkong/35-Racing/pull/25).
+
+La misma rama siguió con ajustes menores: la aureola del auto propio y la escala del dibujo de los autos (`0c3893b`) y la limpieza de la documentación (`87cba34`). Entraron a `main` con el PR [#26](https://github.com/joakinkong/35-Racing/pull/26).
