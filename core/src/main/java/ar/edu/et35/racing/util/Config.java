@@ -95,4 +95,22 @@ public final class Config {
     public static final int MUESTRAS_ANTIALIASING = 4;
     /** Zoom de la cámara de cada jugador: 2 = se ve el doble de mundo que con la resolución virtual. */
     public static final float ZOOM_CAMARA = 1.25f;
+    
+    public static final float ESCALA_AUTO = 1f;
+    
+    // Aureola del auto propio: un anillo blanco translúcido que late, para distinguirlo entre los demás
+    /** Radio medio del anillo, en píxeles del mundo (el auto mide unos 32 x 17). */
+    public static final float AUREOLA_RADIO = 11f;
+    /** Grosor del anillo. */
+    public static final float AUREOLA_GROSOR = 2.5f;
+    /** Cuánto se agranda y se achica el radio al latir. */
+    public static final float AUREOLA_LATIDO = 1f;
+    /** Ciclos de latido por segundo. */
+    public static final float AUREOLA_FRECUENCIA = 1.2f;
+    /** Opacidad del anillo (0 a 1). */
+    public static final float AUREOLA_OPACIDAD = 0.55f;
+    /** El halo difuso de afuera es esta fracción de la opacidad del anillo. */
+    public static final float AUREOLA_OPACIDAD_HALO = 0.25f;
+    /** Lados del polígono que aproxima el círculo. */
+    public static final int AUREOLA_LADOS = 48;
 }

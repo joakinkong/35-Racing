@@ -339,25 +339,26 @@ public class PantallaCarrera extends PantallaBase {
             int desde = ancho * i / n;
             int hasta = ancho * (i + 1) / n;
             HdpiUtils.glViewport(x + desde, y, hasta - desde, alto);
-            dibujarMundo(camaras.get(i), foto);
+            dibujarMundo(camaras.get(i), foto, idsLocales.get(i));
         }
 
         actualizarInterfaz(foto, delta);
     }
 
-    private void dibujarMundo(OrthographicCamera camara, FotoCarrera foto) {
+    /** {@code idPropio} es el auto que sigue esta cámara: es el único que lleva aureola en su pantalla. */
+    private void dibujarMundo(OrthographicCamera camara, FotoCarrera foto, int idPropio) {
         vistaCircuito.dibujar(camara);
         if (foto != null) {
-            dibujarAutos(camara, foto, true);
+            dibujarAutos(camara, foto, true, idPropio);
         }
         vistaCircuito.dibujarPuentes(camara);
         if (foto != null) {
-            dibujarAutos(camara, foto, false);
+            dibujarAutos(camara, foto, false, idPropio);
         }
     }
 
     /** Dibuja los autos que van por debajo de un puente, o todos los demás. */
-    private void dibujarAutos(OrthographicCamera camara, FotoCarrera foto, boolean losDeAbajo) {
+    private void dibujarAutos(OrthographicCamera camara, FotoCarrera foto, boolean losDeAbajo, int idPropio) {
         // Los autos vienen ordenados por posición: se dibujan del último al primero para que el puntero quede arriba.
         List<FotoAuto> autos = foto.autos();
         for (int i = autos.size() - 1; i >= 0; i--) {
@@ -367,6 +368,9 @@ public class PantallaCarrera extends PantallaBase {
             nivelesCruce.put(a.id(), nivel);
             if ((nivel == NivelCruce.ABAJO) == losDeAbajo && !a.desconectado()
                 && (!clasificacion || idsLocales.contains(a.id()))) {
+                if (a.id() == idPropio) {
+                    vistaAuto.dibujarAureola(a.x(), a.y(), camara);
+                }
                 vistaAuto.dibujar(a.x(), a.y(), a.angulo(), Paleta.autoDePiloto(fuente.piloto(a.id())),
                     Paleta.detalleDePiloto(fuente.piloto(a.id())), Catalogo.esSegundoPiloto(fuente.piloto(a.id())), camara);
             }
