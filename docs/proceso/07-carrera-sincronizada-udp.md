@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Que la carrera se juegue en red de verdad, según [docs/PROTOCOLO.md](../PROTOCOLO.md) (secciones 4 a 8). La simula solo el servidor, con la última entrada recibida de cada jugador, y manda el estado de todos los autos por UDP. Los clientes mandan lo que aprieta cada jugador y dibujan lo que llega, interpolado. Al terminar vienen los resultados por TCP y la opción de revancha, y la prueba local tiene que seguir andando sin red. La guía la marca como "la parte que define si se aprueba la materia". Se usó Claude Opus 5.5, como recomienda la guía.
+Que la carrera se juegue en red de verdad, según [docs/PROTOCOLO.md](../PROTOCOLO.md) (secciones 4 a 8). La simula solo el servidor, con la última entrada recibida de cada jugador, y manda el estado de todos los autos por UDP. Los clientes mandan lo que aprieta cada jugador y dibujan lo que llega, interpolado. Al terminar vienen los resultados por TCP y la opción de revancha, y la prueba local tiene que seguir andando sin red. La guía la marca como "la parte que define si se aprueba la materia".
 
 ## El plan (se mostró y se confirmó antes de programar)
 

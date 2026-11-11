@@ -65,10 +65,6 @@ Que los circuitos dejen de flotar sobre un fondo negro y que los autos dejen de 
 
 ![Las 11 escuderías, grandes y a la escala de la carrera](img/etapa18-autos.png)
 
-## Uso de IA
-
-El código y esta documentación los escribió Claude (Claude Code) a pedido de Joaquín, que compró el pack, pidió qué poner alrededor de cada tipo de circuito y aprobó el plan. Ningún otro integrante participó en este arte.
-
 ## Commits y PR
 
 Rama `feature/entorno-y-autos`: `b8bc515` y `78d68d8`. Entró a `main` con el PR [#23](https://github.com/joakinkong/35-Racing/pull/23).

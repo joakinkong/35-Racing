@@ -79,10 +79,6 @@ Joaquín pidió los puntos "como la F1, pero al revés": el último siempre suma
 - **Solo se puede salir de un torneo a mitad cerrando la partida.** No hay un botón para volver a la sala con los mismos jugadores.
 - **Si quedan pocos, el torneo sigue.** Con un solo auto en pista, la carrera se corre igual y da 1 punto. No se quiso frenar al host, que puede cerrar la partida.
 
-## Uso de IA
-
-El código y esta documentación los escribió Claude (Claude Code) a pedido de Joaquín, que definió el sistema de puntos y cómo se eligen los circuitos, y aprobó el plan.
-
 ## Commits y PR
 
 Todo lo de las etapas 11 a 16 quedó junto, en la rama `feature/estetica-pitwall`, porque esas etapas tocan los mismos archivos: `de4678c` (código, recursos y pruebas) y `0d74733` (documentación). Entró a `main` con los PR [#15](https://github.com/joakinkong/35-Racing/pull/15) y [#16](https://github.com/joakinkong/35-Racing/pull/16), y a `develop` con el [#17](https://github.com/joakinkong/35-Racing/pull/17).
