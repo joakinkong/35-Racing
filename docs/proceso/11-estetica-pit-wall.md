@@ -1,8 +1,8 @@
-# Etapa 11: Estética de PIT WALL
+# Etapa 11: Estética tipo F1
 
 ## Objetivo
 
-Que todo el juego copie la estética de PIT WALL, la página de estadísticas de Fórmula 1 de Joaquín (<https://joakinkong.github.io/Pitwall-F1/>), porque la idea es sumar el juego a esa página como minijuego cuando el proyecto termine. Es la primera de seis etapas: después siguen hasta 8 jugadores, mapa en vivo, bots, clasificación y torneos.
+Cambiar la estética de la app a una estética tipo F1. Como referencia se usó PIT WALL, una página de estadísticas de Fórmula 1 (<https://joakinkong.github.io/Pitwall-F1/>). Es la primera de seis etapas: después siguen hasta 8 jugadores, mapa en vivo, bots, clasificación y torneos.
 
 Se hizo primero porque esas etapas agregan opciones a la sala de espera. Si la estética quedaba para el final, la sala se habría rehecho dos veces.
 
