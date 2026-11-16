@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Que los circuitos dejen de flotar sobre un fondo negro y que los autos dejen de ser rectángulos. Joaquín pidió que los circuitos callejeros tengan calles, edificios y autos alrededor, y que los permanentes tengan pasto, tribunas, ambulancias y muros, con un pack de assets que compró.
+Que los circuitos dejen de flotar sobre un fondo negro y que los autos dejen de ser rectángulos. Los circuitos callejeros pasan a tener calles, edificios y autos alrededor, y los permanentes, pasto, tribunas, ambulancias y muros, con un pack de assets comprado para el proyecto.
 
 ## Qué se hizo
 
@@ -13,7 +13,7 @@ Que los circuitos dejen de flotar sobre un fondo negro y que los autos dejen de 
 | `vista/VistaEntorno` (nueva) | Dibuja el suelo, las calles, las piezas y el público de las tribunas, solo lo que entra en la cámara |
 | `VistaCircuito` | Dibuja el entorno antes de la pista, en lugar del fondo liso |
 | `VistaAuto` | Monoplaza visto desde arriba, hecho con polígonos, con la carrocería y el acento de cada escudería |
-| `Escuderia`, `Catalogo` y `Paleta` | Colores nuevos para los autos, tomados de fotos de los autos de 2026 que pasó Joaquín, separados del color de la interfaz |
+| `Escuderia`, `Catalogo` y `Paleta` | Colores nuevos para los autos, tomados de fotos de los autos de 2026, separados del color de la interfaz |
 | `Circuito` y `CargadorCircuito` | La geometría ahora incluye el campo `callejero`, que ya estaba en los JSON |
 | `Pianos` | Expone las curvas, para ubicar tribunas y protecciones del lado de afuera |
 | `PruebaEntorno` (nueva) | Comprueba la ubicación de las piezas en los 24 circuitos |

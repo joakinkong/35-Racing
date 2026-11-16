@@ -4,7 +4,7 @@
 
 Que al crear una sala se pueda elegir si hay clasificación antes de la carrera. Cada jugador da una sola vuelta y el orden de los tiempos arma la grilla: el más rápido larga primero, como en la Fórmula 1.
 
-En la misma tanda se escalonó la grilla de largada, también pedido por Joaquín al probar la etapa 14.
+En la misma tanda se escalonó la grilla de largada, ajuste que surgió al probar la etapa 14.
 
 ## Qué se hizo
 
@@ -22,7 +22,7 @@ En la misma tanda se escalonó la grilla de largada, también pedido por Joaquí
 
 ## Decisiones
 
-**Todos a la vez, sin verse.** Joaquín pidió que corran al mismo tiempo, cada uno en su pantalla y sin ver a los demás. Se resolvió en dos partes:
+**Todos a la vez, sin verse.** Los jugadores corren al mismo tiempo, cada uno en su pantalla y sin ver a los demás. Se resolvió en dos partes:
 
 - **En el servidor** no hay choques entre autos y todos salen del mismo lugar, así que los tiempos son comparables.
 - **En el cliente** se dejan de dibujar los otros autos, en la pista, en el mapa y en la torre de tiempos.

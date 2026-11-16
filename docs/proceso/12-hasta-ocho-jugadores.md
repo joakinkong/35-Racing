@@ -17,7 +17,7 @@ Este cambio se aparta de la propuesta original del proyecto, que dejaba fuera de
 | `PruebaCircuitos` | Comprueba los 8 lugares y agrega un control nuevo: dos lugares no pueden quedar encimados |
 | `CapturaPantallas` | Ahora prueba una partida llena: 8 clientes de verdad y un noveno que tiene que quedar afuera |
 | `docs/PROTOCOLO.md` | Límites y cuenta de ancho de banda para 8 jugadores |
-| `Paleta` | El pasto pasa de `#1F3D2B` a `#24592F`, pedido por Joaquín al revisar la etapa 11 |
+| `Paleta` | El pasto pasa de `#1F3D2B` a `#24592F`, ajuste que surgió al revisar la etapa 11 |
 
 La sala de espera y la torre de tiempos no necesitaron cambios de código: arman sus filas según `MAX_JUGADORES` y la cantidad de autos. Se revisó que entraran en pantalla.
 

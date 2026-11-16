@@ -4,7 +4,7 @@
 
 Que en la sala se pueda elegir entre una carrera única y un torneo: varias carreras seguidas, en los circuitos que quiera el host y en la cantidad que quiera, acumulando puntos.
 
-Joaquín pidió los puntos "como la F1, pero al revés": el último siempre suma 1 y de ahí para arriba. Dio dos ejemplos, 2-1 con 2 autos y 6-4-2-1 con 4. Los dos coinciden con la tabla de la F1 (25, 18, 15, 12, 10, 8, 6, 4, 2, 1) leída desde el final: 1, 2, 4, 6, 8, 10, 12, 15.
+Los puntos son "como la F1, pero al revés": el último siempre suma 1 y de ahí para arriba. Dos ejemplos: 2-1 con 2 autos y 6-4-2-1 con 4. Los dos coinciden con la tabla de la F1 (25, 18, 15, 12, 10, 8, 6, 4, 2, 1) leída desde el final: 1, 2, 4, 6, 8, 10, 12, 15.
 
 | Autos que largan | Puntos, del primero al último |
 |---|---|
@@ -34,7 +34,7 @@ Joaquín pidió los puntos "como la F1, pero al revés": el último siempre suma
 
 **El calendario lo arma el host, con circuitos repetidos si quiere.** Empieza con el circuito que estaba elegido y nunca queda vacío. Se conserva si el host vuelve a carrera única o pide revancha.
 
-**Hay un tope de 32 carreras.** Joaquín pidió cualquier cantidad, así que esto es una decisión nuestra. Hace falta algún tope para acotar el mensaje `LOBBY` y lo que entra en la sala. Se cambia en `Config.MAX_CARRERAS_TORNEO`, pero más carreras también piden más lugar en la pantalla.
+**Hay un tope de 32 carreras.** La cantidad de carreras tendría que ser libre, así que el tope es una decisión nuestra. Hace falta algún tope para acotar el mensaje `LOBBY` y lo que entra en la sala. Se cambia en `Config.MAX_CARRERAS_TORNEO`, pero más carreras también piden más lugar en la pantalla.
 
 **Vueltas, clasificación y piloto son los mismos en todo el torneo.** Si hay clasificación, se corre antes de cada carrera. Da la grilla, pero no da puntos.
 
@@ -44,7 +44,7 @@ Joaquín pidió los puntos "como la F1, pero al revés": el último siempre suma
 
 **El host decide cuándo sigue.** Entre carreras se ve la tabla y el host toca "SIGUIENTE". A diferencia de la grilla de la clasificación, que arranca sola, acá hay más para leer y puede hacer falta una pausa.
 
-**Empates por posiciones de carrera.** Joaquín definió la regla: a igual puntaje desempata la cantidad de victorias; si siguen iguales, la de segundos puestos, después la de terceros, y así. Solo si están iguales en todo queda adelante el que entró antes a la sala. En una de las pruebas pasó con dos bots empatados a 22 puntos, cada uno con un segundo y un tercer puesto. Como el servidor manda la tabla ya ordenada, los clientes no necesitan todas esas cuentas: el mensaje `TORNEO` solo lleva las victorias, que se muestran en pantalla.
+**Empates por posiciones de carrera.** La regla es: a igual puntaje desempata la cantidad de victorias; si siguen iguales, la de segundos puestos, después la de terceros, y así. Solo si están iguales en todo queda adelante el que entró antes a la sala. En una de las pruebas pasó con dos bots empatados a 22 puntos, cada uno con un segundo y un tercer puesto. Como el servidor manda la tabla ya ordenada, los clientes no necesitan todas esas cuentas: el mensaje `TORNEO` solo lleva las victorias, que se muestran en pantalla.
 
 ## Problemas y cómo se resolvieron
 
@@ -64,7 +64,7 @@ Joaquín pidió los puntos "como la F1, pero al revés": el último siempre suma
 - `PruebaSalaBots` y `PruebaClasificacion` siguen pasando con el protocolo nuevo.
 - `CapturaPantallas torneo`: el juego real, una persona contra 7 bots, en un torneo de 2 carreras (Austria y Mónaco). La persona no maneja, así que queda última y suma 1 en cada una.
 
-**Sin verificar:** el desempate definitivo por todas las posiciones compila, y `PruebaTorneo` ya tiene tres comprobaciones nuevas para ese caso, pero esa versión no se llegó a correr. Tampoco se volvió a correr el torneo contra el servidor con el mensaje `TORNEO` modificado. Joaquín lo va a probar en el juego. No se probó entre varias PC, ni con personas de verdad jugando un torneo. Tampoco la pantalla de un invitado con el calendario, ni que alguien se vaya en medio de una carrera de un torneo con la red real: la regla de ese caso solo se probó en `Torneo`, sin servidor.
+**Sin verificar:** el desempate definitivo por todas las posiciones compila, y `PruebaTorneo` ya tiene tres comprobaciones nuevas para ese caso, pero esa versión no se llegó a correr. Tampoco se volvió a correr el torneo contra el servidor con el mensaje `TORNEO` modificado. Falta probarlo jugando. No se probó entre varias PC, ni con personas de verdad jugando un torneo. Tampoco la pantalla de un invitado con el calendario, ni que alguien se vaya en medio de una carrera de un torneo con la red real: la regla de ese caso solo se probó en `Torneo`, sin servidor.
 
 | Sala | Calendario |
 |---|---|
