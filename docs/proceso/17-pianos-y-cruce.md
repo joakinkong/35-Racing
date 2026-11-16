@@ -22,7 +22,7 @@ Terminar dos pendientes del dibujo de los circuitos desde la [etapa 10](10-circu
 
 **Qué curvas llevan piano.** Las de radio menor a 500 px. El piano va en el interior de la curva y en el exterior de su salida. Es un punto de partida, porque esta decisión es de gusto: se ajusta en las constantes de `Pianos`.
 
-**El muro del puente es solo dibujo.** Joaquín eligió esta opción entre dos. La otra era una grilla de colisión por nivel, que toca `Circuito`, `Auto` y la física del servidor, justo lo que todavía no se probó en una red real. La consecuencia es que un auto puede salirse por el costado del puente hacia la pista de abajo. No gana nada: se saltea checkpoints y la vuelta no le cuenta.
+**El muro del puente es solo dibujo.** Se eligió esta opción entre dos. La otra era una grilla de colisión por nivel, que toca `Circuito`, `Auto` y la física del servidor, justo lo que todavía no se probó en una red real. La consecuencia es que un auto puede salirse por el costado del puente hacia la pista de abajo. No gana nada: se saltea checkpoints y la vuelta no le cuenta.
 
 **El nivel se decide por la posición al entrar a la zona.** El plan era usar el ángulo del auto, pero la posición resultó más simple y más firme: al entrar, los dos tramos están bien separados, y el auto que va a contramano o de costado se clasifica igual. El nivel se mantiene hasta salir, porque en el centro los tramos se pisan y la posición ya no dice por dónde venía el auto.
 

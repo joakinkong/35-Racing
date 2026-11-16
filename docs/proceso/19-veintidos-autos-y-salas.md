@@ -4,7 +4,7 @@
 
 Que la partida pueda tener los 22 pilotos de la grilla en pista, que quien crea la sala decida cuántos autos entran, que el host elija qué piloto suma como bot (y no que se agreguen en el orden del catálogo), que dos pilotos de la misma escudería corran a la vez, y que la prueba local permita 1 o 2 jugadores y los bots que se quieran.
 
-Reglas de esta etapa, que pidió Joaquín: como máximo **8 personas** reales, y como máximo **22 autos** entre personas y bots. El segundo piloto de cada escudería lleva un cuadradito verde fluo en el techo, como en la F1.
+Reglas de esta etapa: como máximo **8 personas** reales, y como máximo **22 autos** entre personas y bots. El segundo piloto de cada escudería lleva un cuadradito verde fluo en el techo, como en la F1.
 
 ## Qué se hizo
 

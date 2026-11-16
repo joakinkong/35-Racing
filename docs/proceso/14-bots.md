@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Que el host pueda completar la grilla con bots, hasta 8 autos, eligiendo la dificultad de cada uno: fácil, medio o difícil. Joaquín pidió que al difícil sea casi imposible ganarle.
+Que el host pueda completar la grilla con bots, hasta 8 autos, eligiendo la dificultad de cada uno: fácil, medio o difícil. El nivel difícil tiene que ser casi imposible de ganar.
 
 Como la etapa 12, esto se aparta de la propuesta original, que dejaba fuera del alcance los "rivales controlados por inteligencia artificial". La propuesta no se modificó.
 

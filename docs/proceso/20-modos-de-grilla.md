@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Que la grilla de largada no dependa siempre de la clasificación ni del orden de llegada a la sala. Joaquín pidió que, sin clasificación, el host pueda cambiar la grilla a mano o sortearla, y después precisó que la opción "clasificación" de la sala tenga tres modos: **sin clasificación**, **clasificación** o **al azar**. Con "al azar", todas las carreras (también las de un torneo) largan con una grilla sorteada; con "sin clasificación", se larga con la grilla que armó el host.
+Que la grilla de largada no dependa siempre de la clasificación ni del orden de llegada a la sala. Sin clasificación, el host puede cambiar la grilla a mano o sortearla, y la opción "clasificación" de la sala tiene tres modos: **sin clasificación**, **clasificación** o **al azar**. Con "al azar", todas las carreras (también las de un torneo) largan con una grilla sorteada; con "sin clasificación", se larga con la grilla que armó el host.
 
 ## Qué se hizo
 
