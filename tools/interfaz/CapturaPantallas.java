@@ -33,17 +33,11 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Programa de verificación (fuera del juego): abre el juego real en una ventana oculta, recorre las pantallas y guarda
- * una captura de cada una. La sala y la carrera en red usan el servidor y una partida llena de clientes de verdad, en los puertos del
- * juego, así que no tiene que haber otra partida abierta en la PC. Ver tools/interfaz/LEEME.md.
- */
 public class CapturaPantallas extends Main {
     private record Paso(Runnable accion, int cuadrosDeEspera, String captura) {
     }
 
     private static final String[] NOMBRES = {"Ana", "Beto", "Caro", "Dani", "Eli", "Fede", "Gala"};
-    /** La carrera de prueba corre en el circuito más angosto, que es donde menos lugar hay para la grilla. */
     private static final String CIRCUITO_ANGOSTO = "monaco";
 
     private final String salida;
@@ -63,7 +57,6 @@ public class CapturaPantallas extends Main {
         this.salida = salida;
     }
 
-    /** Con un segundo argumento "clasificacion" o "torneo", solo corre esa partida. */
     private static boolean soloClasificacion;
     private static boolean soloTorneo;
     private static boolean soloVeintidos;
@@ -75,7 +68,6 @@ public class CapturaPantallas extends Main {
         Lwjgl3ApplicationConfiguration c = new Lwjgl3ApplicationConfiguration();
         c.setTitle("captura");
         c.setInitialVisible(false);
-        // A 60 cuadros por segundo, para que las esperas de abajo sean tiempo real (60 cuadros = 1 s) también con la ventana oculta.
         c.useVsync(false);
         c.setForegroundFPS(60);
         c.setIdleFPS(60);
@@ -146,7 +138,6 @@ public class CapturaPantallas extends Main {
         listo = true;
     }
 
-    /** Una persona contra 7 bots: sala, vuelta de clasificación, grilla y largada de la carrera. */
     private void pasosDeClasificacion() {
         pasos.add(new Paso(this::crearSalaConBots, 40, null));
         pasos.add(new Paso(() -> {
@@ -164,7 +155,6 @@ public class CapturaPantallas extends Main {
         pasos.add(new Paso(() -> { }, 60 * 12, "clasif_largada"));
     }
 
-    /** Los 22 autos: la sala con el host sumando bots, la prueba local con 2 personas y 20 bots, y una carrera con todos. */
     private void pasosDeVeintidos() {
         pasos.add(new Paso(this::crearSalaConBots, 40, null));
         pasos.add(new Paso(() -> {
@@ -191,7 +181,6 @@ public class CapturaPantallas extends Main {
             60 * 14, "veintidos_local_carrera"));
     }
 
-    /** Una persona contra 7 bots, un torneo de 2 carreras: la sala, el calendario y los resultados de cada carrera. */
     private void pasosDeTorneo() {
         pasos.add(new Paso(this::crearSalaConBots, 40, null));
         pasos.add(new Paso(() -> {
@@ -242,7 +231,6 @@ public class CapturaPantallas extends Main {
         }
     }
 
-    /** Una sala nueva, sin clientes de prueba: el host y lo que agregue después. */
     private void crearSalaConBots() {
         try {
             for (ClientePartida invitado : invitados) {
@@ -260,13 +248,11 @@ public class CapturaPantallas extends Main {
         }
     }
 
-    /** Un jugador de más: el servidor tiene que rechazarlo con PARTIDA_LLENA. */
     private void probarSobrante() {
         sobrante = new ClientePartida("Sobrante");
         sobrante.conectar("127.0.0.1", Config.PUERTO_TCP);
     }
 
-    /** Se llama cuando faltan 5 s para la captura de la carrera; lo que imprime sale al terminar ese paso. */
     private void informarRed() {
         Gdx.app.postRunnable(() -> System.out.println("VERIFICACION sobrante: " + respuestaAlSobrante));
     }
@@ -320,12 +306,10 @@ public class CapturaPantallas extends Main {
         }
     }
 
-    /** Los invitados hacen lo mínimo de un cliente de verdad: mantener viva la conexión y, en carrera, mandar sus teclas. */
     private void atenderInvitados() {
         for (ClientePartida invitado : invitados) {
             invitado.actualizar();
             while (invitado.sondear() != null) {
-                // lo que llega por TCP no le importa a este programa
             }
             if (invitadosManejando) {
                 invitado.enviarEntrada(aFondo);
@@ -352,8 +336,6 @@ public class CapturaPantallas extends Main {
         int alto = Gdx.graphics.getBackBufferHeight();
         Gdx.gl.glFinish();
         Pixmap leido = Pixmap.createFromFrameBuffer(0, 0, ancho, alto);
-        // El framebuffer viene con el origen abajo: se da vuelta para que la imagen salga derecha.
-        // El canal alfa de la ventana no se ve en pantalla, pero en un PNG aclararía los paneles semitransparentes.
         java.nio.ByteBuffer pixeles = leido.getPixels();
         for (int i = 3; i < pixeles.limit(); i += 4) {
             pixeles.put(i, (byte) 0xFF);

@@ -6,43 +6,25 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Calcula los pianos de un circuito a partir de la línea central: franjas rojas y blancas sobre el borde del asfalto, en
- * el interior de cada curva cerrada y en el exterior de su salida. Son solo dibujo: la grilla de colisión no los conoce,
- * así que no cambian cómo se maneja, y como se calculan al cargar, los JSON de los circuitos no se tocan.
- */
 final class Pianos {
-    /** Una curva lleva piano si su radio es menor que este (px). */
     private static final float RADIO_MAXIMO = 500f;
-    /** Muestras antes y después con las que se mide la curvatura (48 px): más corto, el ruido del trazado parece curva. */
     private static final int VENTANA_CURVATURA = 6;
-    /** Dos tramos de curva hacia el mismo lado separados por hasta estas muestras son la misma curva. */
     private static final int HUECO_MAXIMO = 5;
-    /** Una curva de menos muestras que estas no lleva piano: quedaría una mancha de dos o tres franjas. */
     private static final int MUESTRAS_MINIMAS = 8;
-    /** Parte final de la curva (la salida) que lleva piano del lado de afuera. */
     private static final float FRACCION_SALIDA = 0.4f;
-    /** Muestras que el piano de afuera sigue después del final de la curva. */
     private static final int MUESTRAS_DESPUES_DE_SALIDA = 6;
-    /** Ancho de la cinta (px). */
     private static final float ANCHO = 10f;
-    /** Muestras de cada franja de color: 2 muestras son 16 px. */
     private static final int MUESTRAS_POR_FRANJA = 2;
-    /** Muestras vecinas contra las que se comprueba que un punto sea borde del asfalto (320 px). */
     private static final int VECINAS_BORDE = 40;
-    /** Cuánto puede quedar un punto adentro de otro círculo y seguir contando como borde (px). */
     private static final float TOLERANCIA_BORDE = 2f;
-    /** Un pedazo de cinta de menos muestras que estas no se dibuja: en una esquina viva quedaría una mancha. */
     private static final int PEDAZO_MINIMO = 4;
 
-    /** Los triángulos de un color de una cinta, con coordenadas de mundo. */
     record Franjas(float[] vertices, short[] triangulos, boolean rojas) {
     }
 
     private Pianos() {
     }
 
-    /** Para cada muestra: 1 si es parte de una curva cerrada a la izquierda, -1 a la derecha, 0 si no. */
     static int[] curvas(Circuito circuito) {
         return marcarCurvas(circuito.geometria(), muestrasEnCruces(circuito));
     }
@@ -58,7 +40,7 @@ final class Pianos {
             inicio++;
         }
         if (inicio == n) {
-            return resultado; // Toda la vuelta es una sola curva: no pasa en ningún circuito real.
+            return resultado;
         }
         for (int k = 0; k < n; ) {
             int i = (inicio + k) % n;
@@ -85,7 +67,6 @@ final class Pianos {
         return resultado;
     }
 
-    /** Donde hay un puente no van pianos: quedarían tapados a medias, o encima del tramo de abajo. */
     private static boolean[] muestrasEnCruces(Circuito circuito) {
         Circuito.Geometria g = circuito.geometria();
         boolean[] prohibida = new boolean[g.muestras()];
@@ -97,7 +78,6 @@ final class Pianos {
         return prohibida;
     }
 
-    /** Para cada muestra: 1 si es parte de una curva cerrada a la izquierda, -1 a la derecha, 0 si no. */
     private static int[] marcarCurvas(Circuito.Geometria g, boolean[] prohibida) {
         int n = g.muestras();
         float[] l = g.linea();
@@ -116,7 +96,6 @@ final class Pianos {
                 curva[i] = giro > 0 ? 1 : -1;
             }
         }
-        // Se cierran los huecos chicos dentro de una misma curva.
         for (int i = 0; i < n; i++) {
             if (curva[i] == 0 || curva[(i + 1) % n] != 0) {
                 continue;
@@ -139,11 +118,6 @@ final class Pianos {
         return curva;
     }
 
-    /**
-     * Una cinta sobre el borde del asfalto.
-     *
-     * @param lado 1 = a la izquierda del sentido de la carrera, -1 = a la derecha
-     */
     private static void agregarCinta(Circuito.Geometria g, int desde, int largo, int lado, List<Franjas> resultado) {
         boolean[] visible = pedazosVisibles(g, desde, largo, lado);
         for (int color = 0; color < 2; color++) {
@@ -159,10 +133,6 @@ final class Pianos {
         }
     }
 
-    /**
-     * Qué pedazos de la cinta van sobre el borde real del asfalto. En una esquina más cerrada que el ancho de la pista,
-     * el punto corrido desde la línea central cae adentro de la propia curva: dibujarlo plegaría la cinta sobre sí misma.
-     */
     private static boolean[] pedazosVisibles(Circuito.Geometria g, int desde, int largo, int lado) {
         boolean[] visible = new boolean[largo];
         for (int k = 0; k < largo; k++) {
@@ -181,7 +151,6 @@ final class Pianos {
         return visible;
     }
 
-    /** Si el punto del borde de esta muestra no queda adentro del círculo de otra muestra vecina. */
     private static boolean esBorde(Circuito.Geometria g, int muestra, int lado) {
         float[] v = new float[4];
         borde(g, muestra, lado, v, 0);
@@ -198,12 +167,10 @@ final class Pianos {
         return true;
     }
 
-    /** El pedazo de cinta entre una muestra y la siguiente. */
     private static float[] cuadrado(Circuito.Geometria g, int muestra, int lado) {
         float[] v = new float[8];
         borde(g, muestra, lado, v, 0);
         borde(g, muestra + 1, lado, v, 4);
-        // Se invierte el segundo par para recorrer el contorno en orden.
         float x = v[4];
         float y = v[5];
         v[4] = v[6];
@@ -213,7 +180,6 @@ final class Pianos {
         return v;
     }
 
-    /** Los dos puntos de la cinta en una muestra: el borde del asfalto y el que está {@link #ANCHO} px adentro. */
     private static void borde(Circuito.Geometria g, int muestra, int lado, float[] v, int desde) {
         int n = g.muestras();
         float[] l = g.linea();

@@ -47,37 +47,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-/**
- * Servidor de la partida, embebido en el proceso del host (docs/PROTOCOLO.md). Es autoritativo: tiene la única
- * {@link Carrera} que se simula de verdad.
- *
- * <p>Hilos: uno que acepta conexiones TCP, uno lector TCP por cliente, uno receptor UDP y uno de simulación.
- * <b>Solo el hilo de simulación toca el estado de la partida</b> (jugadores, fase, carrera). Los demás le pasan datos
- * por dos vías, igual que la diferencia entre TCP y UDP:
- * <ul>
- * <li>lo que llega por TCP (no se puede perder) va a una cola de eventos que se procesa en orden;</li>
- * <li>lo que llega por UDP (se reemplaza constantemente) se guarda como "última entrada" de cada jugador, en campos
- * volatile que el receptor sobrescribe y la simulación lee.</li>
- * </ul>
- *
- * <p>El primer jugador que se une es el host: es el que creó la partida y se conecta enseguida a su propio servidor.
- */
 public class ServidorPartida {
     private static final String ORIGEN = "SERVIDOR";
     private static final long NANOS_POR_TICK = 1_000_000_000L / Config.TICKS_POR_SEGUNDO;
     private static final float PASO = 1f / Config.TICKS_POR_SEGUNDO;
     private static final int TICKS_POR_ESTADO = Math.max(1, Config.TICKS_POR_SEGUNDO / Config.ENVIOS_ESTADO_POR_SEGUNDO);
-    /** Si la simulación se atrasa más que esto (la PC se trabó), no intenta recuperar todos los ticks de golpe. */
     private static final long MAX_ATRASO_NANOS = TimeUnit.MILLISECONDS.toNanos(250);
     private static final long TIMEOUT_ENTRADA_NANOS = TimeUnit.MILLISECONDS.toNanos(Config.TIMEOUT_ENTRADA_UDP_MS);
 
-    /** Fase de la partida (docs/PROTOCOLO.md, sección 2). */
     private enum Fase { LOBBY, CUENTA_REGRESIVA, CARRERA, GRILLA, RESULTADOS }
 
-    /** Una conexión aceptada. Todavía no es un jugador hasta que manda UNIRSE y se lo acepta. */
     private static final class Cliente {
         final ConexionTcp conexion;
-        volatile Jugador jugador; // lo asigna el hilo de simulación
+        volatile Jugador jugador;
 
         Cliente(ConexionTcp conexion) {
             this.conexion = conexion;
@@ -89,11 +71,6 @@ public class ServidorPartida {
         }
     }
 
-    /**
-     * Un auto de la partida: un jugador aceptado o un bot. Un bot no tiene conexión (cliente y udp en null) porque no
-     * hay nadie del otro lado: sus entradas las calcula acá mismo el hilo de simulación, y por eso un bot no agrega nada
-     * de tráfico. Solo lo modifica el hilo de simulación.
-     */
     private static final class Jugador {
         final int id;
         final Cliente cliente;
@@ -123,7 +100,6 @@ public class ServidorPartida {
             return nivelBot != null;
         }
 
-        /** Le cambia el piloto y, si es un bot, el nombre, que es el apellido del piloto. */
         void cambiarPiloto(int nuevo) {
             piloto = nuevo;
             if (esBot()) {
@@ -132,16 +108,11 @@ public class ServidorPartida {
         }
     }
 
-    /**
-     * Lo que llega por UDP de un jugador. El receptor UDP es el único que escribe (los volatile para que la
-     * simulación vea el último valor) y la simulación solo lee.
-     */
     private static final class EntradaRemota {
         final int token;
         volatile int botones;
         volatile long ultimaLlegadaNanos;
         volatile SocketAddress direccion;
-        // Solo los usa el hilo receptor UDP.
         boolean recibioAlguna;
         int ultimaSecuencia;
         int descartados;
@@ -151,11 +122,6 @@ public class ServidorPartida {
         }
     }
 
-    /**
-     * Carga un circuito por el nombre de su archivo. Lo implementa el host con su hilo de render, porque leer el archivo
-     * usa Gdx.files y no se toca LibGDX desde los hilos del servidor; se lo llama desde el hilo de
-     * simulación, que espera la respuesta (no hay carrera en curso, así que no se atrasa nada).
-     */
     @FunctionalInterface
     public interface ProveedorCircuitos {
         Circuito cargar(String archivo) throws Exception;
@@ -172,53 +138,35 @@ public class ServidorPartida {
 
     private final ServerSocket socketTcp;
     private final DatagramSocket socketUdp;
-    /** Cómo conseguir el circuito elegido al iniciar la carrera (lo carga el host en su hilo de render). */
     private final ProveedorCircuitos proveedor;
-    /** El último circuito cargado, para que una revancha en el mismo circuito no lo cargue de nuevo. */
     private String archivoCargado;
     private Circuito circuitoCargado;
     private final BlockingQueue<Evento> eventos = new LinkedBlockingQueue<>();
     private final List<Cliente> conexiones = new CopyOnWriteArrayList<>();
-    /** Por id de jugador: lo comparten el receptor UDP (busca el token) y la simulación (crea y borra). */
     private final AtomicReferenceArray<EntradaRemota> remotas = new AtomicReferenceArray<>(Config.MAX_JUGADORES);
     private final AtomicBoolean activo = new AtomicBoolean(true);
     private final SecureRandom azar = new SecureRandom();
 
-    // Estado de la partida: solo lo toca el hilo de simulación
     private final Map<Integer, Jugador> jugadores = new LinkedHashMap<>();
     private final Map<Integer, EntradaAuto> entradas = new HashMap<>();
-    /** Los pilotos de los bots de la carrera en curso, por id. */
     private final Map<Integer, PilotoBot> pilotosBot = new HashMap<>();
     private Fase fase = Fase.LOBBY;
     private int idHost = -1;
-    /** Índice en el catálogo del circuito elegido; lo cambia el host en el lobby. */
     private int circuitoElegido;
-    /** Vueltas elegidas por el host en el lobby. */
     private int vueltasElegidas = Config.VUELTAS;
-    /** Cómo se arma la grilla: a mano, con clasificación o al azar. */
     private ModoGrilla modoGrilla = ModoGrilla.MANUAL;
-    /** Ids de los autos en el orden de la grilla sin clasificación; lo arma el host o el sorteo (ver {@link #sincronizarGrilla}). */
     private final List<Integer> ordenGrilla = new ArrayList<>();
-    /** Si el host eligió torneo en lugar de carrera única. */
     private boolean modoTorneo;
-    /** Los circuitos del torneo en orden. Se conserva si el host vuelve a carrera única o después de una revancha. */
     private final List<Integer> calendario = new ArrayList<>();
-    /** El torneo en curso; null en una carrera única o en el lobby. */
     private Torneo torneo;
-    /** Índice en el catálogo del circuito que se está corriendo: el elegido o el que toca en el torneo. */
     private int circuitoEnCurso;
-    /** Si lo que se está corriendo ahora es la clasificación y no la carrera. */
     private boolean enClasificacion;
-    /** Ids en el orden en que terminó la clasificación; vacía si no hubo. */
     private List<Integer> ordenClasificacion = List.of();
-    /** Ticks que faltan para que arranque la carrera, mientras se muestra la grilla. */
     private int ticksDeGrilla;
     private Carrera carrera;
     private int tickInicioCarrera;
-    /** Número de tick de la simulación: nunca vuelve atrás, ni entre carreras. Es la secuencia del ESTADO. */
     private int tick;
 
-    /** Máximo de autos (personas y bots) de esta sala; lo elige el host al crearla y no cambia. */
     private final int capacidad;
 
     private ServidorPartida(ServerSocket socketTcp, DatagramSocket socketUdp, ProveedorCircuitos proveedor, int capacidad) {
@@ -230,17 +178,6 @@ public class ServidorPartida {
         this.circuitoElegido = inicial >= 0 ? inicial : 0;
     }
 
-    /**
-     * Crea el servidor y lo deja escuchando.
-     *
-     * @param puertoTcp puerto TCP; 0 deja que el sistema elija uno libre (se usa en las pruebas)
-     * @param puertoUdp puerto UDP; 0 igual
-     * @param capacidad máximo de autos de la sala (personas más bots), de MIN_JUGADORES a MAX_JUGADORES; las personas
-     *                  no pasan de MAX_PERSONAS
-     * @param proveedor carga el circuito elegido cuando el host inicia la carrera. Se pide recién ahí y no al crear la
-     *                  partida porque los mapas son grandes y el host puede elegir cualquiera de los 24
-     * @throws IOException si alguno de los puertos ya está ocupado (por ejemplo, otra partida creada en esta PC)
-     */
     public static ServidorPartida crear(int puertoTcp, int puertoUdp, int capacidad, ProveedorCircuitos proveedor) throws IOException {
         ServerSocket tcp = new ServerSocket(puertoTcp);
         DatagramSocket udp;
@@ -257,7 +194,6 @@ public class ServidorPartida {
         return servidor;
     }
 
-    /** Sala con la capacidad máxima (los 22 autos); la usan las pruebas. */
     public static ServidorPartida crear(int puertoTcp, int puertoUdp, ProveedorCircuitos proveedor) throws IOException {
         return crear(puertoTcp, puertoUdp, Config.MAX_JUGADORES, proveedor);
     }
@@ -282,13 +218,10 @@ public class ServidorPartida {
 
     private static Thread hilo(String nombre, Runnable tarea) {
         Thread hilo = new Thread(tarea, nombre);
-        // Daemon: si el programa termina, estos hilos no lo mantienen vivo.
         hilo.setDaemon(true);
         hilo.start();
         return hilo;
     }
-
-    // ------------------------------------------------------------------ hilo de aceptación y lectores TCP
 
     private void aceptar() {
         while (activo.get()) {
@@ -310,7 +243,6 @@ public class ServidorPartida {
         }
     }
 
-    /** Hilo lector de un cliente: convierte lo que llega en eventos para el hilo de simulación. */
     private void leer(Cliente cliente) {
         String motivo = "cerró la conexión";
         try {
@@ -332,7 +264,6 @@ public class ServidorPartida {
         } catch (IOException e) {
             motivo = cliente.conexion.cerrada() ? "conexión cerrada" : "error de red: " + e.getMessage();
         } catch (RuntimeException e) {
-            // Un mensaje que rompa el procesamiento da de baja a ese cliente, pero no al servidor.
             RegistroRed.log(ORIGEN, "Error inesperado con " + cliente.nombreParaLog() + ": " + e);
             motivo = "error interno";
         } finally {
@@ -341,13 +272,6 @@ public class ServidorPartida {
         }
     }
 
-    // ------------------------------------------------------------------ hilo receptor UDP
-
-    /**
-     * Recibe las ENTRADA. Descarta lo que no tenga el tamaño y el tipo correctos, un id o un token que no
-     * correspondan, o una secuencia menor o igual a la última (atrasado o duplicado). Con la primera ENTRADA válida
-     * de cada jugador aprende a qué dirección y puerto mandarle los ESTADO.
-     */
     private void recibirUdp() {
         byte[] bufer = new byte[PaquetesUdp.LARGO_MAXIMO + 64];
         DatagramPacket paquete = new DatagramPacket(bufer, bufer.length);
@@ -356,7 +280,7 @@ public class ServidorPartida {
                 paquete.setLength(bufer.length);
                 socketUdp.receive(paquete);
             } catch (IOException e) {
-                return; // el socket se cerró: el servidor se está apagando
+                return;
             }
             try {
                 procesarPaqueteUdp(bufer, paquete);
@@ -393,13 +317,6 @@ public class ServidorPartida {
         remota.ultimaLlegadaNanos = System.nanoTime();
     }
 
-    // ------------------------------------------------------------------ hilo de simulación
-
-    /**
-     * Ciclo a TICKS_POR_SEGUNDO: mientras espera el próximo tick procesa los eventos TCP que lleguen, y en cada
-     * tick avanza la carrera. Los ticks se programan sobre un horario fijo, así el promedio se mantiene en 60 por
-     * segundo aunque el sistema operativo despierte al hilo un poco tarde.
-     */
     private void correrSimulacion() {
         long siguiente = System.nanoTime();
         try {
@@ -427,7 +344,6 @@ public class ServidorPartida {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } catch (RuntimeException | Error e) {
-            // Una partida con la simulación muerta no se puede continuar: se avisa a todos y se cierra.
             RegistroRed.log(ORIGEN, "Error inesperado en la simulación: " + e);
             e.printStackTrace();
             cerrar("Error interno del servidor (" + e.getClass().getSimpleName() + ")");
@@ -460,7 +376,6 @@ public class ServidorPartida {
             terminarClasificacion();
         } else if (despues == EstadoCarrera.TERMINADA) {
             fase = Fase.RESULTADOS;
-            // Primero la tabla: TCP entrega en orden, así el cliente ya la tiene cuando pasa a los resultados.
             if (torneo != null) {
                 torneo.sumarCarrera(carrera.resultados(), abandonaron());
                 difundir(EstadoTorneo.armar(torneo));
@@ -469,7 +384,6 @@ public class ServidorPartida {
         }
     }
 
-    /** Los que se fueron de la partida sin completar la carrera: esa carrera no les suma puntos. */
     private Set<Integer> abandonaron() {
         Set<Integer> ids = new HashSet<>();
         for (ResultadoJugador resultado : carrera.resultados()) {
@@ -480,7 +394,6 @@ public class ServidorPartida {
         return ids;
     }
 
-    /** La clasificación terminó: se avisa la grilla y queda a la vista hasta que arranca sola la carrera. */
     private void terminarClasificacion() {
         List<Integer> orden = new ArrayList<>();
         for (ResultadoJugador resultado : carrera.resultados()) {
@@ -492,10 +405,6 @@ public class ServidorPartida {
         difundir(Protocolo.armarGrilla(carrera.resultados()));
     }
 
-    /**
-     * Si a los TIMEOUT_RED segundos de empezar un jugador no mandó ninguna ENTRADA, casi seguro es un firewall que
-     * bloquea el UDP: se avisa una sola vez en la consola del host.
-     */
     private void avisarSiNoLlegaUdp() {
         if (tick - tickInicioCarrera < Config.TIMEOUT_RED * Config.TICKS_POR_SEGUNDO) {
             return;
@@ -509,10 +418,6 @@ public class ServidorPartida {
         }
     }
 
-    /**
-     * La entrada de cada auto: la de una persona es la última que llegó por UDP (si no llegó nada en el último segundo,
-     * controles neutros), y la de un bot la decide su piloto. Para la {@link Carrera} son iguales.
-     */
     private Map<Integer, EntradaAuto> armarEntradas() {
         long ahora = System.nanoTime();
         for (Jugador jugador : jugadores.values()) {
@@ -520,7 +425,6 @@ public class ServidorPartida {
             if (jugador.esBot()) {
                 Participante participante = carrera.participante(jugador.id);
                 if (carrera.estado() == EstadoCarrera.EN_CURSO && !participante.terminado()) {
-                    // En la clasificación no hay otros autos en la pista, ni siquiera para esquivarlos.
                     pilotosBot.get(jugador.id).decidir(participante, enClasificacion ? List.of(participante) : carrera.participantes(), entrada, PASO);
                 }
                 continue;
@@ -532,7 +436,6 @@ public class ServidorPartida {
         return entradas;
     }
 
-    /** Manda el mismo ESTADO a cada jugador cuya dirección UDP ya se conoce. */
     private void enviarEstado() {
         byte[] datos = PaquetesUdp.armarEstado(tick, carrera.foto(1f));
         for (Jugador jugador : jugadores.values()) {
@@ -541,7 +444,7 @@ public class ServidorPartida {
             }
             SocketAddress direccion = jugador.udp.direccion;
             if (direccion == null) {
-                continue; // todavía no mandó ninguna ENTRADA
+                continue;
             }
             try {
                 socketUdp.send(new DatagramPacket(datos, datos.length, direccion));
@@ -567,7 +470,6 @@ public class ServidorPartida {
     private void procesarMensaje(Cliente cliente, Mensaje mensaje) {
         Jugador jugador = cliente.jugador;
         if (jugador == null) {
-            // Antes de UNIRSE no se acepta ningún otro mensaje.
             if (mensaje.es(Protocolo.UNIRSE)) {
                 unir(cliente, mensaje);
             } else {
@@ -642,7 +544,6 @@ public class ServidorPartida {
         } else if (fase != Fase.LOBBY) {
             rechazar(cliente, Protocolo.CARRERA_EN_CURSO, "La carrera ya empezó");
         } else if (cantidadDePersonas() >= Math.min(capacidad, Config.MAX_PERSONAS)) {
-            // Los bots no cuentan: una persona siempre tiene prioridad y, si hace falta, le saca el lugar a uno.
             rechazar(cliente, Protocolo.PARTIDA_LLENA, "La partida está llena");
         } else if (!Protocolo.nombreValido(nombre)) {
             rechazar(cliente, Protocolo.NOMBRE_INVALIDO,
@@ -673,11 +574,6 @@ public class ServidorPartida {
         difundirLobby();
     }
 
-    /**
-     * Cada piloto lo tiene un solo auto, pero los dos de una misma escudería pueden correr a la vez. Si el piloto
-     * elegido lo tiene otra persona se rechaza; si lo tiene un bot, se intercambian: el bot pasa a tener el piloto que
-     * dejó la persona, así ninguno se queda sin piloto.
-     */
     private void elegirPiloto(Jugador jugador, Mensaje mensaje) {
         if (fase != Fase.LOBBY) {
             error(jugador.cliente, Protocolo.NO_PERMITIDO, "Ya no se puede cambiar de piloto");
@@ -704,7 +600,6 @@ public class ServidorPartida {
         difundirLobby();
     }
 
-    /** Solo el host cambia el circuito, y solo en el lobby. */
     private void elegirCircuito(Jugador jugador, Mensaje mensaje) {
         if (jugador.id != idHost || fase != Fase.LOBBY) {
             error(jugador.cliente, Protocolo.NO_PERMITIDO, "Solo el anfitrión puede elegir el circuito, y solo desde el lobby");
@@ -719,7 +614,6 @@ public class ServidorPartida {
         difundirLobby();
     }
 
-    /** Solo el host cambia las vueltas, y solo en el lobby. */
     private void elegirVueltas(Jugador jugador, Mensaje mensaje) {
         if (jugador.id != idHost || fase != Fase.LOBBY) {
             error(jugador.cliente, Protocolo.NO_PERMITIDO, "Solo el anfitrión puede elegir las vueltas, y solo desde el lobby");
@@ -747,10 +641,6 @@ public class ServidorPartida {
         difundirLobby();
     }
 
-    /**
-     * Sube (-1) o baja (+1) un lugar a un auto de la grilla. Solo con la grilla a mano: con clasificación o al azar el orden
-     * no lo decide el host.
-     */
     private void moverEnGrilla(Jugador jugador, Mensaje mensaje) {
         if (!esHostEnLobby(jugador, "mover la grilla") || !grillaAMano(jugador)) {
             return;
@@ -767,7 +657,6 @@ public class ServidorPartida {
         difundirLobby();
     }
 
-    /** Mezcla la grilla ahora; el host puede seguir moviendo lugares después. */
     private void sortearGrilla(Jugador jugador) {
         if (!esHostEnLobby(jugador, "sortear la grilla") || !grillaAMano(jugador)) {
             return;
@@ -785,11 +674,6 @@ public class ServidorPartida {
         return true;
     }
 
-    /**
-     * Deja {@link #ordenGrilla} con exactamente los autos de la partida: saca los que se fueron y suma los nuevos. Una persona
-     * nueva queda después de la última persona (las personas van antes que los bots, como siempre) y un bot, al final. Lo que
-     * el host ya movió se respeta.
-     */
     private void sincronizarGrilla() {
         ordenGrilla.removeIf(id -> !jugadores.containsKey(id));
         for (Jugador j : jugadores.values()) {
@@ -807,7 +691,6 @@ public class ServidorPartida {
         }
     }
 
-    /** Al pasar a torneo por primera vez, el calendario arranca con el circuito elegido: nunca queda vacío. */
     private void elegirModo(Jugador jugador, Mensaje mensaje) {
         if (!esHostEnLobby(jugador, "elegir el modo")) {
             return;
@@ -819,7 +702,6 @@ public class ServidorPartida {
         difundirLobby();
     }
 
-    /** Se puede repetir un circuito. */
     private void agregarCircuito(Jugador jugador, Mensaje mensaje) {
         if (!esHostEnLobby(jugador, "armar el calendario")) {
             return;
@@ -837,7 +719,6 @@ public class ServidorPartida {
         difundirLobby();
     }
 
-    /** La última carrera no se puede sacar: un torneo necesita al menos una. */
     private void quitarCircuito(Jugador jugador, Mensaje mensaje) {
         if (!esHostEnLobby(jugador, "armar el calendario")) {
             return;
@@ -851,7 +732,6 @@ public class ServidorPartida {
         difundirLobby();
     }
 
-    /** AGREGAR_BOT;nivel;piloto. El host elige qué piloto suma; con -1 se le da el primero libre. */
     private void agregarBot(Jugador jugador, Mensaje mensaje) {
         if (!esHostEnLobby(jugador, "agregar bots")) {
             return;
@@ -882,7 +762,6 @@ public class ServidorPartida {
             return;
         }
         Jugador bot = jugadores.get(mensaje.entero(0, -1));
-        // El id viene de afuera: este mensaje nunca puede echar a una persona.
         if (bot == null || !bot.esBot()) {
             RegistroRed.log(ORIGEN, "QUITAR_BOT de algo que no es un bot: " + mensaje.campo(0));
             return;
@@ -933,7 +812,6 @@ public class ServidorPartida {
         return personas;
     }
 
-    /** Los autos en el orden de la grilla sin clasificación: el que armó el host, o el sorteo. Es también el orden del lobby. */
     private List<Jugador> enOrdenDeGrilla() {
         sincronizarGrilla();
         List<Jugador> orden = new ArrayList<>();
@@ -952,7 +830,6 @@ public class ServidorPartida {
         difundirLobby();
     }
 
-    /** Valida el pedido del host y arranca la clasificación, si la hay, o la carrera. */
     private void iniciar(Jugador jugador) {
         if (jugador.id != idHost || fase != Fase.LOBBY) {
             error(jugador.cliente, Protocolo.NO_PERMITIDO, "Solo el anfitrión puede iniciar, y solo desde el lobby");
@@ -978,10 +855,6 @@ public class ServidorPartida {
         empezarCarreraEn(primero);
     }
 
-    /**
-     * Pasa a la próxima carrera del torneo, con los que sigan en la partida. La pide el host desde los resultados, para que
-     * todos tengan tiempo de ver la tabla. El circuito se carga antes de avanzar: si falla, se puede volver a pedir.
-     */
     private void siguienteCarrera(Jugador jugador) {
         if (jugador.id != idHost || fase != Fase.RESULTADOS || torneo == null || !torneo.hayMasCarreras()) {
             error(jugador.cliente, Protocolo.NO_PERMITIDO, "Solo el anfitrión puede largar la carrera siguiente, y solo desde los resultados");
@@ -996,22 +869,16 @@ public class ServidorPartida {
         empezarCarreraEn(siguiente);
     }
 
-    /** Arranca una carrera nueva, con su clasificación si la hay. La grilla de la anterior no cuenta. */
     private void empezarCarreraEn(int circuito) {
         circuitoEnCurso = circuito;
         ordenClasificacion = List.of();
         if (modoGrilla == ModoGrilla.AL_AZAR) {
-            // En un torneo se sortea otra vez antes de cada carrera.
             sincronizarGrilla();
             Collections.shuffle(ordenGrilla, azar);
         }
         empezar(modoGrilla == ModoGrilla.CLASIFICACION);
     }
 
-    /**
-     * Arma la clasificación o la carrera con los jugadores que sigan en la partida. El circuito ya está cargado y
-     * comprobado: se pidió antes de llegar acá, y una clasificación y su carrera usan el mismo.
-     */
     private void empezar(boolean clasificacion) {
         Circuito circuito = circuitoCargado;
         enClasificacion = clasificacion;
@@ -1024,7 +891,6 @@ public class ServidorPartida {
             carrera.agregarAuto(j.id, j.nombre);
             grilla.add(j.id);
             if (j.esBot()) {
-                // El recorrido solo depende del circuito y del nivel: los bots del mismo nivel lo comparten.
                 RecorridoBot recorrido = recorridos.computeIfAbsent(j.nivelBot, nivel -> new RecorridoBot(circuito, nivel));
                 pilotosBot.put(j.id, new PilotoBot(recorrido, j.nivelBot, azar.nextLong()));
             }
@@ -1032,12 +898,10 @@ public class ServidorPartida {
         entradas.clear();
         tickInicioCarrera = tick;
         fase = Fase.CUENTA_REGRESIVA;
-        // La cuenta regresiva la lleva la Carrera: cuando termina, simularTick() manda la LARGADA.
         difundir(Protocolo.armarCuenta(Catalogo.circuito(circuitoEnCurso).archivo(), vueltas, Config.SEGUNDOS_CUENTA_REGRESIVA,
             clasificacion, clasificacion ? List.of() : grilla));
     }
 
-    /** El orden de la clasificación, si la hubo, sin los que se fueron; si no, personas primero y después bots. */
     private List<Jugador> ordenDeLargada() {
         if (ordenClasificacion.isEmpty()) {
             return enOrdenDeGrilla();
@@ -1052,7 +916,6 @@ public class ServidorPartida {
         return orden;
     }
 
-    /** Deja listo ese circuito. Si no se puede cargar, le avisa a quien lo pidió y devuelve false. */
     private boolean cargarCircuito(int indice, Jugador quienPide) {
         String archivo = Catalogo.circuito(indice).archivo();
         try {
@@ -1068,7 +931,6 @@ public class ServidorPartida {
         }
     }
 
-    /** Vuelve al lobby con los mismos jugadores (los que siguen conectados), todos sin "listo". En un torneo, solo al final. */
     private void revancha(Jugador jugador) {
         if (jugador.id != idHost || fase != Fase.RESULTADOS || (torneo != null && torneo.hayMasCarreras())) {
             error(jugador.cliente, Protocolo.NO_PERMITIDO, "Solo el anfitrión puede pedir revancha, y solo en los resultados finales");
@@ -1085,10 +947,6 @@ public class ServidorPartida {
         difundirLobby();
     }
 
-    /**
-     * Saca a un jugador de la partida. Si era el host, la partida termina para todos. En el lobby se avisa con un
-     * LOBBY nuevo; con la carrera empezada su auto sale de la pista y se avisa con SALIO.
-     */
     private void quitar(Jugador jugador) {
         if (jugadores.remove(jugador.id) == null) {
             return;
@@ -1107,8 +965,6 @@ public class ServidorPartida {
             difundir(Protocolo.armar(Protocolo.SALIO, jugador.id));
         }
     }
-
-    // ------------------------------------------------------------------ envío TCP
 
     private EstadoLobby estadoLobby() {
         List<JugadorLobby> lista = new ArrayList<>();
@@ -1134,7 +990,6 @@ public class ServidorPartida {
         enviar(cliente, Protocolo.armar(Protocolo.ERROR, codigo, Protocolo.limpiarTexto(detalle)));
     }
 
-    /** Manda el ERROR y cierra la conexión, para que el cliente pueda leer el motivo antes de que se corte. */
     private void rechazar(Cliente cliente, String codigo, String detalle) {
         error(cliente, codigo, detalle);
         cliente.conexion.cerrar();
@@ -1145,7 +1000,6 @@ public class ServidorPartida {
             cliente.conexion.enviar(linea);
             RegistroRed.log(ORIGEN, "-> " + cliente.nombreParaLog() + ": " + linea);
         } catch (IOException e) {
-            // El lector de ese cliente va a ver la conexión rota y lo va a dar de baja.
             RegistroRed.log(ORIGEN, "No se pudo enviar a " + cliente.nombreParaLog() + ": " + e.getMessage());
             cliente.conexion.cerrar();
         }
@@ -1159,7 +1013,6 @@ public class ServidorPartida {
         return id;
     }
 
-    /** El jugador (persona o bot) que tiene ese piloto, o null si está libre. */
     private Jugador duenioDelPiloto(int piloto) {
         for (Jugador j : jugadores.values()) {
             if (j.piloto == piloto) {
@@ -1169,10 +1022,6 @@ public class ServidorPartida {
         return null;
     }
 
-    /**
-     * Un piloto libre para quien entra sin elegir: primero el de una escudería sin ningún piloto, para repartir los
-     * colores; si todas tienen alguno, el primer piloto que quede libre.
-     */
     private int primerPilotoLibre() {
         for (int piloto = 0; piloto < Catalogo.PILOTOS.size(); piloto += 2) {
             if (duenioDelPiloto(piloto) == null && duenioDelPiloto(piloto + 1) == null) {
@@ -1184,7 +1033,7 @@ public class ServidorPartida {
                 return piloto;
             }
         }
-        return 0; // no pasa: hay tantos pilotos como autos máximos
+        return 0;
     }
 
     private boolean nombreEnUso(String nombre) {
@@ -1196,18 +1045,10 @@ public class ServidorPartida {
         return false;
     }
 
-    // ------------------------------------------------------------------ cierre
-
-    /** Cierra la partida (lo llama el host al salir). Se puede llamar desde cualquier hilo y más de una vez. */
     public void cerrar() {
         cerrar("El anfitrión cerró la partida");
     }
 
-    /**
-     * Avisa con CERRADA, cierra todos los sockets (eso destraba los hilos que están esperando en accept, receive o
-     * readLine) y detiene la simulación. Solo usa la lista de conexiones, que es segura entre hilos, y no el estado
-     * de la partida.
-     */
     private void cerrar(String motivo) {
         if (!activo.compareAndSet(true, false)) {
             return;
@@ -1218,14 +1059,12 @@ public class ServidorPartida {
             try {
                 cliente.conexion.enviar(linea);
             } catch (IOException e) {
-                // Si no se puede avisar, igual se cierra.
             }
             cliente.conexion.cerrar();
         }
         try {
             socketTcp.close();
         } catch (IOException e) {
-            // Ya estaba cerrado.
         }
         socketUdp.close();
     }

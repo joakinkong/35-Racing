@@ -2,29 +2,13 @@ package ar.edu.et35.racing.juego;
 
 import com.badlogic.gdx.math.MathUtils;
 
-/**
- * El camino que sigue un bot en un circuito y la velocidad a la que quiere ir en cada punto, una muestra por cada muestra
- * de la línea central. Se calcula una sola vez, al iniciar la carrera.
- *
- * <p><b>El camino.</b> La trazada ideal se busca como una banda elástica rígida: cada punto solo se puede correr de costado
- * dentro de la pista y se va acomodando donde la línea queda menos doblada. Así la trazada abre antes de la curva, toca la
- * cuerda y abre a la salida, sin que nadie le diga dónde queda cada curva. Primero se resuelve la forma grande (puntos
- * lejanos entre sí) y después los detalles.
- *
- * <p><b>La velocidad.</b> Primero, lo que permite la curva en cada punto, según las gomas del auto. Después se recorre el
- * circuito hacia adelante (no se puede acelerar más de lo que da el motor) y hacia atrás (hay que llegar frenado a cada curva).
- */
 public final class RecorridoBot {
-    /** Lo que queda libre entre el costado del auto y el borde del asfalto. */
     private static final float MARGEN_BORDE = 12f;
-    /** Distancia entre los puntos que se acomodan juntos, en muestras: de lo grande a lo chico. */
     private static final int[] ESCALAS = {64, 32, 16, 8, 4};
     private static final int ITERACIONES_POR_ESCALA = 400;
-    /** Muestras a cada lado para medir la curvatura: con el paso de 8 px son 40 px. */
     private static final int VENTANA_CURVATURA = 5;
     private static final float RADIO_RECTA = 1e6f;
     private static final float VELOCIDAD_MINIMA = 40f;
-    /** Dos pasadas alrededor del circuito alcanzan para que el principio y el final de la vuelta empalmen. */
     private static final int VUELTAS_DE_PERFIL = 2;
 
     private final int muestras;
@@ -78,7 +62,6 @@ public final class RecorridoBot {
         }
     }
 
-    /** Devuelve, para cada muestra, cuánto se corre del centro. */
     private float[] trazadaIdeal() {
         float[] corrimiento = new float[muestras];
         for (int escala : ESCALAS) {
@@ -91,11 +74,6 @@ public final class RecorridoBot {
         return corrimiento;
     }
 
-    /**
-     * El corrimiento de una muestra que deja la línea menos doblada respecto de sus vecinas. El promedio con esos pesos
-     * (4 los cercanos, -1 los lejanos) es el mínimo de la energía de doblado de una viga, no solo el camino más corto,
-     * que haría pasar al auto con un quiebre por la cuerda.
-     */
     private float lugarMenosDoblado(float[] corrimiento, int i, int escala) {
         int a = indice(i - 2 * escala);
         int b = indice(i - escala);
@@ -121,7 +99,6 @@ public final class RecorridoBot {
         for (int i = 0; i < muestras; i++) {
             float radio = radioEn(i);
             float porAgarre = (float) Math.sqrt(nivel.margenAgarre() * ParametrosAuto.ACELERACION_LATERAL * radio);
-            // Con poco radio, lo que limita ya no son las gomas sino lo rápido que puede girar el auto.
             float porGiro = ParametrosAuto.GIRO_MAX * MathUtils.degreesToRadians * radio;
             v[i] = Math.max(VELOCIDAD_MINIMA, Math.min(tope, Math.min(porAgarre, Math.max(porGiro, ParametrosAuto.VELOCIDAD_GIRO_COMPLETO))));
         }
@@ -143,7 +120,6 @@ public final class RecorridoBot {
         return v;
     }
 
-    /** Radio de la circunferencia que pasa por tres puntos del camino. */
     private float radioEn(int i) {
         int a = indice(i - VENTANA_CURVATURA);
         int c = indice(i + VENTANA_CURVATURA);
@@ -185,7 +161,6 @@ public final class RecorridoBot {
         return velocidad[i];
     }
 
-    /** El punto a esa distancia de costado del centro de la pista, sin salirse del asfalto. */
     float xCorrido(int i, float lado) {
         return centroX[i] + normalX[i] * Math.max(-limite[i], Math.min(limite[i], lado));
     }
@@ -194,12 +169,10 @@ public final class RecorridoBot {
         return centroY[i] + normalY[i] * Math.max(-limite[i], Math.min(limite[i], lado));
     }
 
-    /** Cuánto está corrido un punto respecto del centro de la pista. */
     float ladoDe(int i, float px, float py) {
         return (px - centroX[i]) * normalX[i] + (py - centroY[i]) * normalY[i];
     }
 
-    /** Lo máximo que puede correrse de costado en esa muestra. */
     float limite(int i) {
         return limite[i];
     }

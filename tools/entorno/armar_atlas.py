@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-"""Arma assets/entorno a partir de Modern Exteriors (LimeZu, https://limezu.itch.io/modernexteriors).
-
-Uso (desde la raíz del proyecto):  python tools/entorno/armar_atlas.py [carpeta del pack]
-
-Junta los sprites de la lista en una sola imagen, a la mitad de su tamaño, con un archivo .atlas en el formato de LibGDX.
-El prefijo de cada nombre (arbol_, edificio_, ...) es el grupo que usa DisposicionEntorno: para sumar un sprite alcanza con
-agregarlo acá con ese prefijo. Las baldosas del fondo se copian aparte, porque se repiten como textura. Necesita Pillow.
-"""
 import sys
 from pathlib import Path
 
@@ -16,7 +8,7 @@ RAIZ = Path(__file__).resolve().parents[2]
 SALIDA = RAIZ / 'assets' / 'entorno'
 PACK_POR_DEFECTO = Path.home() / 'Desktop' / 'Modern_Exteriors_48x48'
 ANCHO_ATLAS = 2048
-RELLENO = 2  # px transparentes entre sprites, para que el filtro no traiga pedazos del vecino
+RELLENO = 2
 
 
 def pack(carpeta, prefijo, *nombres):
@@ -81,7 +73,6 @@ for i in range(1, 9):
     for sentido, en_ingles in (('der', 'Right'), ('izq', 'Left'), ('arr', 'Up'), ('aba', 'Down')):
         SPRITES[f'auto_{sentido}_{i}'] = (VEH, f'ME_Singles_Vehicles_48x48_Car_{en_ingles}_{i}')
 
-# El pack trae gradas que miran abajo, a la izquierda y a la derecha. Las que miran arriba se sacan dando vuelta las primeras.
 VOLTEAR_VERTICAL = {'tribuna_arriba'}
 
 BALDOSAS = {
@@ -103,7 +94,6 @@ def main():
         im = abrir(pack_dir, carpeta, archivo)
         if nombre in VOLTEAR_VERTICAL:
             im = im.transpose(Image.FLIP_TOP_BOTTOM)
-        # Se recorta lo transparente: el tamaño del sprite tiene que ser lo que se ve, para que no queden huecos al ubicarlo.
         im = im.crop(im.getbbox())
         imagenes[nombre] = im.resize((max(1, im.width // 2), max(1, im.height // 2)), Image.LANCZOS)
 
@@ -131,7 +121,6 @@ def main():
     (SALIDA / 'entorno.atlas').write_text('\n'.join(lineas) + '\n', encoding='utf-8')
     for nombre, (carpeta, archivo) in BALDOSAS.items():
         abrir(pack_dir, carpeta, archivo).convert('RGB').save(SALIDA / (nombre + '.png'), optimize=True)
-    # La vereda del pack tiene juntas muy marcadas y es muy clara: a esta escala distrae de la pista.
     vereda = Image.open(SALIDA / 'fondo_vereda.png')
     plano = Image.new('RGB', vereda.size, (150, 147, 140))
     Image.blend(vereda, plano, 0.75).save(SALIDA / 'fondo_vereda.png', optimize=True)

@@ -18,13 +18,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Tabla de resultados de la carrera: posición, piloto, tiempo total y mejor vuelta. En red, el host puede pedir
- * revancha (vuelven todos al lobby con los mismos jugadores) y los demás esperan su decisión.
- *
- * <p>En un torneo, al lado va la tabla acumulada. El host larga la carrera siguiente desde acá, y la revancha queda para
- * el final del torneo.
- */
 public class Resultados extends PantallaBase {
     private static final float[] ANCHOS = {64f, 300f, 170f, 170f};
     private static final float ANCHO_COLUMNA = 760f;
@@ -32,7 +25,6 @@ public class Resultados extends PantallaBase {
     private static final float SEPARACION_FILAS = 4f;
     private static final float PADDING_FILA = 14f;
     private static final float ALTO_BOTON = 48f;
-    /** Alto máximo de una tabla de resultados: con más filas (hasta 22 autos) se desplaza. */
     private static final float ALTO_MAXIMO_TABLA = 450f;
     private static final String[] ENCABEZADO = {"POS", "PILOTO", "TIEMPO", "MEJOR VUELTA"};
     private static final float[] ANCHOS_TORNEO = {52f, 220f, 130f, 160f, 60f};
@@ -72,7 +64,6 @@ public class Resultados extends PantallaBase {
         contenido.add(mensaje).left().padTop(10);
     }
 
-    /** Los resultados de la carrera, la tabla acumulada y, según quién sea y si quedan carreras, los botones. */
     private void armarTorneo(SesionRed sesion, EstadoTorneo torneo, List<ResultadoJugador> resultados) {
         boolean termino = torneo.esUltimaCarrera();
         String carrera = "CARRERA " + torneo.carrera() + " DE " + torneo.total();
@@ -142,7 +133,6 @@ public class Resultados extends PantallaBase {
         return encabezado;
     }
 
-    /** Una fila con el fondo, la franja de la escudería y la posición: el dato en sí lo agrega quien la pide. */
     private Table filaBase(int id, int lugar, float anchoPosicion) {
         Table fila = new Table();
         fila.setBackground(recursos.conLinea(Paleta.SUPERFICIE_ALTA, colorDeFranja(id), FondoConLinea.Lado.IZQUIERDA));
@@ -164,7 +154,6 @@ public class Resultados extends PantallaBase {
         return tabla;
     }
 
-    /** Una fila al estilo de las posiciones de PIT WALL: franja de la escudería y el número en cursiva (dorado el primero). */
     private Table fila(ResultadoJugador resultado) {
         Table fila = filaBase(resultado.id(), resultado.posicion(), ANCHOS[0]);
         fila.add(new Label(resultado.nombre(), skin, "subtitulo")).width(ANCHOS[1]).left();
@@ -173,18 +162,12 @@ public class Resultados extends PantallaBase {
         return fila;
     }
 
-    /** En red, el color de la escudería del jugador; en la prueba local no hay lobby que lo diga. */
     private Color colorDeFranja(int id) {
         SesionRed sesion = juego.sesion();
         JugadorLobby jugador = sesion != null ? sesion.cliente().lobby().jugador(id) : null;
         return jugador != null ? Paleta.colorDePiloto(jugador.piloto()) : Paleta.SUPERFICIE_MAXIMA;
     }
 
-    /**
-     * En red, la partida sigue abierta mientras se ven los resultados: se manda el PING y se atiende lo que llega.
-     * Con un LOBBY (el host pidió revancha) se pasa a la sala de espera; con CUENTA_REGRESIVA (la carrera siguiente de un
-     * torneo), a la carrera; con CERRADA o si se corta, al menú.
-     */
     @Override
     protected void actualizar(float delta) {
         SesionRed sesion = juego.sesion();

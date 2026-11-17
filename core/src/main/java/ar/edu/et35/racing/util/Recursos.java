@@ -18,11 +18,6 @@ import com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.utils.Disposable;
 
-/**
- * Punto único donde se crean y liberan los recursos compartidos: el AssetManager, el SpriteBatch,
- * las fuentes y el Skin de la interfaz. El Skin se arma por código con la estética de PIT WALL; las fuentes salen de
- * assets/fuentes (las genera tools/fuentes/generar_fuentes.py).
- */
 public class Recursos implements Disposable {
     private static final String[] FUENTES = {
         "titulo", "marca", "encabezado", "subtitulo", "etiqueta", "numeros", "posicion", "cartel", "normal", "chico",
@@ -43,19 +38,15 @@ public class Recursos implements Disposable {
         crearEstilos();
     }
 
-    /** Ruta del archivo de un circuito, a partir de su nombre (el que viaja en CUENTA_REGRESIVA). */
     public static String rutaCircuito(String nombre) {
-        // Solo minúsculas, números y guion bajo: un nombre raro que llegue por la red no puede apuntar a otro archivo.
         String seguro = nombre != null && nombre.matches("[a-z0-9_]+") ? nombre : Config.CIRCUITO;
         return "circuitos/" + seguro + ".json";
     }
 
-    /** Drawable de un color liso. */
     public Drawable color(Color color) {
         return skin.newDrawable("blanco", color);
     }
 
-    /** Drawable de un color con una línea en uno de sus bordes. */
     public Drawable conLinea(Color fondo, Color linea, FondoConLinea.Lado lado) {
         return new FondoConLinea(skin.getRegion("blanco"), fondo, linea, lado, GROSOR_LINEA);
     }
@@ -70,7 +61,6 @@ public class Recursos implements Disposable {
         skin.add("punto", texturaDeCirculo());
     }
 
-    /** Un círculo blanco de borde suave: con filtro lineal se sigue viendo redondo al dibujarlo chico. */
     private Texture texturaDeCirculo() {
         Pixmap circulo = new Pixmap(LADO_PUNTO, LADO_PUNTO, Pixmap.Format.RGBA8888);
         circulo.setBlending(Pixmap.Blending.None);
@@ -111,7 +101,6 @@ public class Recursos implements Disposable {
         estiloTexto("etiquetaSuave", "etiqueta", Paleta.TEXTO_SUAVE);
         estiloTexto("seccion", "etiqueta", Paleta.SECUNDARIO);
         estiloTexto("marcaChica", "etiqueta", Paleta.PRIMARIO);
-        // En blanco porque Label multiplica su color por el del estilo: estos dos se tiñen con setColor según el dato.
         estiloTexto("numeros", "numeros", Paleta.BLANCO);
         estiloTexto("posicion", "posicion", Paleta.BLANCO);
         estiloTexto("cartel", "cartel", Paleta.BLANCO);
@@ -154,7 +143,6 @@ public class Recursos implements Disposable {
         campo.messageFontColor = Paleta.TEXTO_APAGADO;
         skin.add("default", campo);
 
-        // Barra de desplazamiento fina, para las listas largas (por ejemplo los 22 autos del lobby).
         ScrollPaneStyle desplazamiento = new ScrollPaneStyle();
         Drawable carril = color(Paleta.SUPERFICIE_BAJA);
         carril.setMinWidth(ANCHO_BARRA);
@@ -171,7 +159,6 @@ public class Recursos implements Disposable {
 
     @Override
     public void dispose() {
-        // El Skin libera las texturas y fuentes que se le agregaron.
         skin.dispose();
         batch.dispose();
         assets.dispose();

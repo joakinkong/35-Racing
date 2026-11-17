@@ -8,10 +8,6 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.stream.Stream;
 
-/**
- * Prueba descartable de atajos: Dijkstra de un auto (círculo de RADIO) sobre una grilla de PASO px, desde la
- * largada, y compara la distancia más corta con la que hay a lo largo de la pista (en cualquiera de los dos sentidos).
- */
 public class PruebaAtajos {
     static final float RADIO = 10f;
     static final float PASO = 8f;

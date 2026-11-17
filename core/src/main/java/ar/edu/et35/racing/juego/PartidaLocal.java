@@ -4,14 +4,6 @@ import ar.edu.et35.racing.util.Config;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Cómo se arma una partida local (sin red): cuántas personas comparten el teclado, con qué piloto corre cada una, cuántos
- * bots hay en pista y de qué nivel. Los bots toman los pilotos que no eligió nadie, en el orden del catálogo.
- *
- * @param pilotosJugadores un piloto (índice de {@link Catalogo#PILOTOS}) por persona; su tamaño es la cantidad de personas (1 o 2)
- * @param bots             cuántos bots corren; entre 0 y {@link #maxBots(int)}
- * @param nivel            nivel de todos los bots
- */
 public record PartidaLocal(List<Integer> pilotosJugadores, int bots, NivelBot nivel) {
     public static final int MAX_JUGADORES_LOCALES = 2;
 
@@ -25,12 +17,10 @@ public record PartidaLocal(List<Integer> pilotosJugadores, int bots, NivelBot ni
         }
     }
 
-    /** La partida de antes: dos personas, sin bots. */
     public static PartidaLocal dosJugadoresSinBots() {
         return new PartidaLocal(List.of(0, 2), 0, NivelBot.MEDIO);
     }
 
-    /** Cuántos bots caben junto a esa cantidad de personas: el resto de los autos de la grilla. */
     public static int maxBots(int jugadores) {
         return Config.MAX_JUGADORES - jugadores;
     }
@@ -39,7 +29,6 @@ public record PartidaLocal(List<Integer> pilotosJugadores, int bots, NivelBot ni
         return pilotosJugadores.size();
     }
 
-    /** Los pilotos de los bots: los que no usan las personas, empezando por el primero del catálogo. */
     public List<Integer> pilotosBots() {
         List<Integer> libres = new ArrayList<>();
         for (int piloto = 0; piloto < Catalogo.PILOTOS.size() && libres.size() < bots; piloto++) {

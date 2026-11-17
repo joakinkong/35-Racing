@@ -10,11 +10,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 
-/**
- * Prueba descartable: un bot sigue la línea central con la física real de Auto (pura persecución para doblar, y
- * velocidad según el radio de las curvas que vienen) y se mide cuánto tarda una vuelta. Sirve para calibrar el largo
- * de los circuitos, no para decir cuánto va a tardar una persona.
- */
 public class PruebaVuelta {
     static final float DT = 1f / 60f;
     static final float MARGEN_AGARRE = 0.85f;
@@ -51,7 +46,6 @@ public class PruebaVuelta {
                 indice = nuevo;
                 float v = auto.velocidad().len();
 
-                // Persecución: apunta a un punto adelante en la línea central.
                 float mira = 60f + 0.3f * v;
                 float rCerca = 1e9f;
                 for (int k = 0; k <= 10; k++) {
@@ -65,7 +59,6 @@ public class PruebaVuelta {
                 float diff = ((objetivo - auto.angulo() + 540f) % 360f) - 180f;
                 entrada.giro = diff > 1f ? 1 : diff < -1f ? -1 : 0;
 
-                // Velocidad permitida: la de cada curva que viene, más lo que alcanza a frenar hasta ahí.
                 float permitida = ParametrosAuto.VELOCIDAD_MAX;
                 float distancia = 0f;
                 for (int k = 1; k <= 90; k++) {

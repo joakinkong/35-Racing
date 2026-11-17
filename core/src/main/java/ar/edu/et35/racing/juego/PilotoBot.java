@@ -4,40 +4,27 @@ import com.badlogic.gdx.math.MathUtils;
 import java.util.Collection;
 import java.util.Random;
 
-/**
- * El piloto de un bot: mira el auto y arma una {@link EntradaAuto}, igual que un jugador con el teclado. No toca la física
- * ni la posición, así que un bot no puede hacer nada que un jugador no pueda: apretar acelerar, frenar, izquierda o derecha.
- * Lo usa el servidor, igual que las entradas que llegan por UDP.
- */
 public final class PilotoBot {
-    /** Lo que mira adelante para doblar: un mínimo más una parte de lo que recorre por segundo. */
     private static final float MIRA_MINIMA = 34f;
     private static final float MIRA_POR_VELOCIDAD = 0.16f;
-    /** Lo que se anticipa para decidir la velocidad, en segundos: da tiempo a que los frenos hagan efecto. */
     private static final float ANTICIPACION_VELOCIDAD = 0.05f;
     private static final float GRADOS_SIN_CORREGIR = 2f;
     private static final float TOLERANCIA_FRENO = 1.02f;
-    /** Muestras hacia atrás y hacia adelante en que busca dónde está, para no saltar a otro tramo de la pista. */
     private static final int BUSQUEDA_ATRAS = 10;
     private static final int BUSQUEDA_ADELANTE = 40;
-    /** Si está más lejos que esto del camino lo volvió a buscar en todo el circuito (lo sacaron de su tramo a los golpes). */
     private static final float DISTANCIA_PERDIDO = 260f;
 
-    // Trabado contra algo: marcha atrás un rato.
     private static final float VELOCIDAD_TRABADO = 15f;
     private static final float SEGUNDOS_PARA_TRABADO = 1f;
     private static final float SEGUNDOS_DE_REVERSA = 0.9f;
 
-    // Otros autos
     private static final float VENTANA_AUTOS_MINIMA = 50f;
     private static final float VENTANA_AUTOS_POR_VELOCIDAD = 0.4f;
     private static final float ANCHO_AUTO = 2f * ParametrosAuto.RADIO_COLISION + 6f;
     private static final float CORRIMIENTO_ESQUIVE = 40f;
     private static final float DISTANCIA_PEGADO = 42f;
 
-    /** Pequeña diferencia entre bots del mismo nivel, para que no corran todos en fila india. */
     private static final float VARIACION_RITMO = 0.015f;
-    /** Mucho menor en el difícil: alcanza para que dos no hagan exactamente el mismo tiempo en la clasificación. */
     private static final float VARIACION_RITMO_DIFICIL = 0.002f;
 
     private final RecorridoBot recorrido;
@@ -61,19 +48,16 @@ public final class PilotoBot {
     }
 
     private void programarError() {
-        // Exponencial: los errores llegan cuando quieren, no a intervalos fijos.
         proximoError = nivel.segundosEntreErrores() <= 0f ? Float.MAX_VALUE
             : -nivel.segundosEntreErrores() * (float) Math.log(1f - azar.nextFloat());
     }
 
-    /** Decide qué "teclas" aprieta en este paso de la simulación. */
     public void decidir(Participante yo, Collection<Participante> todos, EntradaAuto salida, float dt) {
         Auto auto = yo.auto();
         ubicarse(auto);
         float rapidez = auto.rapidez();
         actualizarError(dt);
 
-        // Punto al que apuntar: sobre el camino, un poco más adelante según la velocidad.
         int mira = recorrido.indice(indice + Math.round((MIRA_MINIMA + MIRA_POR_VELOCIDAD * rapidez) / recorrido.paso()));
         float objetivoX = recorrido.x(mira);
         float objetivoY = recorrido.y(mira);
@@ -86,7 +70,6 @@ public final class PilotoBot {
             objetivoY = recorrido.yCorrido(mira, lado);
         }
 
-        // Otros autos: si hay uno en el camino, se corre para el lado con más lugar y, si está encima, va a su ritmo.
         float radianes = auto.angulo() * MathUtils.degreesToRadians;
         float adelanteX = MathUtils.cos(radianes);
         float adelanteY = MathUtils.sin(radianes);
@@ -102,21 +85,18 @@ public final class PilotoBot {
             if (frente <= 0f || frente > ventana || Math.abs(costado) > ANCHO_AUTO) {
                 continue;
             }
-            // El otro tiene que ser más lento: si va más rápido, se está yendo solo.
             if (otro.auto().rapidez() >= rapidez) {
                 continue;
             }
             float ladoObjetivo = recorrido.ladoDe(mira, objetivoX, objetivoY);
             float ladoOtro = recorrido.ladoDe(mira, otro.auto().x(), otro.auto().y());
             float sentido = ladoOtro > ladoObjetivo ? -1f : 1f;
-            // Si de ese lado no hay lugar, por el otro.
             if (Math.abs(ladoOtro + sentido * CORRIMIENTO_ESQUIVE) > recorrido.limite(mira)) {
                 sentido = -sentido;
             }
             float nuevoLado = ladoOtro + sentido * CORRIMIENTO_ESQUIVE;
             objetivoX = recorrido.xCorrido(mira, nuevoLado);
             objetivoY = recorrido.yCorrido(mira, nuevoLado);
-            // Solo si lo tiene justo adelante: si ya está de costado, lo está pasando.
             if (frente < DISTANCIA_PEGADO && Math.abs(costado) < 2f * ParametrosAuto.RADIO_COLISION) {
                 velocidadDeseada = Math.min(velocidadDeseada, Math.max(otro.auto().rapidez(), VELOCIDAD_TRABADO * 2f));
             }
@@ -140,7 +120,6 @@ public final class PilotoBot {
             tiempoReversa -= dt;
             salida.acelerar = false;
             salida.frenar = true;
-            // En reversa el volante va al revés: al retroceder, la trompa queda apuntando al camino.
             salida.giro = diferencia > GRADOS_SIN_CORREGIR ? -1 : diferencia < -GRADOS_SIN_CORREGIR ? 1 : 0;
             return;
         }
@@ -150,7 +129,6 @@ public final class PilotoBot {
         salida.frenar = rapidez > velocidadDeseada * TOLERANCIA_FRENO;
     }
 
-    /** Busca la muestra más cercana cerca de la anterior: en un circuito que pasa dos veces por el mismo lugar, no salta de tramo. */
     private void ubicarse(Auto auto) {
         if (indice < 0) {
             indice = masCercana(auto, 0, recorrido.muestras());

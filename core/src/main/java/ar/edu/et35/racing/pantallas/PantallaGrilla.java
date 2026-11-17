@@ -16,16 +16,11 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Resultado de la clasificación: quién larga en cada lugar. Se ve unos segundos y la carrera arranca sola: la que manda es
- * la CUENTA_REGRESIVA del servidor, y el reloj de esta pantalla solo la anticipa para que se sepa cuánto falta.
- */
 public class PantallaGrilla extends PantallaBase {
     private static final float[] ANCHOS = {64f, 300f, 170f, 170f};
     private static final String[] ENCABEZADO = {"POS", "PILOTO", "VUELTA", "DIFERENCIA"};
     private static final float ANCHO_COLUMNA = 760f;
     private static final float ALTO_FILA = 44f;
-    /** Alto máximo de la tabla: con más filas (hasta 22 autos) se desplaza. */
     private static final float ALTO_MAXIMO_TABLA = 480f;
     private static final float SEPARACION_FILAS = 4f;
     private static final float PADDING_FILA = 14f;
@@ -72,7 +67,6 @@ public class PantallaGrilla extends PantallaBase {
         return fila;
     }
 
-    /** Lo que le sacó el primero; vacío para el primero y para quien no completó la vuelta. */
     private String diferencia(ResultadoJugador lugar, float referencia) {
         if (lugar.posicion() == 1 || Float.isNaN(lugar.tiempoTotal()) || Float.isNaN(referencia)) {
             return "";

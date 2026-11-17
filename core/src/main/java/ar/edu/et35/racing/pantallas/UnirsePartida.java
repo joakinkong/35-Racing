@@ -20,10 +20,6 @@ import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Formulario para crear una partida (solo el nombre) o unirse a una (nombre e IP del anfitrión). La conexión se
- * hace en segundo plano; esta pantalla espera la respuesta del servidor y, si sale bien, pasa al lobby.
- */
 public class UnirsePartida extends PantallaBase {
     private static final float ANCHO_COLUMNA = 560f;
     private static final float ALTO_CAMPO = 48f;
@@ -37,12 +33,9 @@ public class UnirsePartida extends PantallaBase {
     private final TextButton botonAccion;
     private final Label estado = textoLargo("", "suave");
     private final Label valorCapacidad = new Label("", skin, "numeros");
-    /** Autos (personas y bots) que entran en la sala que se está creando. */
     private int capacidad = CAPACIDAD_INICIAL;
 
-    /** La partida que se está creando o a la que nos estamos conectando; null si no hay ningún intento en curso. */
     private SesionRed pendiente;
-    /** Segundos del intento en curso: cubre casos en que resolver un nombre tarda más que el timeout de conexión. */
     private float esperando;
 
     public UnirsePartida(Main juego, boolean crear) {
@@ -89,7 +82,6 @@ public class UnirsePartida extends PantallaBase {
         escena.setKeyboardFocus(campoNombre);
     }
 
-    /** "<  8  >": de MIN_JUGADORES a MAX_JUGADORES autos. */
     private Table selectorCapacidad() {
         Table fila = new Table();
         fila.add(boton("<", () -> cambiarCapacidad(capacidad - 1))).size(ANCHO_FLECHA, ALTO_CAMPO);
@@ -106,7 +98,7 @@ public class UnirsePartida extends PantallaBase {
 
     private void intentar() {
         if (pendiente != null) {
-            return; // ya hay un intento en curso
+            return;
         }
         String nombre = campoNombre.getText().strip();
         if (!Protocolo.nombreValido(nombre)) {
@@ -120,13 +112,6 @@ public class UnirsePartida extends PantallaBase {
         }
     }
 
-    /**
-     * El host levanta su servidor y se conecta a él por 127.0.0.1, como un cliente más. El circuito se carga en el
-     * hilo de render y no en el del servidor, porque el archivo se lee con Gdx.files y la regla del proyecto es no
-     * tocar LibGDX desde los hilos de red. Por eso el servidor recibe un proveedor: cuando el host inicia la carrera,
-     * le pide el circuito elegido y este lo carga en el hilo de render (con postRunnable) y le devuelve solo el
-     * Circuito (datos puros).
-     */
     private void crearPartida(String nombre) {
         ServidorPartida servidor;
         try {
@@ -141,7 +126,6 @@ public class UnirsePartida extends PantallaBase {
         esperarRespuesta(new SesionRed(servidor, cliente), "Creando la partida...");
     }
 
-    /** Se llama desde el hilo del servidor: pide la carga al hilo de render y espera el resultado. */
     private Circuito cargarCircuitoEnRender(String archivo) throws Exception {
         CompletableFuture<Circuito> futuro = new CompletableFuture<>();
         Gdx.app.postRunnable(() -> {
@@ -178,7 +162,6 @@ public class UnirsePartida extends PantallaBase {
         estado.setText(texto);
     }
 
-    /** Cancela el intento en curso (cierra el cliente y, si se estaba creando, el servidor) y deja volver a probar. */
     private void cancelarIntento(String motivo) {
         pendiente.cerrar();
         pendiente = null;
@@ -186,7 +169,6 @@ public class UnirsePartida extends PantallaBase {
         mostrarError(motivo);
     }
 
-    /** Cada cuadro mira si el servidor ya contestó. Lo que llega por la red se procesa acá, en el hilo de render. */
     @Override
     protected void actualizar(float delta) {
         if (pendiente == null) {
@@ -203,7 +185,6 @@ public class UnirsePartida extends PantallaBase {
         while ((mensaje = cliente.sondear()) != null) {
             switch (mensaje.nombre()) {
                 case Protocolo.BIENVENIDA:
-                    // Se deja el resto de los mensajes en la cola: los procesa el lobby.
                     SesionRed lista = pendiente;
                     pendiente = null;
                     juego.setSesion(lista);

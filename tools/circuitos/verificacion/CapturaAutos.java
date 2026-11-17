@@ -13,7 +13,6 @@ import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.utils.ScreenUtils;
 import java.util.List;
 
-/** Dibuja un auto de cada escudería sobre el color del asfalto, grandes y a la escala de la carrera, en un PNG. */
 public class CapturaAutos extends ApplicationAdapter {
     private static final int ANCHO = 1280;
     private static final int ALTO = 720;
@@ -49,7 +48,6 @@ public class CapturaAutos extends ApplicationAdapter {
             float y = ALTO / 3f - 45f - (i / 4) * 50f;
             vista.dibujar(x, y, 0f, cuerpo, detalle, false, camara);
         }
-        // Abajo, en tamaño de carrera: se dibujan a un tercio de la escala de arriba.
         OrthographicCamera chica = new OrthographicCamera(ANCHO / 1.6f, ALTO / 1.6f);
         chica.position.set(ANCHO / 3.2f, ALTO / 3.2f, 0f);
         chica.update();

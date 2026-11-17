@@ -16,11 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Programa de verificación (fuera del juego) del torneo. Primero, sin red: los puntos y los desempates. Después, contra el
- * servidor real y con clientes por TCP: el calendario en la sala, un torneo de 3 carreras en el que alguien se va, y otro con
- * clasificación, en tiempo real (unos 8 minutos). Si algo falla, sale con error. Ver tools/bots/LEEME.md.
- */
 public class PruebaTorneo {
     private static final long ESPERA_MS = 3000;
     private static final long ESPERA_FASE_MS = 200_000;
@@ -52,7 +47,6 @@ public class PruebaTorneo {
         return puntos;
     }
 
-    /** Un resultado en ese orden de llegada, con tiempos cualesquiera. */
     private static List<ResultadoJugador> llegada(int... ids) {
         List<ResultadoJugador> lista = new ArrayList<>();
         for (int i = 0; i < ids.length; i++) {
@@ -75,7 +69,6 @@ public class PruebaTorneo {
         FilaTorneo lider = puntaje.tabla().get(0);
         comprobar(lider.id() == 2 && lider.puntos() == 12 && lider.victorias() == 0, "manda el puntaje: 12 puntos sin ganar van primeros");
 
-        // En los dos desempates, el que debe ir adelante se inscribió después: no puede estar ahí por casualidad.
         Torneo victoria = torneoDeCuatro();
         victoria.sumarCarrera(llegada(2, 1, 3, 0), Set.of());
         victoria.sumarCarrera(llegada(3, 1, 0, 2), Set.of());
@@ -133,11 +126,9 @@ public class PruebaTorneo {
     private static void probarAbandono() {
         Torneo torneo = torneoDeCuatro();
         torneo.sumarCarrera(llegada(0, 1, 2, 3), Set.of());
-        // El 0 ya tenía 6; se va y queda último en la siguiente, que largaron los 4.
         torneo.sumarCarrera(llegada(1, 2, 3, 0), Set.of(0));
         comprobar(puntosDe(torneo, 0) == 6, "el que abandona conserva sus puntos y esta carrera no le suma");
         comprobar(puntosDe(torneo, 1) == 10, "el reparto es por los que largaron: 4 + 6");
-        // Ya no corre más: los que quedan siguen sumando según cuántos largan ahora, que son 3.
         torneo.sumarCarrera(llegada(3, 2, 1), Set.of());
         comprobar(puntosDe(torneo, 3) == 1 + 2 + 4, "con 3 autos el ganador suma 4");
         comprobar(puntosDe(torneo, 0) == 6, "el que se fue sigue en la tabla");
@@ -202,7 +193,6 @@ public class PruebaTorneo {
         invitado.siguienteCarrera();
         esperarError(invitado, "un invitado no larga la carrera siguiente");
 
-        // Se va el invitado entre carreras: sigue en la tabla con sus puntos, pero no larga.
         int puntosInvitado = despues1.fila(idInvitado).puntos();
         invitado.cerrar();
         esperarSalida(host);
@@ -232,7 +222,6 @@ public class PruebaTorneo {
         comprobar(host.lobby().calendario().equals(List.of(spielberg, monza, spielberg)), "la revancha conserva el calendario");
         comprobar(idHost == host.miId(), "el host sigue siendo el mismo");
 
-        // Un torneo con clasificación: da la grilla, pero no da puntos.
         host.quitarCircuito(2);
         host.quitarCircuito(1);
         host.elegirClasificacion(true);
@@ -267,7 +256,6 @@ public class PruebaTorneo {
         while (System.currentTimeMillis() < limite) {
             cliente.actualizar();
             while (cliente.sondear() != null) {
-                // el lobby y el torneo los guarda el cliente solo
             }
             if (condicion.vale()) {
                 comprobar(true, regla);
@@ -312,7 +300,6 @@ public class PruebaTorneo {
         comprobar(false, "llega el aviso de que se fue el invitado");
     }
 
-    /** Espera ese mensaje en el primero, manteniendo viva la conexión del otro (null si ya no hay). */
     private static Mensaje mensaje(ClientePartida cliente, ClientePartida otro, String nombre) throws InterruptedException {
         long limite = System.currentTimeMillis() + ESPERA_FASE_MS;
         while (System.currentTimeMillis() < limite) {
@@ -320,7 +307,6 @@ public class PruebaTorneo {
             if (otro != null) {
                 otro.actualizar();
                 while (otro.sondear() != null) {
-                    // al que acompaña solo le importa seguir conectado y tener la tabla al día
                 }
             }
             Mensaje mensaje;

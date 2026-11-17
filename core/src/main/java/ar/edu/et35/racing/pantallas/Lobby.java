@@ -27,14 +27,6 @@ import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import java.util.List;
 import java.util.StringJoiner;
 
-/**
- * Sala de espera en vivo. Muestra los jugadores que informa el servidor, deja elegir piloto (una escudería por
- * jugador), marcar "listo" y, al host, elegir modo, circuito o calendario, vueltas, clasificación y bots, e iniciar. Los mensajes de la red se procesan
- * acá, en el hilo de render.
- *
- * <p>Dos columnas de tarjetas: a la izquierda los jugadores y la carrera (modo, circuito y vueltas); a la derecha la grilla de
- * pilotos o, si se pide en un torneo, el calendario, y los botones. Los textos de ancho fijo llevan puntos suspensivos para que nunca se pisen con el de al lado.
- */
 public class Lobby extends PantallaBase {
     private static final float ANCHO_COLUMNA_IZQUIERDA = 540f;
     private static final float ANCHO_COLUMNA_DERECHA = 660f;
@@ -43,9 +35,7 @@ public class Lobby extends PantallaBase {
     private static final float ANCHO_DENTRO_IZQUIERDA = ANCHO_COLUMNA_IZQUIERDA - 2 * PADDING_TARJETA;
     private static final float ANCHO_DENTRO_DERECHA = ANCHO_COLUMNA_DERECHA - 2 * PADDING_TARJETA;
     private static final float ALTO_FILA_JUGADOR = 26f;
-    /** Aire a la derecha de cada fila de la lista, para que la barra de desplazamiento no tape el estado. */
     private static final float PADDING_BARRA = 12f;
-    /** Alto visible de la lista de autos: con 22 no entran todos y el resto se ve desplazando. */
     private static final float ALTO_LISTA_JUGADORES = 206f;
     private static final float ANCHO_NIVEL_BOT = 92f;
     private static final float ANCHO_QUITAR_BOT = 28f;
@@ -81,13 +71,9 @@ public class Lobby extends PantallaBase {
     private final Label textoDeRed = new Label("", skin, "suave");
     private boolean navego;
     private ScrollPane listaJugadores;
-    /** Si la columna derecha muestra el calendario del torneo en lugar de los pilotos. */
     private boolean verCalendario;
-    /** Solo el host: si tocar un piloto de la grilla suma un bot con ese piloto, en lugar de elegirlo para sí. */
     private boolean agregandoBots;
-    /** Nivel con el que el host suma los bots nuevos. */
     private NivelBot nivelNuevoBot = NivelBot.MEDIO;
-    /** Dónde estaba la lista de autos, para que al llegar un LOBBY nuevo no vuelva al principio. */
     private float desplazamientoLista;
 
     public Lobby(Main juego) {
@@ -123,7 +109,6 @@ public class Lobby extends PantallaBase {
         reconstruir();
     }
 
-    /** Si somos el host, las IPs para dictarles a los demás; si no, con quién estamos conectados (se actualiza con el lobby). */
     private String armarTextoDeRed() {
         if (cliente == null) {
             return "";
@@ -140,8 +125,6 @@ public class Lobby extends PantallaBase {
         JugadorLobby host = cliente.lobby().jugador(cliente.lobby().idHost());
         return host != null ? host.nombre() : "?";
     }
-
-    // ------------------------------------------------------------------ red
 
     @Override
     protected void actualizar(float delta) {
@@ -182,7 +165,6 @@ public class Lobby extends PantallaBase {
         }
     }
 
-    /** CUENTA_REGRESIVA trae lo que hace falta para correr; la carrera la simula el servidor y acá solo se dibuja. */
     private void empezarCarrera(Mensaje mensaje) {
         navego = true;
         juego.irA(PantallaCarrera.desde(juego, Protocolo.leerCuenta(mensaje)));
@@ -197,8 +179,6 @@ public class Lobby extends PantallaBase {
     protected void volver() {
         salir(null);
     }
-
-    // ------------------------------------------------------------------ dibujo de los paneles
 
     private void reconstruir() {
         if (listaJugadores != null) {
@@ -223,17 +203,12 @@ public class Lobby extends PantallaBase {
         armarBotones(lobby);
     }
 
-    /** Un texto de ancho fijo: si no entra, se corta con puntos suspensivos en lugar de pisar al de al lado. */
     private Label etiqueta(String texto, String estilo) {
         Label label = new Label(texto, skin, estilo);
         label.setEllipsis(true);
         return label;
     }
 
-    /**
-     * La lista de autos de la sala, en el orden de la grilla de largada, con un contador y desplazamiento si no entran todos.
-     * Con la grilla a mano, el host sube y baja a cada auto con las flechas o la sortea.
-     */
     private void armarJugadores(EstadoLobby lobby) {
         boolean armaElHost = anfitrion && lobby.modoGrilla() == ModoGrilla.MANUAL;
         Table cabecera = new Table();
@@ -253,7 +228,6 @@ public class Lobby extends PantallaBase {
             lista.add(etiqueta(String.valueOf(lugar + 1), "etiqueta")).width(ANCHO_LUGAR).height(ALTO_FILA_JUGADOR).left();
             String texto = jugador.esBot() ? jugador.nombre() : jugador.nombre()
                 + (jugador.id() == cliente.miId() ? " (vos)" : "") + (jugador.id() == lobby.idHost() ? " [host]" : "");
-            // Una sola línea por jugador: con dos, el piloto de uno se pisaba con el nombre del siguiente.
             lista.add(etiqueta(texto, "default")).width(armaElHost ? ANCHO_NOMBRE_CON_FLECHAS : ANCHO_NOMBRE_JUGADOR - ANCHO_LUGAR)
                 .height(ALTO_FILA_JUGADOR).left();
             lista.add(etiqueta(Catalogo.piloto(jugador.piloto()).codigo(), "suave")).width(ANCHO_PILOTO_JUGADOR).height(ALTO_FILA_JUGADOR).left();
@@ -279,7 +253,6 @@ public class Lobby extends PantallaBase {
         desplazable.setFadeScrollBars(false);
         desplazable.setOverscroll(false, false);
         panelJugadores.add(desplazable).width(ANCHO_DENTRO_IZQUIERDA).height(ALTO_LISTA_JUGADORES).top();
-        // Con la lista ya armada se recupera dónde estaba; la altura se calcula recién al hacer el layout.
         desplazable.setSize(ANCHO_DENTRO_IZQUIERDA, ALTO_LISTA_JUGADORES);
         desplazable.layout();
         desplazable.setScrollY(desplazamientoLista);
@@ -287,7 +260,6 @@ public class Lobby extends PantallaBase {
         this.listaJugadores = desplazable;
     }
 
-    /** Una línea que dice de dónde sale el orden de largada, según el modo de la grilla. */
     private String textoDeGrilla(EstadoLobby lobby) {
         switch (lobby.modoGrilla()) {
             case CLASIFICACION:
@@ -299,7 +271,6 @@ public class Lobby extends PantallaBase {
         }
     }
 
-    /** El nivel de un bot. El host lo cambia tocándolo y saca al bot con la X. */
     private Table controlDeBot(JugadorLobby bot) {
         NivelBot nivel = NivelBot.desde(bot.nivelBot());
         Table control = new Table();
@@ -313,7 +284,6 @@ public class Lobby extends PantallaBase {
         return control;
     }
 
-    /** Modo, circuito, vueltas y clasificación: el host los cambia con las flechas; los demás los ven. */
     private void armarCarrera(EstadoLobby lobby) {
         if (lobby.torneo()) {
             armarResumenCalendario(lobby);
@@ -335,7 +305,6 @@ public class Lobby extends PantallaBase {
         }
     }
 
-    /** Carrera única: el circuito elegido, con sus datos y las flechas para cambiarlo. */
     private void armarCircuito(EstadoLobby lobby) {
         InfoCircuito info = Catalogo.circuito(lobby.circuito());
         panelCarrera.add(etiqueta(info.gp() + " - " + info.ciudad(), "subtitulo")).width(ANCHO_DENTRO_IZQUIERDA).left().row();
@@ -349,7 +318,6 @@ public class Lobby extends PantallaBase {
             .padBottom(4).row();
     }
 
-    /** Torneo: cuántas carreras son, cuáles, y el botón que muestra el calendario en la columna derecha. */
     private void armarResumenCalendario(EstadoLobby lobby) {
         int carreras = lobby.calendario().size();
         panelCarrera.add(etiqueta("Torneo de " + carreras + (carreras == 1 ? " carrera" : " carreras"), "subtitulo"))
@@ -366,19 +334,16 @@ public class Lobby extends PantallaBase {
         panelCarrera.add(fila).width(ANCHO_DENTRO_IZQUIERDA).padBottom(4).row();
     }
 
-    /** Cambia lo que hace tocar un piloto de la grilla (solo el host): sumar un bot o elegir el propio. Lo usan las capturas. */
     public void modoAgregarBots(boolean agregar) {
         agregandoBots = agregar && anfitrion;
         reconstruir();
     }
 
-    /** Cambia la columna derecha entre los pilotos y el calendario del torneo. */
     public void mostrarCalendario(boolean mostrar) {
         verCalendario = mostrar;
         reconstruir();
     }
 
-    /** Las carreras en orden y, para el host, todos los circuitos: tocar uno lo suma al final, tocar una carrera la saca. */
     private void armarCalendario(EstadoLobby lobby) {
         panelPilotos.add(etiqueta("CALENDARIO" + (anfitrion ? "  ·  TOCÁ UNA CARRERA PARA SACARLA" : ""), "etiqueta"))
             .colspan(COLUMNAS_CALENDARIO).left().padBottom(6).row();
@@ -418,7 +383,6 @@ public class Lobby extends PantallaBase {
         }
     }
 
-    /** Una fila "ETIQUETA  <  valor  >"; solo el host tiene las flechas. */
     private Table selector(String nombre, String valor, Runnable menos, Runnable mas) {
         Table fila = new Table();
         fila.add(etiqueta(nombre, "etiqueta")).width(ANCHO_ETIQUETA_SELECTOR).left();
@@ -432,11 +396,6 @@ public class Lobby extends PantallaBase {
         return fila;
     }
 
-    /**
-     * La grilla de los 22 pilotos, una fila por escudería. Cada piloto lo tiene un solo auto, pero los dos de una
-     * escudería pueden correr juntos. El host tiene dos modos: elegir su propio piloto o sumar bots tocando el piloto
-     * que quiere; los demás solo eligen el suyo.
-     */
     private void armarPilotos(EstadoLobby lobby) {
         JugadorLobby yo = lobby.jugador(cliente.miId());
         if (anfitrion) {
@@ -484,11 +443,6 @@ public class Lobby extends PantallaBase {
         reconstruir();
     }
 
-    /**
-     * Un botón con el color de la escudería y el apellido del piloto, más quién lo tiene (BOT o el nombre de la persona).
-     * El propio lleva un borde. Qué hace al tocarlo depende del modo: elegirlo para uno (si lo tiene un bot, se
-     * intercambian), o, en el modo de agregar bots, sumar un bot con ese piloto o sacar el que ya lo tiene.
-     */
     private Table botonPiloto(EstadoLobby lobby, JugadorLobby yo, int piloto) {
         int escuderia = Catalogo.piloto(piloto).escuderia();
         JugadorLobby duenio = lobby.duenioDelPiloto(piloto);

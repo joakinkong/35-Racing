@@ -8,15 +8,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Las direcciones IPv4 de esta PC en la red local, para que el host se las dicte a los demás. */
 public final class DireccionesLocales {
     private DireccionesLocales() {
     }
 
-    /**
-     * Devuelve las IPv4 de las placas de red activas, sin la de loopback. Se descartan las de máquinas virtuales
-     * y del subsistema de Linux, que no sirven para conectarse desde otra PC.
-     */
     public static List<String> listar() {
         List<String> direcciones = new ArrayList<>();
         try {

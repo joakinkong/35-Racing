@@ -3,19 +3,8 @@ package ar.edu.et35.racing.juego;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * La zona alrededor de un lugar donde la pista pasa por encima de sí misma. Dice qué muestras forman el puente (lo que
- * se dibuja encima de los autos de abajo) y en qué nivel está un auto. Es solo un cálculo sobre la línea central: no
- * cambia la grilla de colisión, así que contra los muros el cruce sigue siendo una sola superficie.
- *
- * El nivel se decide una sola vez, al entrar a la zona, según el tramo más cercano, y se mantiene hasta salir: en el
- * centro los dos tramos se pisan y la posición ya no dice por cuál viene el auto. Como solo usa la posición, el cliente
- * lo calcula con lo que ya recibe en ESTADO, sin cambiar el protocolo.
- */
 public final class ZonaCruce {
-    /** Muestras que se miran a cada lado del cruce (480 px): sobra para salir de la zona donde los tramos se tocan. */
     private static final int MUESTRAS_BUSQUEDA = 60;
-    /** Muestras que el puente sigue después de dejar de tocar el tramo de abajo. */
     private static final int MUESTRAS_EXTREMO = 3;
 
     private final float[] linea;
@@ -35,7 +24,6 @@ public final class ZonaCruce {
         tramoAbajo = tramo(cruce.tunel(), n);
         tramoArriba = tramo(cruce.puente(), n);
 
-        // El puente es lo que toca el tramo de abajo, un poco más: va sin pasto, con el muro pegado al asfalto.
         int atras = muestrasQueTocan(cruce.puente(), -1, g) + MUESTRAS_EXTREMO;
         int adelante = muestrasQueTocan(cruce.puente(), 1, g) + MUESTRAS_EXTREMO;
         muestrasPuente = new int[atras + adelante + 1];
@@ -52,7 +40,6 @@ public final class ZonaCruce {
         alcance = alcanceTotal;
     }
 
-    /** Una zona por cada cruce de la geometría. */
     static List<ZonaCruce> de(Circuito.Geometria g) {
         List<ZonaCruce> zonas = new ArrayList<>();
         for (Circuito.Cruce cruce : g.cruces()) {
@@ -61,11 +48,6 @@ public final class ZonaCruce {
         return List.copyOf(zonas);
     }
 
-    /**
-     * El nivel de un auto después de moverse a (autoX, autoY), a partir del que tenía antes.
-     *
-     * @param actual el nivel anterior; {@link NivelCruce#FUERA} para un auto recién aparecido
-     */
     public static NivelCruce nivel(List<ZonaCruce> zonas, NivelCruce actual, float autoX, float autoY) {
         for (ZonaCruce zona : zonas) {
             if (zona.contiene(autoX, autoY)) {
@@ -104,7 +86,6 @@ public final class ZonaCruce {
         return tramo;
     }
 
-    /** Cuántas muestras seguidas del puente, en ese sentido, tocan con su asfalto y muro al tramo de abajo con su pasto y muro. */
     private int muestrasQueTocan(int puente, int sentido, Circuito.Geometria g) {
         int n = g.muestras();
         int cuenta = 0;
@@ -131,12 +112,10 @@ public final class ZonaCruce {
         return g.anchos()[i] / 2f + g.escapes()[i] + g.muro();
     }
 
-    /** Muestras de la línea central que forman el puente, en orden. No modificar. */
     public int[] muestrasPuente() {
         return muestrasPuente;
     }
 
-    /** Si un punto cae dentro de lo que dibuja el puente, incluidos sus extremos. */
     public boolean alcanza(float puntoX, float puntoY) {
         return Math.hypot(puntoX - x, puntoY - y) <= alcance;
     }

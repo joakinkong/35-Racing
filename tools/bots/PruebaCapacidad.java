@@ -15,12 +15,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
-/**
- * Programa de verificación (fuera del juego): la capacidad de la sala, el tope de 8 personas, elegir el piloto de cada bot y
- * que dos pilotos de la misma escudería corran juntos, contra el servidor real y con clientes reales. Termina largando una
- * carrera con los 22 autos y mirando que llegue la cuenta regresiva con los 22 en la grilla. Tarda unos segundos.
- * Ver tools/bots/LEEME.md.
- */
 public class PruebaCapacidad {
     private static final long ESPERA_MS = 3000;
     private static String ultimoError = "";
@@ -40,7 +34,6 @@ public class PruebaCapacidad {
             archivo -> CargadorCircuito.cargarDesdeTexto(Files.readString(carpeta.resolve(archivo + ".json")), Config.MAX_JUGADORES));
     }
 
-    /** Una sala de 4 autos: el lobby informa la capacidad y no deja pasarse. */
     private static void probarCapacidadChica(Path carpeta) throws Exception {
         ServidorPartida servidor = servidor(carpeta, 4);
         ClientePartida host = new ClientePartida("Host");
@@ -63,7 +56,6 @@ public class PruebaCapacidad {
         host.conectar("127.0.0.1", servidor.puerto());
         esperar(host, l -> l.jugadores().size() == 1, "el host entra a la sala de 22");
 
-        // Cada bot con el piloto que se pide, no en el orden del catálogo: primero el último.
         int ultimo = Catalogo.PILOTOS.size() - 1;
         host.agregarBot(NivelBot.MEDIO, ultimo);
         esperar(host, l -> l.duenioDelPiloto(ultimo) != null && l.duenioDelPiloto(ultimo).esBot(),
@@ -71,21 +63,18 @@ public class PruebaCapacidad {
         host.agregarBot(NivelBot.MEDIO, ultimo);
         esperarError(host, Protocolo.PILOTO_OCUPADO, "no se suma un bot con un piloto que ya está");
 
-        // Los dos pilotos de una misma escudería corren a la vez.
         int hermano = ultimo - 1;
         host.agregarBot(NivelBot.DIFICIL, hermano);
         esperar(host, l -> l.duenioDelPiloto(hermano) != null && l.duenioDelPiloto(ultimo) != null,
             "los dos pilotos de una escudería, a la vez");
         comprobar(Catalogo.piloto(hermano).escuderia() == Catalogo.piloto(ultimo).escuderia(), "son de la misma escudería");
 
-        // Al elegir el piloto de un bot se intercambian.
         int mio = host.lobby().jugador(host.miId()).piloto();
         host.elegirPiloto(hermano);
         esperar(host, l -> l.jugador(host.miId()).piloto() == hermano, "una persona elige el piloto de un bot");
         comprobar(host.lobby().duenioDelPiloto(mio) != null && host.lobby().duenioDelPiloto(mio).esBot(),
             "el bot toma el piloto que dejó la persona");
 
-        // Hasta 8 personas; la novena no entra aunque haya lugar en la sala.
         List<ClientePartida> invitados = new ArrayList<>();
         for (int i = 1; i < Config.MAX_PERSONAS; i++) {
             ClientePartida invitado = new ClientePartida("Ana" + i);
@@ -98,7 +87,6 @@ public class PruebaCapacidad {
         novena.conectar("127.0.0.1", servidor.puerto());
         esperarError(novena, Protocolo.PARTIDA_LLENA, "la novena persona se rechaza (máximo " + Config.MAX_PERSONAS + ")");
 
-        // Se completan los 22 autos y los pilotos son todos distintos.
         while (host.lobby().hayLugarParaBot()) {
             int antes = host.lobby().jugadores().size();
             host.agregarBot(NivelBot.FACIL, -1);
@@ -107,7 +95,6 @@ public class PruebaCapacidad {
         long distintos = host.lobby().jugadores().stream().map(JugadorLobby::piloto).distinct().count();
         comprobar(host.lobby().jugadores().size() == 22 && distintos == 22, "22 autos con 22 pilotos distintos");
 
-        // La grilla sin clasificación: personas primero, y el host la mueve a mano.
         List<Integer> inicial = ids(host);
         comprobar(inicial.subList(0, Config.MAX_PERSONAS).stream().noneMatch(id -> host.lobby().jugador(id).esBot()),
             "por defecto, las personas largan antes que los bots");
@@ -131,7 +118,6 @@ public class PruebaCapacidad {
         esperar(host, l -> l.modoGrilla() == ModoGrilla.MANUAL, "el host vuelve a la grilla a mano");
         List<Integer> armada = ids(host);
 
-        // Se larga con los 22, en el orden que armó el host.
         ultimaCuenta = null;
         host.marcarListo(true);
         for (ClientePartida invitado : invitados) {
@@ -156,7 +142,6 @@ public class PruebaCapacidad {
         servidor.cerrar();
     }
 
-    /** Una sala con la grilla al azar: la largada es un sorteo del mismo conjunto de autos, y no el orden del lobby. */
     private static void probarGrillaAlAzar(Path carpeta) throws Exception {
         ServidorPartida servidor = servidor(carpeta, 12);
         ClientePartida host = new ClientePartida("Host");

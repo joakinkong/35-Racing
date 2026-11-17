@@ -12,10 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-/**
- * En los 24 circuitos: ninguna decoración toca la pista ni su muro, ninguna se sale del mapa ni pisa a otra, y hay lo que
- * corresponde a cada tipo de circuito. Da además la disposición de dos corridas iguales. Sale con error si algo falla.
- */
 public class PruebaEntorno {
     private static int fallas;
 
@@ -68,7 +64,6 @@ public class PruebaEntorno {
             DisposicionEntorno.Pieza q = piezas.get(a);
             for (int b = a + 1; b < piezas.size(); b++) {
                 DisposicionEntorno.Pieza o = piezas.get(b);
-                // Las hileras de vallas y muros se tocan a propósito.
                 if (q.nombre().matches("(valla|muro)_.") && o.nombre().matches("(valla|muro)_.")) {
                     continue;
                 }

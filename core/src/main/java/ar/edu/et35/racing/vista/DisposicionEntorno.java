@@ -8,41 +8,25 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 
-/**
- * Decide qué decoración va alrededor de un circuito y dónde. Es solo un cálculo, sin clases gráficas, y nunca pone nada a
- * menos de {@link #MARGEN_PISTA} px del muro, así que no cambia lo que se ve de la pista ni cómo se maneja. Depende solo de
- * la línea central: en todas las PC y en todas las carreras el mismo circuito queda igual.
- *
- * Los permanentes llevan pasto, tribunas en todos los bordes, ambulancias, neumáticos, vallas, muros y árboles. Los callejeros, una grilla de
- * calles con edificios, autos estacionados, faroles, carteles, barreras y tribunas donde entren.
- */
 public final class DisposicionEntorno {
-    /** Una decoración: esquina inferior izquierda y tamaño en px de mundo. */
     public record Pieza(String nombre, float x, float y, float ancho, float alto) {
     }
 
-    /** Un rectángulo de calle, con la línea punteada a lo largo si {@code horizontal}. */
     public record Calle(float x, float y, float ancho, float alto, boolean horizontal) {
     }
 
-    /** Px de mundo por px del atlas: el atlas está a la mitad del pack y el pack, a 0,35 de escala con el auto. */
     public static final float ESCALA = 0.7f;
-    /** Lo que se deja libre afuera del muro (px). */
     public static final float MARGEN_PISTA = 8f;
 
     private static final float CELDA = 8f;
     private static final int PASO_CURVAS = 6;
-    /** Cada cuántas muestras se prueba poner una tribuna: si no entra por la anterior, se sigue probando, y quedan seguidas. */
     private static final int PASO_TRIBUNAS = 1;
     private static final float SEPARACION_PROTECCION = 10f;
     private static final float SEPARACION_TRIBUNA = 36f;
     private static final float SEPARACION_AMBULANCIA = 40f;
-    /** Una curva de cada tantas lleva ambulancia. */
     private static final int CURVAS_POR_AMBULANCIA = 4;
     private static final int NEUMATICOS_POR_CURVA = 4;
-    /** Una recta con menos muestras que estas no lleva valla: quedaría un pedazo suelto. */
     private static final int RECTA_MINIMA = 24;
-    /** Coseno del ángulo con un eje a partir del cual un tramo se puede decorar con piezas rectas (unos 14 grados). */
     private static final float CASI_RECTO = 0.97f;
     private static final float PASO_VEGETACION = 110f;
     private static final float ANCHO_CALLE = 64f;
@@ -67,7 +51,6 @@ public final class DisposicionEntorno {
     private final List<Pieza> piezas = new ArrayList<>();
     private final List<Calle> calles = new ArrayList<>();
 
-    /** @param tamanosAtlas ancho y alto de cada sprite en el atlas, en px */
     public DisposicionEntorno(Circuito circuito, Map<String, float[]> tamanosAtlas) {
         this.circuito = circuito;
         this.g = circuito.geometria();
@@ -116,7 +99,6 @@ public final class DisposicionEntorno {
             float y = g.linea()[2 * i + 1];
             for (int fila = Math.max(0, (int) ((y - r) / CELDA) - 1); fila <= Math.min(filas - 1, (int) ((y + r) / CELDA) + 1); fila++) {
                 for (int col = Math.max(0, (int) ((x - r) / CELDA) - 1); col <= Math.min(columnas - 1, (int) ((x + r) / CELDA) + 1); col++) {
-                    // Se mide a la esquina más lejana de la celda: una pieza puede ocupar cualquier parte de ella.
                     float dx = Math.abs((col + 0.5f) * CELDA - x) + CELDA / 2f;
                     float dy = Math.abs((fila + 0.5f) * CELDA - y) + CELDA / 2f;
                     float cercaX = Math.max(0f, dx - CELDA);
@@ -143,7 +125,6 @@ public final class DisposicionEntorno {
         return true;
     }
 
-    /** Pone una pieza si entra, sin pisar la pista ni otra pieza. Con {@code sobreCalle} en false, tampoco una calle. */
     private boolean poner(String nombre, float x, float y, boolean sobreCalle) {
         float[] tam = tamanos.get(nombre);
         if (tam == null) {
@@ -174,7 +155,6 @@ public final class DisposicionEntorno {
         return new float[] {tx / largo, ty / largo};
     }
 
-    /** Pone una pieza del lado indicado de una muestra (1 = izquierda de la carrera), a esa distancia del muro. */
     private boolean ponerAlLado(String nombre, int muestra, int lado, float separacion) {
         float[] tam = tamanos.get(nombre);
         if (tam == null) {
@@ -186,12 +166,10 @@ public final class DisposicionEntorno {
         float ny = t[0] * lado;
         float ancho = tam[0] * ESCALA;
         float alto = tam[1] * ESCALA;
-        // Hasta el centro: la distancia al muro más la mitad de lo que mide la pieza en esa dirección.
         float distancia = radioExterior(g, i) + MARGEN_PISTA + separacion + (Math.abs(nx) * ancho + Math.abs(ny) * alto) / 2f;
         return poner(nombre, g.linea()[2 * i] + nx * distancia - ancho / 2f, g.linea()[2 * i + 1] + ny * distancia - alto / 2f, false);
     }
 
-    /** La tribuna que mira a la pista desde ese lado de la muestra: la gente siempre queda de frente a los autos. */
     private String tribunaPara(int muestra, int lado) {
         float[] t = tangente(muestra);
         if (Math.abs(t[0]) > Math.abs(t[1])) {
@@ -200,7 +178,6 @@ public final class DisposicionEntorno {
         return -t[1] * lado > 0 ? "tribuna_izq" : "tribuna_der";
     }
 
-    /** Tribunas a ambos lados de toda la pista, donde entren. Se prueba en cada muestra para que queden seguidas. */
     private void tribunasEnLosBordes() {
         for (int lado : new int[] {1, -1}) {
             for (int i = 0; i < g.muestras(); i += PASO_TRIBUNAS) {
@@ -209,7 +186,6 @@ public final class DisposicionEntorno {
         }
     }
 
-    /** Las curvas en orden, como {muestra del medio, signo}. */
     private List<int[]> listaDeCurvas() {
         List<int[]> lista = new ArrayList<>();
         int n = g.muestras();
@@ -227,7 +203,6 @@ public final class DisposicionEntorno {
         return lista;
     }
 
-    /** Del lado de afuera de cada curva: una pila de protecciones contra el muro y, cada tanto, una ambulancia. */
     private void detallesDeCurvas(String proteccion, String cartel) {
         List<int[]> lista = listaDeCurvas();
         for (int c = 0; c < lista.size(); c++) {
@@ -252,7 +227,6 @@ public final class DisposicionEntorno {
         }
     }
 
-    /** En las rectas casi paralelas a un eje: valla o muro, una recta de cada cosa. Afuera del muro rojo, que es el que choca. */
     private void vallasYMuros() {
         int n = g.muestras();
         int recta = 0;
@@ -274,10 +248,6 @@ public final class DisposicionEntorno {
         }
     }
 
-    /**
-     * Una hilera continua de piezas a lo largo de un tramo. Las piezas se tocan entre sí, así que la grilla se marca al
-     * final: si se marcara a medida que se ponen, cada una le quitaría el lugar a la siguiente.
-     */
     private void tiraDePiezas(String tipo, int desde, int hasta, int lado) {
         List<Pieza> tira = new ArrayList<>();
         float paso = (float) Math.hypot(g.linea()[2] - g.linea()[0], g.linea()[3] - g.linea()[1]);
@@ -369,7 +339,6 @@ public final class DisposicionEntorno {
         }
     }
 
-    /** Llena cada manzana entre calles con una fila de edificios abajo y otra arriba, y un farol en la esquina. */
     private void manzanas() {
         for (float y = SEPARACION_CALLES_Y / 2f + ANCHO_CALLE - SEPARACION_CALLES_Y; y < circuito.alto(); y += SEPARACION_CALLES_Y) {
             for (float x = SEPARACION_CALLES_X / 2f + ANCHO_CALLE - SEPARACION_CALLES_X; x < circuito.ancho(); x += SEPARACION_CALLES_X) {
@@ -382,7 +351,6 @@ public final class DisposicionEntorno {
         }
     }
 
-    /** Una fila de edificios de izquierda a derecha, apoyada abajo o colgada arriba de la manzana. */
     private void filaDeEdificios(float desde, float derecha, float piso, float techo, boolean arriba) {
         float px = desde;
         while (px < derecha) {

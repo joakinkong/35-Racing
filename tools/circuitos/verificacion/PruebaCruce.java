@@ -12,10 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-/**
- * Comprueba el cruce de Suzuka: un auto que recorre cada tramo queda en su nivel, dos autos en niveles distintos no se
- * chocan aunque estén en el mismo punto, y dos en el mismo nivel sí. Sale con error si algo falla.
- */
 public class PruebaCruce {
     private static final float DT = 1f / 60f;
     private static int fallas;
@@ -28,9 +24,7 @@ public class PruebaCruce {
         comprobarTramo(suzuka, cruce.tunel(), NivelCruce.ABAJO);
         comprobarTramo(suzuka, cruce.puente(), NivelCruce.ARRIBA);
 
-        // Autos en cada tramo, justo donde se tocan los dos: distinto nivel, no se separan.
         comprobarChoque(suzuka, cruce.tunel(), cruce.puente(), false);
-        // Dos autos por el mismo tramo sí se chocan, también abajo y arriba.
         comprobarChoque(suzuka, cruce.tunel(), cruce.tunel(), true);
         comprobarChoque(suzuka, cruce.puente(), cruce.puente(), true);
 
@@ -51,7 +45,6 @@ public class PruebaCruce {
         System.out.println("OK");
     }
 
-    /** Recorre 120 muestras de un tramo, centradas en el cruce: dentro de la zona, siempre el mismo nivel. */
     private static void comprobarTramo(Circuito c, int centro, NivelCruce esperado) {
         NivelCruce nivel = NivelCruce.FUERA;
         int adentro = 0;
@@ -68,7 +61,6 @@ public class PruebaCruce {
             "tramo " + esperado + ": " + adentro + " muestras en la zona (" + adentro * 8 + " px), siempre en su nivel");
     }
 
-    /** Lleva a dos autos por su tramo hasta el punto del cruce y mira si la carrera los separa. */
     private static void comprobarChoque(Circuito c, int tramoA, int tramoB, boolean debenChocar) throws Exception {
         Carrera carrera = new Carrera(c, 1);
         Participante a = carrera.agregarAuto(0, "A");
@@ -77,13 +69,11 @@ public class PruebaCruce {
         for (int i = 0; i < 60 * (Config.SEGUNDOS_CUENTA_REGRESIVA + 1); i++) {
             carrera.actualizar(sinEntradas, DT);
         }
-        // Los autos entran a la zona por su tramo, un paso de simulación por muestra, para que tomen su nivel.
         for (int k = -60; k <= 0; k++) {
             ubicar(a, c, tramoA + k);
             ubicar(b, c, tramoB + k - (tramoA == tramoB ? 10 : 0));
             carrera.actualizar(sinEntradas, DT);
         }
-        // Mismo lugar exacto (o casi, para que el choque tenga dirección).
         Vector2 punto = new Vector2(c.geometria().linea()[2 * tramoA], c.geometria().linea()[2 * tramoA + 1]);
         poner(a, punto.x, punto.y);
         poner(b, punto.x + 4f, punto.y);

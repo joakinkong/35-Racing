@@ -10,10 +10,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Arma y lee los dos paquetes UDP del juego, byte por byte como en docs/PROTOCOLO.md (sección 4). ByteBuffer usa
- * big-endian por defecto, igual en el servidor y en el cliente.
- */
 public final class PaquetesUdp {
     private PaquetesUdp() {
     }
@@ -23,9 +19,7 @@ public final class PaquetesUdp {
     public static final int LARGO_ENTRADA = 11;
     public static final int LARGO_CABECERA_ESTADO = 12;
     public static final int LARGO_AUTO = 24;
-    /** Tamaño más grande que puede tener un paquete (ESTADO con todos los autos). Los búferes de recepción lo superan. */
     public static final int LARGO_MAXIMO = LARGO_CABECERA_ESTADO + Config.MAX_JUGADORES * LARGO_AUTO;
-    /** Valor del campo "cierre" cuando todavía nadie terminó. */
     private static final int SIN_CIERRE = 255;
 
     private static final int BIT_ACELERAR = 1;
@@ -35,17 +29,12 @@ public final class PaquetesUdp {
     private static final int BIT_TERMINO = 1;
     private static final int BIT_DESCONECTADO = 1 << 1;
 
-    /** Una ENTRADA recibida. */
     public record Entrada(int id, int token, int secuencia, int botones) {
     }
 
-    /** Un ESTADO recibido: el tick del servidor (que hace de secuencia) y la foto de la carrera. */
     public record Estado(int tick, FotoCarrera foto) {
     }
 
-    // ------------------------------------------------------------------ ENTRADA (11 bytes)
-
-    /** Los botones apretados como bits: 0 acelerar, 1 frenar, 2 izquierda, 3 derecha. */
     public static int botones(EntradaAuto entrada) {
         int bits = 0;
         if (entrada.acelerar) {
@@ -63,7 +52,6 @@ public final class PaquetesUdp {
         return bits;
     }
 
-    /** Pasa los bits a una EntradaAuto. Con izquierda y derecha apretadas a la vez, el giro es 0. */
     public static void aEntrada(int botones, EntradaAuto destino) {
         destino.acelerar = (botones & BIT_ACELERAR) != 0;
         destino.frenar = (botones & BIT_FRENAR) != 0;
@@ -82,24 +70,21 @@ public final class PaquetesUdp {
             .array();
     }
 
-    /** Lee una ENTRADA. Devuelve null si el tamaño o el tipo no corresponden. */
     public static Entrada leerEntrada(byte[] datos, int largo) {
         if (largo != LARGO_ENTRADA || datos[0] != TIPO_ENTRADA) {
             return null;
         }
         ByteBuffer b = ByteBuffer.wrap(datos, 0, largo);
-        b.get(); // tipo
+        b.get();
         return new Entrada(b.get() & 0xFF, b.getInt(), b.getInt(), b.get() & 0xFF);
     }
-
-    // ------------------------------------------------------------------ ESTADO (12 + 24 por auto)
 
     public static byte[] armarEstado(int tick, FotoCarrera foto) {
         List<FotoAuto> autos = foto.autos();
         ByteBuffer b = ByteBuffer.allocate(LARGO_CABECERA_ESTADO + LARGO_AUTO * autos.size());
         b.put(TIPO_ESTADO);
         b.putInt(tick);
-        b.put((byte) foto.estado().ordinal()); // 0 cuenta regresiva, 1 en curso, 2 terminada
+        b.put((byte) foto.estado().ordinal());
         b.putFloat(foto.reloj());
         int cierre = foto.cierreActivo() ? Math.min(SIN_CIERRE - 1, Math.max(0, (int) Math.ceil(foto.cierreRestante())))
             : SIN_CIERRE;
@@ -119,14 +104,13 @@ public final class PaquetesUdp {
         return b.array();
     }
 
-    /** Lee un ESTADO. Devuelve null si el tipo, el estado o el tamaño no corresponden (paquete dañado o ajeno). */
     public static Estado leerEstado(byte[] datos, int largo) {
         if (largo < LARGO_CABECERA_ESTADO || datos[0] != TIPO_ESTADO) {
             return null;
         }
         try {
             ByteBuffer b = ByteBuffer.wrap(datos, 0, largo);
-            b.get(); // tipo
+            b.get();
             int tick = b.getInt();
             int indiceEstado = b.get() & 0xFF;
             float reloj = b.getFloat();
@@ -146,7 +130,6 @@ public final class PaquetesUdp {
                 int banderas = b.get() & 0xFF;
                 float tiempo = b.getFloat();
                 float mejor = b.getFloat();
-                // La velocidad no viaja: la estima el cliente al interpolar.
                 autos.add(new FotoAuto(id, x, y, angulo, 0f, 0f, vueltas, posicion, (banderas & BIT_TERMINO) != 0,
                     (banderas & BIT_DESCONECTADO) != 0, tiempo, mejor));
             }

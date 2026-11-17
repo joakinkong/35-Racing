@@ -8,19 +8,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Convierte los ESTADO que llegan del servidor (cada 33 ms, no siempre parejos) en una foto para cada cuadro
- * (docs/PROTOCOLO.md, sección 6). Dibuja un poco en el pasado, {@code retraso} segundos, para tener casi siempre un
- * estado anterior y uno posterior, y muestra un punto intermedio entre los dos.
- *
- * <p>Se usa solo desde el hilo de render: no necesita sincronización.
- */
 public class Interpolador {
-    /** Si el reloj estimado se aleja más que esto del servidor, se corrige de golpe en lugar de a poco (s). */
     private static final double SALTO_RELOJ = 0.25;
-    /** Fracción de la diferencia con el servidor que se corrige con cada estado que llega. */
     private static final double CORRECCION_RELOJ = 0.1;
-    /** Estados más viejos que el momento a dibujar menos esto ya no se necesitan (s). */
     private static final double MEMORIA = 1.0;
 
     private record Muestra(double tiempo, FotoCarrera foto) {
@@ -30,17 +20,12 @@ public class Interpolador {
     private final ArrayDeque<Muestra> muestras = new ArrayDeque<>();
     private boolean hayTick;
     private int ultimoTick;
-    /** Estimación del tiempo del servidor, en segundos de simulación (tick / 60). NaN hasta el primer estado. */
     private double reloj = Double.NaN;
 
     public Interpolador(float retraso) {
         this.retraso = retraso;
     }
 
-    /**
-     * Agrega un estado recibido. Devuelve false (y lo descarta) si es viejo o duplicado: su tick es menor o igual al
-     * último aceptado. Así una sola comparación resuelve los paquetes atrasados y los repetidos.
-     */
     public boolean agregar(int tick, FotoCarrera foto) {
         if (hayTick && tick <= ultimoTick) {
             return false;
@@ -60,24 +45,16 @@ public class Interpolador {
         return true;
     }
 
-    /** El reloj avanza con el tiempo del cuadro; los estados que llegan lo corrigen. */
     public void avanzar(float delta) {
         if (!Double.isNaN(reloj)) {
             reloj += delta;
         }
     }
 
-    /** Segundos de simulación que está mostrando la foto (el reloj estimado menos el retraso). */
     public double tiempoDibujado() {
         return reloj - retraso;
     }
 
-    /**
-     * La foto para dibujar ahora, o null si todavía no llegó ningún estado. Posición, ángulo y velocidad salen de
-     * interpolar entre los dos estados que rodean el momento a dibujar; vueltas, posición, tiempos y la cabecera
-     * salen del estado más reciente. Si faltan estados posteriores (se perdieron varios), el auto se queda en el
-     * último conocido: no se extrapola.
-     */
     public FotoCarrera foto() {
         if (muestras.isEmpty()) {
             return null;
@@ -103,7 +80,6 @@ public class Interpolador {
 
     private FotoAuto interpolar(FotoAuto actual, Muestra anterior, Muestra posterior, double tDibujo) {
         if (anterior == null || posterior == null) {
-            // Antes del primer estado o después del último: se queda quieto en el más cercano.
             Muestra cercana = anterior != null ? anterior : posterior;
             FotoAuto a = cercana.foto().auto(actual.id());
             if (a == null) {
@@ -125,7 +101,6 @@ public class Interpolador {
         return actual.conMovimiento(x, y, angulo, (float) ((b.x() - a.x()) / dt), (float) ((b.y() - a.y()) / dt));
     }
 
-    /** Velocidad estimada con los dos últimos estados (la usa la cámara cuando no hay a dónde interpolar). */
     private float[] velocidadFinal(int id) {
         if (muestras.size() < 2) {
             return new float[] {0f, 0f};
@@ -142,7 +117,6 @@ public class Interpolador {
         return new float[] {(float) ((b.x() - a.x()) / dt), (float) ((b.y() - a.y()) / dt)};
     }
 
-    /** Diferencia de ángulo por el camino más corto (de -180 a 180 grados). */
     private static float diferenciaAngular(float desde, float hasta) {
         float d = (hasta - desde) % 360f;
         if (d > 180f) {

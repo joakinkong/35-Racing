@@ -3,17 +3,11 @@ package ar.edu.et35.racing.juego;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
-/**
- * Auto con física arcade: posición, ángulo (grados, 0 = derecha) y velocidad como vector de mundo.
- * La velocidad se separa en una componente hacia adelante y otra lateral respecto del ángulo del auto;
- * la lateral se va perdiendo de a poco, y de ahí sale el derrape leve.
- */
 public class Auto {
     private final Vector2 posicion = new Vector2();
     private final Vector2 velocidad = new Vector2();
     private float angulo;
 
-    // Estado del tick anterior, para interpolar el dibujo entre dos ticks de la simulación
     private float xPrevia;
     private float yPrevia;
     private float anguloPrevio;
@@ -24,7 +18,6 @@ public class Auto {
         guardarPrevio();
     }
 
-    /** Avanza la simulación un paso de dt segundos. */
     public void actualizar(EntradaAuto entrada, Circuito circuito, float dt) {
         guardarPrevio();
 
@@ -45,11 +38,9 @@ public class Auto {
         vAdelante = aplicarRozamiento(entrada, vAdelante, enPasto, dt);
         vLateral *= Math.max(0f, 1f - ParametrosAuto.AGARRE * dt);
 
-        // Girar cuesta velocidad: las gomas que doblan no empujan. Pierde más cuanto más gira y más rápido va.
         float giro = velocidadDeGiro(entrada, vAdelante);
         vAdelante -= vAdelante * ParametrosAuto.PERDIDA_POR_GIRO * Math.abs(giro) * MathUtils.degreesToRadians * dt;
 
-        // La velocidad se reconstruye con el ángulo viejo; al girar, parte de ella pasa a ser lateral.
         velocidad.set(adelanteX * vAdelante + lateralX * vLateral, adelanteY * vAdelante + lateralY * vLateral);
 
         angulo += giro * dt;
@@ -59,7 +50,6 @@ public class Auto {
 
     private float aplicarPedales(EntradaAuto entrada, float vAdelante, float velocidadMaxima, float dt) {
         if (entrada.acelerar && vAdelante < velocidadMaxima) {
-            // El motor empuja menos a medida que se acerca a la velocidad máxima.
             float fraccion = MathUtils.clamp(vAdelante / ParametrosAuto.VELOCIDAD_MAX, 0f, 1f);
             float aceleracion = ParametrosAuto.ACELERACION * (1f - ParametrosAuto.PERDIDA_ACELERACION * fraccion);
             vAdelante = Math.min(velocidadMaxima, vAdelante + aceleracion * dt);
@@ -72,18 +62,12 @@ public class Auto {
                     vAdelante - ParametrosAuto.ACELERACION_REVERSA * dt);
             }
         }
-        // Si se pasa del máximo (por ejemplo al entrar al pasto a toda velocidad), se frena de a poco.
         if (vAdelante > velocidadMaxima) {
             vAdelante = Math.max(velocidadMaxima, vAdelante - ParametrosAuto.DESACELERACION_EXCESO * dt);
         }
         return vAdelante;
     }
 
-    /**
-     * Solo hay rozamiento cuando no se toca ningún pedal: el auto se va frenando solo, y más rápido en
-     * el pasto. Con un pedal apretado no se aplica, para que el pasto no impida arrancar ni ir en reversa;
-     * ahí lo que limita al auto en el pasto es la velocidad máxima.
-     */
     private float aplicarRozamiento(EntradaAuto entrada, float vAdelante, boolean enPasto, float dt) {
         if (entrada.acelerar || entrada.frenar) {
             return vAdelante;
@@ -96,10 +80,6 @@ public class Auto {
         return vAdelante - Math.signum(vAdelante) * perdida;
     }
 
-    /**
-     * Grados por segundo. Parado no gira; en reversa gira al revés. A poca velocidad gira todo lo que puede; a mucha,
-     * el agarre lo limita (aceleración lateral = velocidad × giro), así que cuanto más rápido, más abierta la curva.
-     */
     private float velocidadDeGiro(EntradaAuto entrada, float vAdelante) {
         float velocidad = Math.abs(vAdelante);
         float factor = MathUtils.clamp(velocidad / ParametrosAuto.VELOCIDAD_GIRO_COMPLETO, 0f, 1f);
@@ -111,10 +91,6 @@ public class Auto {
         return entrada.giro * giro * sentido;
     }
 
-    /**
-     * Mueve el auto un eje por vez. Si el círculo del auto tocaría un muro en ese eje, no se mueve y la
-     * velocidad de ese eje rebota (con pérdida). Así no atraviesa el muro ni se traba en él.
-     */
     private void mover(Circuito circuito, float dt) {
         float nuevaX = posicion.x + velocidad.x * dt;
         if (circuito.chocaConMuro(nuevaX, posicion.y, ParametrosAuto.RADIO_COLISION)) {
@@ -133,10 +109,6 @@ public class Auto {
         }
     }
 
-    /**
-     * Corre el auto sin cambiar su velocidad (por ejemplo, al separarlo de otro auto). Cada eje se mueve
-     * por separado y no entra en un muro: lo que no se pueda mover, no se mueve.
-     */
     public void desplazar(float dx, float dy, Circuito circuito) {
         if (!circuito.chocaConMuro(posicion.x + dx, posicion.y, ParametrosAuto.RADIO_COLISION)) {
             posicion.x += dx;
@@ -168,18 +140,15 @@ public class Auto {
         return velocidad;
     }
 
-    /** Velocidad en la dirección a la que mira el auto: positiva yendo hacia adelante, negativa en reversa (px/s). */
     public float velocidadAdelante() {
         float radianes = angulo * MathUtils.degreesToRadians;
         return velocidad.x * MathUtils.cos(radianes) + velocidad.y * MathUtils.sin(radianes);
     }
 
-    /** Módulo de la velocidad (px/s). */
     public float rapidez() {
         return velocidad.len();
     }
 
-    /** Posición entre el tick anterior (alfa = 0) y el actual (alfa = 1), para dibujar sin saltos. */
     public float xInterpolada(float alfa) {
         return MathUtils.lerp(xPrevia, posicion.x, alfa);
     }

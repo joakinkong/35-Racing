@@ -46,12 +46,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Pantalla de la carrera. Lee el teclado, se lo pasa a una {@link FuenteCarrera} y dibuja la foto que ella devuelve.
- * La fuente puede ser una {@link SimulacionLocal} (prueba local: la carrera se simula en esta PC) o una
- * {@link CarreraEnRed} (la carrera la simula el servidor y acá solo se dibuja). Por eso la misma pantalla sirve
- * para las dos y la prueba local sigue andando sin red.
- */
 public class PantallaCarrera extends PantallaBase {
     private static final int MAX_JUGADORES_LOCALES = 2;
     private static final float ANCHO_FRANJA_COLOR = 5f;
@@ -60,41 +54,31 @@ public class PantallaCarrera extends PantallaBase {
     private static final float MARGEN_HUD = 16f;
     private static final float ESCALA_CARTEL_FIN = 0.7f;
     private static final float ANCHO_PANEL = 320f;
-    /** Lo que ocupan arriba el margen y el panel de los jugadores, antes de que empiece la torre de tiempos. */
     private static final float DESDE_ARRIBA_TORRE = 94f;
 
-    /** Teclas de un esquema de control. */
     private record Controles(int acelerar, int frenar, int izquierda, int derecha) {
     }
 
     private static final Controles WASD = new Controles(Keys.W, Keys.S, Keys.A, Keys.D);
     private static final Controles FLECHAS = new Controles(Keys.UP, Keys.DOWN, Keys.LEFT, Keys.RIGHT);
 
-    /** Nombre del archivo del circuito; en la prueba local sirve para volver a la pantalla de elección con ese circuito. */
     private final String nombreCircuito;
-    /** Cómo se armó la prueba local, para volver a la pantalla de elección con lo mismo; null en red. */
     private final PartidaLocal partidaLocal;
-    /** En la clasificación solo se ven los autos de esta PC: en la pista y en el HUD, cada uno corre solo. */
     private final boolean clasificacion;
-    /** "CARRERA 2 DE 5" en un torneo; vacío si no es un torneo. */
     private final String textoTorneo;
     private final Circuito circuito;
     private final FuenteCarrera fuente;
-    /** La misma fuente si la carrera es en red; null en la prueba local. */
     private final CarreraEnRed red;
     private final List<Integer> idsLocales;
     private final List<Controles[]> controlesLocales = new ArrayList<>();
     private final Map<Integer, EntradaAuto> entradas = new HashMap<>();
 
-    // Solo se usa para saber dónde queda la zona de juego (con las barras del FitViewport) dentro de la ventana.
     private final FitViewport viewportMundo = new FitViewport(Config.ANCHO_MUNDO, Config.ALTO_MUNDO);
-    // Una cámara por jugador local, siempre con el mismo zoom. Con 2 jugadores la pantalla queda dividida en dos mitades.
     private final List<OrthographicCamera> camaras = new ArrayList<>();
     private final List<CamaraSeguimiento> seguimientos = new ArrayList<>();
     private final Image divisor = new Image(recursos.color(Paleta.FONDO));
     private final VistaCircuito vistaCircuito;
     private final VistaAuto vistaAuto = new VistaAuto();
-    /** En qué nivel de un cruce va cada auto: el cliente lo calcula con las posiciones que recibe. */
     private final Map<Integer, NivelCruce> nivelesCruce = new HashMap<>();
 
     private final List<PanelHud> paneles = new ArrayList<>();
@@ -112,22 +96,14 @@ public class PantallaCarrera extends PantallaBase {
     private float sinEstados;
     private int estadosVistos;
 
-    /**
-     * Prueba local en el circuito indicado (nombre del archivo): 1 jugador (flechas o WASD) o 2 en el mismo teclado
-     * (J1 con WASD y J2 con flechas).
-     */
     public PantallaCarrera(Main juego, int jugadoresLocales, String nombreCircuito) {
         this(juego, nombreCircuito, null, jugadoresLocales, null, null);
     }
 
-    /** Prueba local con las personas, los pilotos y los bots que indica la partida. */
     public PantallaCarrera(Main juego, PartidaLocal partida, String nombreCircuito) {
         this(juego, nombreCircuito, null, partida.jugadores(), null, partida);
     }
 
-    /**
-     * Carrera o clasificación en red, al recibir CUENTA_REGRESIVA. Usa el lobby del cliente para saber nombres y colores.
-     */
     public static PantallaCarrera desde(Main juego, Protocolo.Cuenta cuenta) {
         return new PantallaCarrera(juego, cuenta.circuito(), juego.sesion(), 1, cuenta, null);
     }
@@ -160,7 +136,6 @@ public class PantallaCarrera extends PantallaBase {
             controlesLocales.add(idsLocales.size() == 1 ? new Controles[] {WASD, FLECHAS}
                 : new Controles[] {i == 0 ? WASD : FLECHAS});
             entradas.put(id, new EntradaAuto());
-            // Hasta que llegue la primera foto, la cámara mira el lugar de largada del auto.
             Vector2 largada = circuito.posicionesLargada().get(fuente.lugarDeLargada(id));
             OrthographicCamera camara = new OrthographicCamera(Config.ANCHO_MUNDO / (float) idsLocales.size(), Config.ALTO_MUNDO);
             camaras.add(camara);
@@ -182,7 +157,6 @@ public class PantallaCarrera extends PantallaBase {
         raiz.row();
         raiz.add(indicadorPerdida).colspan(idsLocales.size()).left().padLeft(4).row();
         raiz.add(alertaRed).colspan(idsLocales.size()).padTop(2).row();
-        // Los avisos van arriba y no en el centro, que es donde la cámara pone al auto propio.
         raiz.add(aviso).colspan(idsLocales.size()).padTop(4).row();
         Table ayuda = new Table();
         ayuda.setBackground(recursos.color(Paleta.FONDO_HUD));
@@ -194,7 +168,6 @@ public class PantallaCarrera extends PantallaBase {
         ayuda.add(new Label(teclas + "  ·  ESC: menú", skin, "suave"));
         raiz.add(ayuda).colspan(idsLocales.size()).expand().bottom().left();
 
-        // Cartel central (cuenta regresiva, ¡YA!, fin). El Table no captura clics: solo lo hacen sus hijos.
         cartel.setAlignment(Align.center);
         subcartel.setAlignment(Align.center);
         Table centro = new Table();
@@ -203,11 +176,9 @@ public class PantallaCarrera extends PantallaBase {
         centro.add(subcartel);
         escena.addActor(centro);
 
-        // La torre de tiempos va arriba a la izquierda, debajo del panel de cada jugador. El Table no captura clics.
         torre.setTouchable(Touchable.disabled);
         escena.addActor(torre);
 
-        // Arriba a la derecha: no se cruza con el panel de ningún jugador, ni con la pantalla dividida.
         miniMapa.setPosition(Config.ANCHO_INTERFAZ - MARGEN_HUD - miniMapa.getWidth(),
             Config.ALTO_INTERFAZ - MARGEN_HUD - miniMapa.getHeight());
         escena.addActor(miniMapa);
@@ -222,12 +193,6 @@ public class PantallaCarrera extends PantallaBase {
         return Paleta.colorDePiloto(fuente.piloto(id));
     }
 
-    // ------------------------------------------------------------------ red (TCP)
-
-    /**
-     * En red, procesa lo que llegó por TCP: los resultados, quién abandonó, la revancha (vuelta al lobby) y el
-     * cierre de la partida. Lo que llega por UDP lo procesa la {@link CarreraEnRed} al avanzar.
-     */
     @Override
     protected void actualizar(float delta) {
         if (red == null || salio) {
@@ -252,14 +217,12 @@ public class PantallaCarrera extends PantallaBase {
                     red.fijarResultados(Protocolo.leerResultados(mensaje));
                     break;
                 case Protocolo.CUENTA_REGRESIVA:
-                    // Solo si esta pantalla se atrasó tanto que la grilla ya pasó entera.
                     irA(desde(juego, Protocolo.leerCuenta(mensaje)));
                     return;
                 case Protocolo.SALIO:
                     mostrarAviso(red.nombre(mensaje.entero(0, -1)) + " abandonó la carrera");
                     break;
                 case Protocolo.LOBBY:
-                    // El host pidió revancha antes de que esta pantalla pasara a los resultados.
                     irA(new Lobby(juego));
                     return;
                 case Protocolo.CERRADA:
@@ -274,11 +237,6 @@ public class PantallaCarrera extends PantallaBase {
         }
     }
 
-    /**
-     * En red, si dejan de llegar estados UDP: a AVISO_RED_INESTABLE segundos se avisa, y a TIMEOUT_RED se vuelve al
-     * menú. Si nunca llegó ninguno, lo más probable es que un firewall bloquee el UDP y el mensaje lo dice. No se
-     * controla una vez terminada la carrera: el servidor deja de mandar estados.
-     */
     private void controlarDatosDeRed(FotoCarrera foto, float delta) {
         if (red == null || salio) {
             return;
@@ -290,7 +248,6 @@ public class PantallaCarrera extends PantallaBase {
             alertaRed.setText("");
             return;
         }
-        // Se limita el delta: si la ventana se congela un rato, los estados atrasados llegan enseguida y no es una falla.
         sinEstados += Math.min(delta, 0.25f);
         if (sinEstados >= Config.TIMEOUT_RED) {
             String motivo = estadosVistos == 0
@@ -312,8 +269,6 @@ public class PantallaCarrera extends PantallaBase {
         juego.irA(siguiente);
     }
 
-    // ------------------------------------------------------------------ cuadro
-
     @Override
     protected void dibujarFondo(float delta) {
         leerEntradas();
@@ -328,7 +283,6 @@ public class PantallaCarrera extends PantallaBase {
             }
         }
 
-        // La zona de juego se reparte en tantas franjas verticales como jugadores locales.
         viewportMundo.apply();
         int x = viewportMundo.getScreenX();
         int y = viewportMundo.getScreenY();
@@ -345,7 +299,6 @@ public class PantallaCarrera extends PantallaBase {
         actualizarInterfaz(foto, delta);
     }
 
-    /** {@code idPropio} es el auto que sigue esta cámara: es el único que lleva aureola en su pantalla. */
     private void dibujarMundo(OrthographicCamera camara, FotoCarrera foto, int idPropio) {
         vistaCircuito.dibujar(camara);
         if (foto != null) {
@@ -357,9 +310,7 @@ public class PantallaCarrera extends PantallaBase {
         }
     }
 
-    /** Dibuja los autos que van por debajo de un puente, o todos los demás. */
     private void dibujarAutos(OrthographicCamera camara, FotoCarrera foto, boolean losDeAbajo, int idPropio) {
-        // Los autos vienen ordenados por posición: se dibujan del último al primero para que el puntero quede arriba.
         List<FotoAuto> autos = foto.autos();
         for (int i = autos.size() - 1; i >= 0; i--) {
             FotoAuto a = autos.get(i);
@@ -411,11 +362,9 @@ public class PantallaCarrera extends PantallaBase {
         subcartel.setText("");
         boolean terminada = fuente.resultados() != null || (foto != null && foto.estado() == EstadoCarrera.TERMINADA);
         if (terminada) {
-            // Más chico que la cuenta regresiva: si no, este texto largo se pisa con la torre de tiempos.
             cartel.setFontScale(ESCALA_CARTEL_FIN);
             cartel.setText(clasificacion ? "FIN DE LA CLASIFICACIÓN" : "CARRERA FINALIZADA");
             tiempoTerminada += delta;
-            // En red, los resultados llegan por TCP: se espera a tenerlos antes de cambiar de pantalla.
             if (tiempoTerminada >= Config.SEGUNDOS_FIN_A_RESULTADOS && fuente.resultados() != null && !salio) {
                 irA(clasificacion ? new PantallaGrilla(juego, fuente.resultados()) : new Resultados(juego, fuente.resultados()));
             }
@@ -445,7 +394,6 @@ public class PantallaCarrera extends PantallaBase {
 
     @Override
     protected void volver() {
-        // En la prueba local se vuelve a elegir circuito; en red, al menú (que además cierra la sesión).
         irA(red == null ? new PruebaLocal(juego, nombreCircuito, partidaLocal) : new MenuPrincipal(juego));
     }
 
@@ -456,7 +404,6 @@ public class PantallaCarrera extends PantallaBase {
         super.dispose();
     }
 
-    /** Panel del HUD de un jugador: franja con el color de su auto, vuelta, posición, tiempo actual y mejor vuelta. */
     private class PanelHud {
         private final int id;
         private final String codigo;
@@ -480,7 +427,6 @@ public class PantallaCarrera extends PantallaBase {
         void actualizar(FotoCarrera foto) {
             FotoAuto yo = foto != null ? foto.auto(id) : null;
             int vueltas = fuente.vueltasTotales();
-            // La posición y la mejor vuelta de todos están en la torre de tiempos: acá solo lo propio de este jugador.
             if (yo == null) {
                 cabecera.setText(fuente.nombre(id) + " [" + codigo + "]");
                 tiempos.setText("VUELTA 1/" + vueltas + "   TIEMPO " + Tiempo.formato(0f));

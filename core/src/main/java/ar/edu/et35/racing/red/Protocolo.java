@@ -7,15 +7,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
-/**
- * Nombres de los mensajes TCP y cómo se arman y se leen. Es la traducción a código de docs/PROTOCOLO.md
- * (sección 3): texto UTF-8, un mensaje por línea, campos separados por ";".
- */
 public final class Protocolo {
     private Protocolo() {
     }
 
-    // Cliente -> servidor
     public static final String UNIRSE = "UNIRSE";
     public static final String ELEGIR_PILOTO = "ELEGIR_PILOTO";
     public static final String ELEGIR_CIRCUITO = "ELEGIR_CIRCUITO";
@@ -36,7 +31,6 @@ public final class Protocolo {
     public static final String SALIR = "SALIR";
     public static final String PING = "PING";
 
-    // Servidor -> cliente
     public static final String BIENVENIDA = "BIENVENIDA";
     public static final String LOBBY = "LOBBY";
     public static final String CUENTA_REGRESIVA = "CUENTA_REGRESIVA";
@@ -49,12 +43,9 @@ public final class Protocolo {
     public static final String CERRADA = "CERRADA";
     public static final String PONG = "PONG";
 
-    // Mensajes que el cliente genera por su cuenta (no viajan por la red) para avisarle a la pantalla
-    // que la conexión falló o se perdió. El "_" del principio evita que se confundan con uno del protocolo.
     public static final String CONEXION_FALLIDA = "_CONEXION_FALLIDA";
     public static final String CONEXION_PERDIDA = "_CONEXION_PERDIDA";
 
-    // Códigos de ERROR
     public static final String PARTIDA_LLENA = "PARTIDA_LLENA";
     public static final String CARRERA_EN_CURSO = "CARRERA_EN_CURSO";
     public static final String NOMBRE_REPETIDO = "NOMBRE_REPETIDO";
@@ -65,16 +56,13 @@ public final class Protocolo {
     public static final String FALTAN_JUGADORES = "FALTAN_JUGADORES";
     public static final String CIRCUITO_NO_CARGO = "CIRCUITO_NO_CARGO";
 
-    /** Solo letras (con acentos y ñ), números y espacios: así el nombre nunca trae ";" ni saltos de línea. */
     private static final Pattern NOMBRE = Pattern.compile("[\\p{L}\\p{N} ]+");
 
-    /** Un mensaje ya separado: su nombre y sus campos (sin el nombre). */
     public record Mensaje(String nombre, List<String> campos) {
         public String campo(int indice) {
             return indice < campos.size() ? campos.get(indice) : "";
         }
 
-        /** Campo como entero, o el valor por defecto si falta o no es un número. */
         public int entero(int indice, int pordefecto) {
             try {
                 return Integer.parseInt(campo(indice).trim());
@@ -88,7 +76,6 @@ public final class Protocolo {
         }
     }
 
-    /** Arma la línea de un mensaje (sin el "\n" final). */
     public static String armar(String nombre, Object... campos) {
         StringBuilder linea = new StringBuilder(nombre);
         for (Object campo : campos) {
@@ -97,7 +84,6 @@ public final class Protocolo {
         return linea.toString();
     }
 
-    /** Separa una línea recibida. El -1 conserva los campos vacíos del final. Devuelve null si la línea está vacía. */
     public static Mensaje leer(String linea) {
         if (linea == null || linea.isBlank()) {
             return null;
@@ -111,16 +97,10 @@ public final class Protocolo {
             && nombre.length() <= Config.LARGO_MAXIMO_NOMBRE && NOMBRE.matcher(nombre).matches();
     }
 
-    /**
-     * Arma el mensaje RESULTADOS: {@code RESULTADOS;cantidad;posicion;id;nombre;totalMs;mejorVueltaMs...}. Los
-     * tiempos van en milisegundos enteros (nunca con decimales, que en una PC en español se escriben con coma), y
-     * -1 si no terminó o no completó ninguna vuelta.
-     */
     public static String armarResultados(List<ResultadoJugador> resultados) {
         return armarTabla(RESULTADOS, resultados);
     }
 
-    /** El mensaje GRILLA, con el resultado de la clasificación: el mismo formato que RESULTADOS. */
     public static String armarGrilla(List<ResultadoJugador> clasificacion) {
         return armarTabla(GRILLA, clasificacion);
     }
@@ -134,11 +114,6 @@ public final class Protocolo {
         return linea.toString();
     }
 
-    /**
-     * Lo que trae CUENTA_REGRESIVA: {@code CUENTA_REGRESIVA;circuito;vueltas;segundos;clasificacion;cantidad;id...}.
-     *
-     * @param grilla ids en el orden de largada; vacía en una clasificación, donde todos salen del mismo lugar
-     */
     public record Cuenta(String circuito, int vueltas, boolean clasificacion, List<Integer> grilla) {
     }
 
@@ -159,7 +134,6 @@ public final class Protocolo {
         return new Cuenta(mensaje.campo(0), mensaje.entero(1, Config.VUELTAS), mensaje.campo(3).equals("1"), List.copyOf(grilla));
     }
 
-    /** Lee un mensaje RESULTADOS o GRILLA; los tiempos vuelven a segundos (NaN donde venía -1). */
     public static List<ResultadoJugador> leerResultados(Mensaje mensaje) {
         int cantidad = Math.min(mensaje.entero(0, 0), Config.MAX_JUGADORES);
         List<ResultadoJugador> lista = new ArrayList<>();
@@ -182,7 +156,6 @@ public final class Protocolo {
         return milisegundos < 0 ? Float.NaN : milisegundos / 1000f;
     }
 
-    /** El texto del ERROR va en un solo campo: no puede llevar ";" ni saltos de línea. */
     public static String limpiarTexto(String texto) {
         return texto.replace(';', ',').replace('\n', ' ').replace('\r', ' ');
     }

@@ -17,7 +17,6 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Prueba descartable: dibuja la VistaCircuito real en una ventana oculta (MSAA 4) y guarda capturas en PNG. */
 public class CapturaVista extends ApplicationAdapter {
     final String carpetaCircuitos;
     final String salida;
@@ -64,7 +63,6 @@ public class CapturaVista extends ApplicationAdapter {
             Gdx.gl.glViewport(0, 0, 1280, 720);
             ScreenUtils.clear(0f, 0f, 0f, 1f);
             vista.dibujar(camara);
-            // Un auto en el centro, para tener una referencia de tamaño. Con "abajo" al final, pasa debajo del puente.
             boolean abajo = partes.length > 3 && partes[3].equals("abajo");
             if (abajo) {
                 auto.dibujar(g.linea()[2 * indice], g.linea()[2 * indice + 1], 0f, Color.valueOf("E8002D"), Color.valueOf("FFEB00"), false, camara);
@@ -75,7 +73,6 @@ public class CapturaVista extends ApplicationAdapter {
             }
             Gdx.gl.glFinish();
             Pixmap leido = Pixmap.createFromFrameBuffer(0, 0, 1280, 720);
-            // El framebuffer viene con el origen abajo: se da vuelta para que la imagen salga derecha.
             Pixmap pixmap = new Pixmap(1280, 720, leido.getFormat());
             for (int y = 0; y < 720; y++) {
                 pixmap.drawPixmap(leido, 0, y, 0, 719 - y, 1280, 1);

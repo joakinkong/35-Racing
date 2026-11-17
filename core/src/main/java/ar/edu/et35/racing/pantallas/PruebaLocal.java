@@ -15,11 +15,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.Align;
 import java.util.List;
 
-/**
- * Prueba local (sin red): se elige el circuito entre los del catálogo, si juegan 1 o 2 personas en el mismo teclado, con
- * qué piloto corre cada una y cuántos bots hay en pista y de qué nivel. Se corre con CORRER o ENTER; las flechas izquierda
- * y derecha cambian el circuito.
- */
 public class PruebaLocal extends PantallaBase {
     private static final float ANCHO_COLUMNA = 620f;
     private static final float ANCHO_FLECHA = 56f;
@@ -45,15 +40,10 @@ public class PruebaLocal extends PantallaBase {
         this(juego, Config.CIRCUITO);
     }
 
-    /** @param archivo circuito elegido al abrir la pantalla (nombre del archivo); si no existe, el primero del catálogo */
     public PruebaLocal(Main juego, String archivo) {
         this(juego, archivo, null);
     }
 
-    /**
-     * @param archivo circuito elegido al abrir la pantalla (nombre del archivo); si no existe, el primero del catálogo
-     * @param partida lo elegido la vez anterior, para no tener que cargarlo de nuevo al volver de la carrera; null = lo de siempre
-     */
     public PruebaLocal(Main juego, String archivo, PartidaLocal partida) {
         super(juego);
         indice = Math.max(0, Catalogo.indiceDeCircuito(archivo));
@@ -93,7 +83,6 @@ public class PruebaLocal extends PantallaBase {
         return fila;
     }
 
-    /** Una fila "ETIQUETA  <  valor  >" de la tarjeta de la partida. */
     private Table fila(String nombre, String valor, Runnable menos, Runnable mas) {
         Table fila = new Table();
         fila.add(new Label(nombre, skin, "etiqueta")).width(ANCHO_ETIQUETA).left();
@@ -106,7 +95,6 @@ public class PruebaLocal extends PantallaBase {
         return fila;
     }
 
-    /** Vuelve a armar la tarjeta con jugadores, pilotos, bots y nivel; se llama al cambiar cualquiera de ellos. */
     private void armarPartida() {
         panelPartida.clearChildren();
         panelPartida.add(new Label("PARTIDA", skin, "etiqueta")).left().padBottom(8).row();
@@ -161,7 +149,6 @@ public class PruebaLocal extends PantallaBase {
         return p.apellido() + "  ·  " + Catalogo.ESCUDERIAS.get(p.escuderia()).nombre();
     }
 
-    /** El piloto siguiente (o anterior) en el catálogo, salteando el que ya usa el otro jugador. */
     private static int siguientePiloto(int actual, int paso, int ocupado) {
         int total = Catalogo.PILOTOS.size();
         int nuevo = Math.floorMod(actual + paso, total);

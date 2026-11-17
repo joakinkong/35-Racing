@@ -12,11 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Predicate;
 
-/**
- * Programa de verificación (fuera del juego): prueba las reglas de los bots contra el servidor real, con clientes reales
- * por TCP y sin ventana. Termina corriendo una carrera de una vuelta y pidiendo revancha, así que tarda más de un minuto
- * (en tiempo real, como una partida). Si una regla falla, sale con error. Ver tools/bots/LEEME.md.
- */
 public class PruebaSalaBots {
     private static final long ESPERA_MS = 3000;
     private static final long ESPERA_CARRERA_MS = 150_000;

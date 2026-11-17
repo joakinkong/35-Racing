@@ -11,13 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.TreeMap;
 
-/**
- * Lee un circuito en formato JSON (docs/FORMATO_CIRCUITO.md) y lo convierte en un {@link Circuito}: guarda la
- * geometría para dibujarla y rasteriza una grilla fina de superficies para la colisión. Solo lee datos (no crea
- * texturas), pero igual se lo llama desde el hilo de render para no tocar LibGDX desde los hilos de red.
- */
 public final class CargadorCircuito {
-    /** Versión del formato que entiende este cargador. */
     private static final int VERSION = 1;
 
     private CargadorCircuito() {
@@ -91,13 +85,6 @@ public final class CargadorCircuito {
         return numeros;
     }
 
-    /**
-     * Marca en una grilla de celdas de {@code tam} px qué es pista, pasto y muro. Cada muestra de la línea central
-     * pinta un círculo: de radio la mitad del ancho es pista, y hasta sumarle el escape es pasto. Todo lo demás es
-     * muro, también hacia afuera: la línea de muro que se dibuja es fina (unos 6 px) y un auto rápido la
-     * atravesaría de un salto, así que lo sólido es todo lo que queda más allá del pasto. Donde dos tramos de pista
-     * están cerca, el generador ya acortó el pasto para que quede muro entre los dos.
-     */
     private static byte[] rasterizar(float ancho, float alto, float tam, Circuito.Geometria g) {
         int columnas = (int) Math.ceil(ancho / tam);
         int filas = (int) Math.ceil(alto / tam);

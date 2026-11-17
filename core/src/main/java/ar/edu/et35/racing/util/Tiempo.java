@@ -1,13 +1,11 @@
 package ar.edu.et35.racing.util;
 
-/** Formato de tiempos de carrera. */
 public final class Tiempo {
     private static final String SIN_TIEMPO = "--:--.---";
 
     private Tiempo() {
     }
 
-    /** Convierte segundos a m:ss.mmm. Un valor negativo o NaN (sin tiempo todavía) se muestra como guiones. */
     public static String formato(float segundos) {
         if (Float.isNaN(segundos) || Float.isInfinite(segundos) || segundos < 0f) {
             return SIN_TIEMPO;

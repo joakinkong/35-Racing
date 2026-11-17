@@ -17,14 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Torre de tiempos al estilo de las transmisiones de Fórmula 1: arriba el nombre del juego y la vuelta en que va el
- * puntero, y abajo una fila por auto, en orden de posición, con el número de posición (dorado el primero), la franja de
- * color de su escudería, las tres letras del piloto y su mejor vuelta. Los autos de esta PC se resaltan.
- *
- * Es una tabla de Scene2D: no toca nada de la simulación, solo lee la {@link FotoCarrera} que le pasan. En la clasificación
- * muestra solo los autos de esta PC: cada uno corre sin saber cómo les va a los demás.
- */
 public class TorreHud extends Table {
     private static final int SIN_POSICION = 0;
     private static final float ANCHO_POSICION = 36f;
@@ -32,7 +24,6 @@ public class TorreHud extends Table {
     private static final float ANCHO_CODIGO = 62f;
     private static final float ANCHO_TIEMPO = 104f;
     private static final float ALTO_FILA = 30f;
-    /** Con muchos autos (hasta 22) las filas se achican para que la torre entre en la pantalla. */
     private static final float ALTO_FILA_COMPACTA = 22f;
     private static final float ESCALA_TEXTO_COMPACTO = 0.75f;
     private static final int AUTOS_PARA_COMPACTAR = 12;
@@ -46,7 +37,6 @@ public class TorreHud extends Table {
     private final Set<Integer> idsLocales;
     private final Drawable fondo;
     private final Drawable fondoPropio;
-    /** Un Drawable por piloto, creados la primera vez que hacen falta (crear uno por cuadro llenaría la memoria). */
     private final Drawable[] colorPiloto = new Drawable[Catalogo.PILOTOS.size()];
     private final Label vuelta;
     private final boolean clasificacion;
@@ -73,7 +63,6 @@ public class TorreHud extends Table {
         pack();
     }
 
-    /** La fila de arriba: el nombre del juego a la izquierda y la vuelta del puntero ("V 2/3") a la derecha. */
     private void agregarEncabezado() {
         Table encabezado = new Table();
         encabezado.setBackground(fondo);
@@ -83,12 +72,10 @@ public class TorreHud extends Table {
         add(encabezado).width(ANCHO_TORRE).height(ALTO_ENCABEZADO).padBottom(SEPARACION).row();
     }
 
-    /** Ancho fijo de la torre, para ubicarla en la pantalla. */
     public float anchoTorre() {
         return ANCHO_TORRE;
     }
 
-    /** Pone al día los textos y colores con lo que hay en la carrera. Las filas se arman con la primera foto. */
     public void actualizar(FotoCarrera foto) {
         if (foto == null || foto.autos().isEmpty()) {
             return;
@@ -142,7 +129,6 @@ public class TorreHud extends Table {
         return colorPiloto[indice];
     }
 
-    /** Una fila de la torre: posición, franja de escudería, código y tiempo. */
     private class Fila {
         private final Table tabla = new Table();
         private final Label posicion = new Label("", skin, "numeros");

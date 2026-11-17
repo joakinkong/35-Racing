@@ -17,26 +17,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-/**
- * Dibuja lo que hay alrededor de la pista: el suelo que se repite y las piezas que ubica {@link DisposicionEntorno}. Las
- * piezas se agrupan por zonas para mirar solo las que entran en la cámara: en los circuitos grandes hay miles.
- */
 public class VistaEntorno implements Disposable {
     private static final String CARPETA = "entorno/";
-    /** Lado de una zona (px): más que la pieza más grande, así alcanza con mirar una zona más a cada lado de la cámara. */
     private static final float ZONA = 512f;
-    /** Lado con que se dibuja una baldosa de 48 px, a la misma escala que los sprites (px de mundo). */
     private static final float BALDOSA = 48f * DisposicionEntorno.ESCALA / 2f;
     private static final float LARGO_LINEA_CALLE = 20f;
     private static final float ESPACIO_LINEA_CALLE = 20f;
     private static final float GROSOR_LINEA_CALLE = 2f;
     private static final Color COLOR_LINEA_CALLE = new Color(0.85f, 0.83f, 0.76f, 1f);
 
-    /** Colores de la ropa del público. */
     private static final Color[] ROPA = {
         Color.valueOf("E8002D"), Color.valueOf("FFEB00"), Color.valueOf("3671C6"), Color.valueOf("FF8700"),
         Color.valueOf("27F4D2"), Color.valueOf("F2F2F2"), Color.valueOf("23262B"), Color.valueOf("C94BCB")};
-    /** Distancia entre personas y fracción de lugares con alguien sentado. */
     private static final float ESPACIO_PUBLICO = 5f;
     private static final float TAMANO_PERSONA = 3f;
     private static final float OCUPACION_TRIBUNA = 0.8f;
@@ -54,7 +46,6 @@ public class VistaEntorno implements Disposable {
     private final int columnas;
     private final int filas;
 
-    /** @param blanco región de una textura blanca de 1 x 1; no la libera esta clase */
     public VistaEntorno(Circuito circuito, TextureRegion blanco) {
         this.blanco = blanco;
         atlas = new TextureAtlas(Gdx.files.internal(CARPETA + "entorno.atlas"));
@@ -84,7 +75,6 @@ public class VistaEntorno implements Disposable {
         }
     }
 
-    /** La gente sentada en una tribuna: filas a lo largo de los bancos, con la misma gente en cada carrera. */
     private void agregarPublico(List<Dibujo> zona, DisposicionEntorno.Pieza p) {
         Random azar = new Random(Float.floatToIntBits(p.x()) * 31L + Float.floatToIntBits(p.y()));
         boolean acostada = p.ancho() > p.alto();
@@ -109,7 +99,6 @@ public class VistaEntorno implements Disposable {
         return textura;
     }
 
-    /** Dibuja lo que entra en la cámara. El batch ya tiene que estar abierto. */
     public void dibujar(PolygonSpriteBatch batch, OrthographicCamera camara) {
         float mitadAncho = camara.viewportWidth * camara.zoom / 2f;
         float mitadAlto = camara.viewportHeight * camara.zoom / 2f;
@@ -147,7 +136,6 @@ public class VistaEntorno implements Disposable {
         }
     }
 
-    /** Llena un rectángulo con una baldosa, alineada con el mundo para que no se mueva con la cámara. */
     private static void repetir(PolygonSpriteBatch batch, Texture textura, float x1, float y1, float x2, float y2) {
         batch.draw(textura, x1, y1, x2 - x1, y2 - y1, x1 / BALDOSA, y1 / BALDOSA, x2 / BALDOSA, y2 / BALDOSA);
     }

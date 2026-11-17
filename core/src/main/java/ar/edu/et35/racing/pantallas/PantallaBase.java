@@ -22,11 +22,6 @@ import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 
-/**
- * Base de todas las pantallas: escena Scene2D a 1280x720 con FitViewport y, arriba, la barra con la marca al estilo de
- * PIT WALL. Cada subclase arma su interfaz dentro de {@link #contenido}. También tiene las piezas que se repiten: el
- * título con su etiqueta de sección, las tarjetas y los botones.
- */
 public abstract class PantallaBase extends ScreenAdapter {
     private static final float ALTO_BARRA = 60f;
     private static final float MARGEN_BARRA = 32f;
@@ -47,16 +42,10 @@ public abstract class PantallaBase extends ScreenAdapter {
         this(juego, true);
     }
 
-    /**
-     * Con marco = true la pantalla tiene el fondo y la barra superior, y se arma dentro de {@link #contenido}. Con
-     * marco = false la raíz queda vacía y transparente (por ejemplo, para dibujar el mundo de la carrera debajo de la
-     * interfaz).
-     */
     protected PantallaBase(Main juego, boolean marco) {
         this.juego = juego;
         this.recursos = juego.recursos();
         this.skin = recursos.skin;
-        // El Stage comparte el SpriteBatch de Recursos, así no crea (ni destruye) uno propio por pantalla.
         this.escena = new Stage(new FitViewport(Config.ANCHO_INTERFAZ, Config.ALTO_INTERFAZ), recursos.batch);
 
         raiz.setFillParent(true);
@@ -68,15 +57,12 @@ public abstract class PantallaBase extends ScreenAdapter {
         escena.addActor(raiz);
     }
 
-    /** Se llama al principio de cada cuadro, antes de dibujar. Sirve para procesar lo que llegó por la red. */
     protected void actualizar(float delta) {
     }
 
-    /** Se llama en cada cuadro después de limpiar la pantalla y antes de dibujar la interfaz. */
     protected void dibujarFondo(float delta) {
     }
 
-    /** Pantalla a la que vuelve ESC. Por defecto no hace nada. */
     protected void volver() {
     }
 
@@ -84,12 +70,10 @@ public abstract class PantallaBase extends ScreenAdapter {
         return boton(texto, "default", accion);
     }
 
-    /** El botón de la acción principal de la pantalla, en rojo. */
     protected TextButton botonPrimario(String texto, Runnable accion) {
         return boton(texto, "primario", accion);
     }
 
-    /** Un botón con la letra chica, para las listas: si el texto no entra en ese ancho, lleva puntos suspensivos. */
     protected TextButton botonChico(String texto, float ancho, Runnable accion) {
         TextButton boton = boton(texto, "chico", accion);
         boton.getLabel().setEllipsis(true);
@@ -108,11 +92,6 @@ public abstract class PantallaBase extends ScreenAdapter {
         return boton;
     }
 
-    /** Título de pantalla: arriba la etiqueta de sección en turquesa, abajo el título grande. */
-    /**
-     * La tabla tal cual si entra en {@code altoMaximo}; si no (por ejemplo, con los 22 autos), dentro de un panel con
-     * barra de desplazamiento de ese alto, para que los botones de abajo nunca queden fuera de la pantalla.
-     */
     protected Table conDesplazamiento(Table tabla, float altoMaximo) {
         Table envoltorio = new Table();
         if (tabla.getPrefHeight() <= altoMaximo) {
@@ -138,7 +117,6 @@ public abstract class PantallaBase extends ScreenAdapter {
         return prepararTarjeta(recursos.color(Paleta.SUPERFICIE_BAJA));
     }
 
-    /** Una tarjeta con la línea de color arriba. */
     protected Table tarjeta(Color acento) {
         return prepararTarjeta(recursos.conLinea(Paleta.SUPERFICIE_BAJA, acento, FondoConLinea.Lado.ARRIBA));
     }
@@ -151,7 +129,6 @@ public abstract class PantallaBase extends ScreenAdapter {
         return tarjeta;
     }
 
-    /** Un texto largo que se parte en varias líneas dentro del ancho de su celda. */
     protected Label textoLargo(String texto, String estilo) {
         Label label = new Label(texto, skin, estilo);
         label.setWrap(true);

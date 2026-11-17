@@ -21,14 +21,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Programa de verificación (fuera del juego) de la clasificación. Primero, sin red: que 8 autos en la misma pista no se
- * molesten, comparando cada uno con lo que hace solo. Después, contra el servidor real: el recorrido completo de mensajes,
- * de la sala a los resultados, en tiempo real (más de 3 minutos). Si algo falla, sale con error. Ver tools/bots/LEEME.md.
- */
 public class PruebaClasificacion {
     private static final float DT = 1f / Config.TICKS_POR_SEGUNDO;
-    /** La misma para todos: con el mismo ritmo, cualquier diferencia de tiempo vendría de que se molestaron. */
     private static final long SEMILLA = 7L;
     private static final long ESPERA_MS = 3000;
     private static final long ESPERA_FASE_MS = 200_000;
@@ -52,7 +46,6 @@ public class PruebaClasificacion {
         }
     }
 
-    /** Una clasificación de esa cantidad de bots difíciles, que no se equivocan: si no se molestan, hacen todos lo mismo. */
     private static List<Float> correr(Circuito c, int cantidad) {
         Carrera carrera = new Carrera(c, 1, true);
         RecorridoBot recorrido = new RecorridoBot(c, NivelBot.DIFICIL);
@@ -136,7 +129,6 @@ public class PruebaClasificacion {
         while (System.currentTimeMillis() < limite) {
             cliente.actualizar();
             while (cliente.sondear() != null) {
-                // acá solo importa el lobby, que el cliente ya guarda solo
             }
             if (cliente.lobby().jugadores().size() == autos && cliente.lobby().clasificacion() == clasificacion) {
                 return;

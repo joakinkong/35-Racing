@@ -21,39 +21,24 @@ import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-/**
- * Cliente de la partida (lobby por TCP, docs/PROTOCOLO.md secciones 3, 7 y 8). Lo usan todos los jugadores, el
- * host también (conectado a 127.0.0.1).
- *
- * <p>Hilos: uno que se conecta y después lee lo que manda el servidor por TCP, y otro que recibe los ESTADO por UDP.
- * Los dos solo dejan lo que reciben en colas thread-safe; <b>la pantalla las vacía en su hilo de render</b> con
- * {@link #sondear()} y {@link #sondearEstado()}, así nunca se toca nada de LibGDX desde un hilo de red. El resto de
- * los métodos (enviar, actualizar, getters) se llaman desde el hilo de render.
- */
 public class ClientePartida {
     private final String nombre;
     private final String origen;
     private final ConcurrentLinkedQueue<Mensaje> recibidos = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<PaquetesUdp.Estado> estados = new ConcurrentLinkedQueue<>();
     private volatile ConexionTcp conexion;
-    /** El socket mientras se está conectando: cerrar() lo cierra para cortar el intento sin esperar el timeout. */
     private volatile Socket conectando;
     private volatile DatagramSocket socketUdp;
-    /** A dónde se mandan las ENTRADA; también es el único origen del que se aceptan ESTADO. */
     private volatile InetSocketAddress servidorUdp;
     private volatile boolean cerrando;
-    /** Paquetes UDP descartados por venir de otra dirección o estar mal formados (para diagnóstico). */
     private volatile int udpAjenos;
 
-    // Estado que se va actualizando con lo que llega. Solo se toca desde el hilo de render.
     private int miId = -1;
     private int token;
     private boolean esHost;
     private EstadoLobby lobby = EstadoLobby.vacio();
-    /** La última foto del torneo en curso; null si no hay torneo. */
     private EstadoTorneo torneo;
     private long ultimoPingNanos = System.nanoTime();
-    /** Secuencia de las ENTRADA: sube de a 1 y nunca vuelve atrás, ni entre carreras. */
     private int secuenciaEntrada;
 
     public ClientePartida(String nombre) {
@@ -61,11 +46,6 @@ public class ClientePartida {
         this.origen = "CLIENTE " + nombre;
     }
 
-    /**
-     * Se conecta en segundo plano (con el timeout de {@link Config#TIMEOUT_CONEXION_MS}) y manda UNIRSE. El
-     * resultado llega como mensajes por {@link #sondear()}: BIENVENIDA o ERROR si sale bien o mal, y
-     * {@link Protocolo#CONEXION_FALLIDA} si no se pudo ni conectar.
-     */
     public void conectar(String direccion, int puerto) {
         Thread hilo = new Thread(() -> conectarYLeer(direccion, puerto), "cliente-tcp-" + nombre);
         hilo.setDaemon(true);
@@ -120,7 +100,7 @@ public class ClientePartida {
                     continue;
                 }
                 RegistroRed.log(origen, "<- " + linea);
-                if (!mensaje.es(Protocolo.PONG)) { // el PONG solo sirve para que el timeout no venza
+                if (!mensaje.es(Protocolo.PONG)) {
                     recibidos.add(mensaje);
                 }
             }
@@ -136,9 +116,6 @@ public class ClientePartida {
         }
     }
 
-    // ------------------------------------------------------------------ hilo de render
-
-    /** Saca el próximo mensaje recibido (o null si no hay) y actualiza el estado del cliente con él. */
     public Mensaje sondear() {
         Mensaje mensaje = recibidos.poll();
         if (mensaje != null) {
@@ -155,18 +132,12 @@ public class ClientePartida {
             abrirUdp(mensaje.entero(3, Config.PUERTO_UDP));
         } else if (mensaje.es(Protocolo.LOBBY)) {
             lobby = EstadoLobby.desde(mensaje);
-            torneo = null; // durante un torneo no se manda LOBBY: si llega, se volvió a la sala
+            torneo = null;
         } else if (mensaje.es(Protocolo.TORNEO)) {
             torneo = EstadoTorneo.desde(mensaje);
         }
     }
 
-    // ------------------------------------------------------------------ UDP
-
-    /**
-     * Abre el socket UDP en un puerto libre (no el del servidor: en la PC del host ya lo ocupa él, y así además se
-     * pueden abrir varias instancias en una PC) y arranca el hilo que recibe los ESTADO.
-     */
     private void abrirUdp(int puertoServidor) {
         ConexionTcp actual = conexion;
         if (cerrando || actual == null || socketUdp != null) {
@@ -185,7 +156,6 @@ public class ClientePartida {
         }
     }
 
-    /** Hilo receptor UDP: acepta solo ESTADO bien formados que vengan del servidor, y los encola. */
     private void recibirUdp(DatagramSocket socket) {
         byte[] bufer = new byte[PaquetesUdp.LARGO_MAXIMO + 64];
         DatagramPacket paquete = new DatagramPacket(bufer, bufer.length);
@@ -194,7 +164,7 @@ public class ClientePartida {
                 paquete.setLength(bufer.length);
                 socket.receive(paquete);
             } catch (IOException e) {
-                return; // el socket se cerró
+                return;
             }
             if (!paquete.getSocketAddress().equals(servidorUdp)) {
                 udpAjenos++;
@@ -211,12 +181,11 @@ public class ClientePartida {
                 }
                 estados.add(estado);
             } catch (RuntimeException e) {
-                udpAjenos++; // un paquete raro no debe detener la recepción
+                udpAjenos++;
             }
         }
     }
 
-    /** Manda lo que está apretando el jugador. Se llama desde el hilo de render, 60 veces por segundo. */
     public void enviarEntrada(EntradaAuto entrada) {
         DatagramSocket socket = socketUdp;
         InetSocketAddress destino = servidorUdp;
@@ -227,21 +196,17 @@ public class ClientePartida {
         try {
             socket.send(new DatagramPacket(datos, datos.length, destino));
         } catch (IOException e) {
-            // UDP no avisa si el paquete llegó: si falla el envío, el siguiente (17 ms después) lo reemplaza.
         }
     }
 
-    /** Saca el próximo ESTADO recibido, o null si no hay. Lo llama la pantalla en el hilo de render. */
     public PaquetesUdp.Estado sondearEstado() {
         return estados.poll();
     }
 
-    /** Descarta los ESTADO que hayan quedado sin leer (por ejemplo, de una carrera anterior). */
     public void descartarEstadosPendientes() {
         estados.clear();
     }
 
-    /** Puerto UDP local, o -1 si todavía no se abrió. Sirve para diagnóstico y para las pruebas. */
     public int puertoUdpLocal() {
         DatagramSocket socket = socketUdp;
         return socket != null ? socket.getLocalPort() : -1;
@@ -251,9 +216,6 @@ public class ClientePartida {
         return udpAjenos;
     }
 
-    // ------------------------------------------------------------------ TCP
-
-    /** Se llama una vez por cuadro: manda el PING cuando corresponde, para que ni el servidor ni el cliente den por caída la conexión. */
     public void actualizar() {
         long ahora = System.nanoTime();
         if (conexion != null && ahora - ultimoPingNanos >= Config.INTERVALO_PING_MS * 1_000_000L) {
@@ -266,72 +228,58 @@ public class ClientePartida {
         enviar(Protocolo.armar(Protocolo.ELEGIR_PILOTO, piloto));
     }
 
-    /** Solo lo acepta el servidor si lo manda el host. */
     public void elegirCircuito(int circuito) {
         enviar(Protocolo.armar(Protocolo.ELEGIR_CIRCUITO, circuito));
     }
 
-    /** Solo lo acepta el servidor si lo manda el host. */
     public void elegirVueltas(int vueltas) {
         enviar(Protocolo.armar(Protocolo.ELEGIR_VUELTAS, vueltas));
     }
 
-    /** Cómo se arma la grilla: a mano, por clasificación o al azar. Solo lo acepta el servidor si lo manda el host. */
     public void elegirGrilla(ModoGrilla modo) {
         enviar(Protocolo.armar(Protocolo.ELEGIR_GRILLA, modo.ordinal()));
     }
 
-    /** Con o sin clasificación (a mano). Solo lo acepta el servidor si lo manda el host. */
     public void elegirClasificacion(boolean hay) {
         elegirGrilla(hay ? ModoGrilla.CLASIFICACION : ModoGrilla.MANUAL);
     }
 
-    /** Sube (-1) o baja (+1) un lugar a ese auto en la grilla. Solo con la grilla a mano y si lo manda el host. */
     public void moverEnGrilla(int id, int lugares) {
         enviar(Protocolo.armar(Protocolo.MOVER_GRILLA, id, lugares));
     }
 
-    /** Sortea la grilla ahora. Solo con la grilla a mano y si lo manda el host. */
     public void sortearGrilla() {
         enviar(Protocolo.armar(Protocolo.GRILLA_AL_AZAR));
     }
 
-    /** Solo lo acepta el servidor si lo manda el host. */
     public void elegirTorneo(boolean torneo) {
         enviar(Protocolo.armar(Protocolo.ELEGIR_MODO, torneo ? 1 : 0));
     }
 
-    /** Suma un circuito al final del calendario. Solo lo acepta el servidor si lo manda el host. */
     public void agregarCircuito(int circuito) {
         enviar(Protocolo.armar(Protocolo.AGREGAR_CIRCUITO, circuito));
     }
 
-    /** Saca del calendario la carrera de ese lugar (desde 0). Solo lo acepta el servidor si lo manda el host. */
     public void quitarCircuito(int lugar) {
         enviar(Protocolo.armar(Protocolo.QUITAR_CIRCUITO, lugar));
     }
 
-    /** Larga la próxima carrera del torneo. Solo lo acepta el servidor si lo manda el host. */
     public void siguienteCarrera() {
         enviar(Protocolo.armar(Protocolo.SIGUIENTE_CARRERA));
     }
 
-    /** Suma un bot con el primer piloto libre. Solo lo acepta el servidor si lo manda el host. */
     public void agregarBot(NivelBot nivel) {
         agregarBot(nivel, -1);
     }
 
-    /** Suma un bot con ese piloto (índice del catálogo). Solo lo acepta el servidor si lo manda el host. */
     public void agregarBot(NivelBot nivel, int piloto) {
         enviar(Protocolo.armar(Protocolo.AGREGAR_BOT, nivel.ordinal(), piloto));
     }
 
-    /** Solo lo acepta el servidor si lo manda el host. */
     public void quitarBot(int id) {
         enviar(Protocolo.armar(Protocolo.QUITAR_BOT, id));
     }
 
-    /** Solo lo acepta el servidor si lo manda el host. */
     public void cambiarNivelBot(int id, NivelBot nivel) {
         enviar(Protocolo.armar(Protocolo.NIVEL_BOT, id, nivel.ordinal()));
     }
@@ -365,7 +313,6 @@ public class ClientePartida {
         RegistroRed.log(origen, "-> " + linea);
     }
 
-    /** Avisa que se va (SALIR) y cierra la conexión. Los hilos que estén esperando terminan solos. */
     public void cerrar() {
         if (cerrando) {
             return;
@@ -374,9 +321,8 @@ public class ClientePartida {
         Socket enCurso = conectando;
         if (enCurso != null) {
             try {
-                enCurso.close(); // el hilo que está en connect() recibe una excepción y termina
+                enCurso.close();
             } catch (IOException e) {
-                // Ya estaba cerrado.
             }
         }
         ConexionTcp actual = conexion;
@@ -384,13 +330,12 @@ public class ClientePartida {
             try {
                 enviarLinea(Protocolo.armar(Protocolo.SALIR));
             } catch (IOException e) {
-                // Si no se puede avisar, igual se cierra.
             }
             actual.cerrar();
         }
         DatagramSocket udp = socketUdp;
         if (udp != null) {
-            udp.close(); // destraba al hilo receptor UDP
+            udp.close();
         }
     }
 
@@ -414,12 +359,10 @@ public class ClientePartida {
         return lobby;
     }
 
-    /** La última foto del torneo en curso, o null si no hay torneo. */
     public EstadoTorneo torneo() {
         return torneo;
     }
 
-    /** El piloto que tiene asignado este jugador según el último LOBBY, o 0 si todavía no llegó. */
     public int miPiloto() {
         EstadoLobby.JugadorLobby yo = lobby.jugador(miId);
         return yo != null ? yo.piloto() : 0;

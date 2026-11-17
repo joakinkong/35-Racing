@@ -13,11 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Programa de verificación (fuera del juego): una partida local con 2 personas y 20 bots (los 22 autos) en cada circuito,
- * sin ventana y más rápido que el tiempo real. Comprueba que los 22 autos largan sobre la pista y que los bots avanzan.
- * Ver tools/bots/LEEME.md.
- */
 public class PruebaLocal22 {
     private static final float SEGUNDOS = 25f;
     private static final float DELTA = 1f / 30f;

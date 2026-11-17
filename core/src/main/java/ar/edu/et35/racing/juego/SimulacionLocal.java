@@ -7,26 +7,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-/**
- * La carrera simulada en esta misma PC (prueba local, sin red): paso fijo de 1 / TICKS_POR_SEGUNDO con un
- * acumulador, y la foto interpolada entre el último tick y el siguiente para dibujar sin saltos. Además de las personas
- * puede haber bots: su {@link PilotoBot} produce una {@link EntradaAuto} igual que lo haría una persona, como en el servidor.
- */
 public class SimulacionLocal implements FuenteCarrera {
     private static final float PASO = 1f / Config.TICKS_POR_SEGUNDO;
-    /** Tope de tiempo por cuadro, para que un tirón (por ejemplo al mover la ventana) no dispare cientos de ticks. */
     private static final float MAX_TIEMPO_CUADRO = 0.25f;
 
     private final Carrera carrera;
     private final List<Integer> ids = new ArrayList<>();
-    /** El piloto del catálogo de cada auto, por id (las personas primero y después los bots). */
     private final List<Integer> pilotos = new ArrayList<>();
     private final Map<Integer, PilotoBot> pilotosBot = new HashMap<>();
     private final Map<Integer, EntradaAuto> entradas = new HashMap<>();
     private float acumulador;
     private float alfa;
 
-    /** Carrera con esa cantidad de jugadores en el mismo teclado, llamados "Jugador 1", "Jugador 2"... */
     public SimulacionLocal(Circuito circuito, int jugadores) {
         this(circuito, new PartidaLocal(jugadores == 1 ? List.of(0) : List.of(0, 2), 0, NivelBot.MEDIO));
     }
@@ -39,7 +31,6 @@ public class SimulacionLocal implements FuenteCarrera {
             pilotos.add(partida.pilotosJugadores().get(i));
         }
         if (partida.bots() > 0) {
-            // El recorrido solo depende del circuito y del nivel: todos los bots lo comparten.
             RecorridoBot recorrido = new RecorridoBot(circuito, partida.nivel());
             Random azar = new Random();
             int id = partida.jugadores();
@@ -64,7 +55,6 @@ public class SimulacionLocal implements FuenteCarrera {
         alfa = acumulador / PASO;
     }
 
-    /** Los bots solo manejan con la carrera en curso, igual que en el servidor. */
     private void decidirBots() {
         if (carrera.estado() != EstadoCarrera.EN_CURSO) {
             return;
@@ -101,7 +91,7 @@ public class SimulacionLocal implements FuenteCarrera {
 
     @Override
     public int lugarDeLargada(int id) {
-        return id; // se agregaron en orden de id
+        return id;
     }
 
     @Override

@@ -12,34 +12,19 @@ import com.badlogic.gdx.utils.Disposable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Dibuja el circuito a partir de su geometría, con las mismas reglas que usa la colisión: cada punto de la línea
- * central pinta un círculo, y la pista es la unión de todos. Hay tres capas, de afuera hacia adentro: el muro (una
- * línea de {@code muro} px más allá del pasto), el pasto de escape y el asfalto. Si no sobra lugar para el pasto, el
- * muro queda pegado al asfalto. Encima van los pianos ({@link Pianos}) y la meta. Los círculos se arman una sola vez,
- * agrupados en bloques de puntos seguidos para dibujar solo los que entran en la cámara.
- *
- * Los puentes se dibujan aparte ({@link #dibujarPuentes}), porque entre la pista y el puente van los autos de abajo.
- *
- * Como cada capa es de un solo color, alcanza con teñir una textura blanca de 1 x 1 con el color del batch.
- */
 public class VistaCircuito implements Disposable {
-    /** Lados de cada círculo: con 24 el borde se aparta de un círculo perfecto menos de 1 px en el radio máximo. */
     private static final int LADOS = 24;
-    /** Puntos de la línea central por bloque: con 24 vértices por círculo son unos 6.400 vértices, lejos del tope del batch. */
     private static final int PUNTOS_POR_BLOQUE = 256;
     private static final int MAX_VERTICES_BATCH = 8192;
     private static final float GROSOR_META = 8f;
     private static final int CAPAS = 3;
 
-    /** Un grupo de polígonos de un color, con el rectángulo que los contiene. */
     private record Bloque(PolygonRegion region, float izquierda, float abajo, float derecha, float arriba) {
     }
 
     private final Circuito circuito;
     private final TextureRegion blanco;
     private final PolygonSpriteBatch batch = new PolygonSpriteBatch(MAX_VERTICES_BATCH);
-    /** Bloques por capa: 0 = muro, 1 = pasto, 2 = asfalto. */
     private final List<List<Bloque>> capas = new ArrayList<>();
     private final List<Bloque> murosPuentes = new ArrayList<>();
     private final List<Bloque> asfaltoPuentes = new ArrayList<>();
@@ -47,7 +32,6 @@ public class VistaCircuito implements Disposable {
     private final List<Bloque> pianosBlancos = new ArrayList<>();
     private final VistaEntorno entorno;
 
-    /** @param blanco región de una textura blanca de 1 x 1; no la libera esta clase */
     public VistaCircuito(Circuito circuito, TextureRegion blanco) {
         this.circuito = circuito;
         this.blanco = blanco;
@@ -64,16 +48,11 @@ public class VistaCircuito implements Disposable {
         }
     }
 
-    /** Radio de una capa en una muestra: la mitad del ancho, más el escape, más el muro. */
     private static float radio(Circuito.Geometria g, int i, int capa) {
         float medio = g.anchos()[i] / 2f;
         return capa == 2 ? medio : capa == 1 ? medio + g.escapes()[i] : medio + g.escapes()[i] + g.muro();
     }
 
-    /**
-     * Una cinta a lo largo de esas muestras, de la mitad del ancho de la pista más {@code extra} a cada lado. A diferencia
-     * de los círculos, termina en un corte recto: los extremos del puente no pisan el pasto del tramo que sigue.
-     */
     private Bloque armarCinta(int[] muestras, float extra) {
         Circuito.Geometria g = circuito.geometria();
         int n = g.muestras();
@@ -106,7 +85,6 @@ public class VistaCircuito implements Disposable {
         return bloque(vertices, triangulos);
     }
 
-    /** Los círculos de una capa, repartidos en bloques. */
     private List<Bloque> armarCapa(int capa) {
         Circuito.Geometria g = circuito.geometria();
         List<Bloque> bloques = new ArrayList<>();
@@ -158,7 +136,6 @@ public class VistaCircuito implements Disposable {
         return capa == 0 ? Paleta.PISTA_MURO : capa == 1 ? Paleta.PISTA_PASTO : Paleta.PISTA_ASFALTO;
     }
 
-    /** Dibuja los bloques que entran en la cámara. */
     private void dibujarBloques(List<Bloque> bloques, Color color, OrthographicCamera camara) {
         float mitadAncho = camara.viewportWidth * camara.zoom / 2f;
         float mitadAlto = camara.viewportHeight * camara.zoom / 2f;
@@ -175,7 +152,6 @@ public class VistaCircuito implements Disposable {
         }
     }
 
-    /** La pista, sin los puentes. */
     public void dibujar(OrthographicCamera camara) {
         batch.setProjectionMatrix(camara.combined);
         batch.begin();
@@ -189,7 +165,6 @@ public class VistaCircuito implements Disposable {
         batch.end();
     }
 
-    /** Los puentes: van después de dibujar los autos que pasan por debajo y antes de los demás. */
     public void dibujarPuentes(OrthographicCamera camara) {
         if (circuito.zonasCruce().isEmpty()) {
             return;
@@ -201,7 +176,6 @@ public class VistaCircuito implements Disposable {
         batch.end();
     }
 
-    /** La línea de meta: una tira blanca cruzando la pista en la muestra 0. */
     private void meta() {
         Circuito.Geometria g = circuito.geometria();
         float x = g.linea()[0];
@@ -209,7 +183,6 @@ public class VistaCircuito implements Disposable {
         float x2 = g.linea()[2];
         float y2 = g.linea()[3];
         float largo = g.anchos()[0];
-        // La tira va a lo ancho de la pista: su lado largo es perpendicular al sentido de la carrera.
         float grados = (float) Math.toDegrees(Math.atan2(y2 - y, x2 - x));
         batch.setColor(Paleta.PISTA_META);
         batch.draw(blanco, x - GROSOR_META / 2f, y - largo / 2f, GROSOR_META / 2f, largo / 2f, GROSOR_META, largo, 1f, 1f, grados);

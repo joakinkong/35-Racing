@@ -2,13 +2,6 @@ package ar.edu.et35.racing.juego;
 
 import java.util.List;
 
-/**
- * Escuderías, pilotos y circuitos de la temporada 2026. Es la única fuente de estos datos: la red solo manda
- * índices (de piloto y de circuito) y cada PC los traduce con este catálogo, así que todas tienen que tener la misma
- * versión (si cambia el orden de las listas, sube {@code Config.VERSION_PROTOCOLO}).
- *
- * <p>Los pilotos están ordenados por escudería, de a dos: el piloto {@code i} es de la escudería {@code i / 2}.
- */
 public final class Catalogo {
     private Catalogo() {
     }
@@ -50,7 +43,6 @@ public final class Catalogo {
         new Piloto("Sergio Pérez", "PER", 11, "mx", 10),
         new Piloto("Valtteri Bottas", "BOT", 77, "fi", 10));
 
-    /** Los 24 circuitos, en orden de calendario. */
     public static final List<InfoCircuito> CIRCUITOS = List.of(
         new InfoCircuito("melbourne", "GP de Australia", "Albert Park Circuit", "Melbourne", "au", 5.278f, 14),
         new InfoCircuito("shanghai", "GP de China", "Shanghai International Circuit", "Shanghái", "cn", 5.451f, 16),
@@ -77,7 +69,6 @@ public final class Catalogo {
         new InfoCircuito("lusail", "GP de Catar", "Lusail International Circuit", "Lusail", "qa", 5.419f, 16),
         new InfoCircuito("yas_marina", "GP de Abu Dabi", "Yas Marina Circuit", "Abu Dabi", "ae", 5.281f, 16));
 
-    /** Si es el segundo piloto de su escudería: en pista lleva un cuadradito verde fluo en el techo, como en la F1. */
     public static boolean esSegundoPiloto(int piloto) {
         return pilotoValido(piloto) && piloto % 2 == 1;
     }
@@ -90,7 +81,6 @@ public final class Catalogo {
         return circuito >= 0 && circuito < CIRCUITOS.size();
     }
 
-    /** Un índice fuera de rango se trata como el 0, para que un dato roto no tire el juego. */
     public static Piloto piloto(int piloto) {
         return PILOTOS.get(pilotoValido(piloto) ? piloto : 0);
     }
@@ -103,7 +93,6 @@ public final class Catalogo {
         return CIRCUITOS.get(circuitoValido(circuito) ? circuito : 0);
     }
 
-    /** Índice del circuito con ese nombre de archivo, o -1 si no existe. */
     public static int indiceDeCircuito(String archivo) {
         for (int i = 0; i < CIRCUITOS.size(); i++) {
             if (CIRCUITOS.get(i).archivo().equals(archivo)) {

@@ -19,11 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-/**
- * Programa de verificación (fuera del juego): corre carreras con las reglas reales de {@link Carrera}, sin red ni gráficos
- * y más rápido que el tiempo real. Primero mide cada nivel solo en cada circuito y después hace una carrera de 8 bots
- * (tres de cada uno de los dos primeros niveles y dos difíciles). Ver tools/bots/LEEME.md.
- */
 public class PruebaBots {
     private static final float DT = 1f / Config.TICKS_POR_SEGUNDO;
     private static final float TOPE_SEGUNDOS = 900f;
@@ -94,7 +89,6 @@ public class PruebaBots {
         System.out.printf("Carreras de 8 con todos en meta: %d de %d. Ganó un difícil: %d de %d%n", gruposCompletos, total, ganoDificil, total);
     }
 
-    /** Una carrera con esos bots, en ese orden en la grilla. Termina cuando la carrera termina o se pasa del tope. */
     private static Resultado correr(Circuito circuito, NivelBot[] grilla, int vueltas) {
         Carrera carrera = new Carrera(circuito, vueltas);
         Map<NivelBot, RecorridoBot> recorridos = new EnumMap<>(NivelBot.class);
@@ -112,7 +106,6 @@ public class PruebaBots {
         float t = 0f;
         int golpes = 0;
         boolean alMuro = false;
-        // En solitario no hay cierre que corte a un bot lento, pero en grupo sí: es la regla real.
         while (carrera.estado() != EstadoCarrera.TERMINADA && t < TOPE_SEGUNDOS) {
             if (carrera.estado() == EstadoCarrera.EN_CURSO) {
                 for (Participante p : new ArrayList<>(carrera.participantes())) {

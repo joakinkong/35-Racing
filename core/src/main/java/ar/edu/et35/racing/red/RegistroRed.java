@@ -4,7 +4,6 @@ import ar.edu.et35.racing.util.Config;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
-/** Log en consola de cada mensaje que se envía o se recibe. Solo escribe si {@link Config#DEBUG_RED} está activo. */
 public final class RegistroRed {
     private static final DateTimeFormatter HORA = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 

@@ -9,7 +9,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 
-/** Prueba descartable: carga los 24 circuitos y revisa largada, checkpoints, pista y atajos entre tramos. */
 public class PruebaCircuitos {
     static final float RADIO = 10f;
 
@@ -33,7 +32,6 @@ public class PruebaCircuitos {
                 if (c.superficieEn(l.x, l.y) != Superficie.PISTA || c.chocaConMuro(l.x, l.y, RADIO)) {
                     problemas.append(" largada").append(i + 1);
                 }
-                // Dos autos no pueden arrancar encimados: el choque entre autos los separaría de golpe en la largada.
                 for (int j = 0; j < i; j++) {
                     if (l.dst(c.posicionesLargada().get(j)) < 2 * RADIO) {
                         problemas.append(" largadasEncimadas").append(j + 1).append('-').append(i + 1);
@@ -62,7 +60,6 @@ public class PruebaCircuitos {
                 problemas.append(" lineaCentralTocaMuro=").append(centroMalo);
             }
 
-            // Atajos: dos muestras lejanas en arco pero cercanas en el plano no pueden unirse en línea recta sin pisar muro.
             boolean[] enCruce = new boolean[n];
             for (Circuito.Cruce cr : g.cruces()) {
                 for (int d = -40; d <= 40; d++) {
@@ -91,7 +88,6 @@ public class PruebaCircuitos {
                     int pasos = (int) (dist / 2) + 1;
                     for (int k = 0; k <= pasos && !hayMuro; k++) {
                         float t = k / (float) pasos;
-                        // Un auto (círculo de RADIO) no puede ir de a hasta b sin que su círculo toque muro.
                         hayMuro = c.chocaConMuro(ax + (bx - ax) * t, ay + (by - ay) * t, RADIO);
                     }
                     if (!hayMuro) {

@@ -5,7 +5,6 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable;
 
-/** Fondo de un color con una línea de otro color en un borde: las tarjetas, solapas y encabezados de PIT WALL. */
 public class FondoConLinea extends BaseDrawable {
     public enum Lado { ARRIBA, ABAJO, IZQUIERDA }
 
@@ -15,7 +14,6 @@ public class FondoConLinea extends BaseDrawable {
     private final Lado lado;
     private final float grosor;
 
-    /** @param blanco región de una textura blanca; no la libera esta clase */
     public FondoConLinea(TextureRegion blanco, Color fondo, Color linea, Lado lado, float grosor) {
         this.blanco = blanco;
         this.fondo = fondo;

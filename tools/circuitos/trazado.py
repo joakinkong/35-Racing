@@ -1,11 +1,3 @@
-"""Lee los SVG de f1-circuits-svg y los convierte en listas de puntos.
-
-Cada SVG "detailed" tiene tres <path>:
-  1. la línea central del circuito (trazo de 20), cerrada;
-  2. la línea de largada (relleno blanco), un cuadrilátero;
-  3. la flecha de sentido (trazo de 2): un ángulo cuya punta es el vértice del medio.
-Los paths 2 y 3 pueden traer un atributo transform.
-"""
 import math
 import re
 
@@ -15,7 +7,6 @@ CANTIDAD_ARGS = {'m': 2, 'l': 2, 'h': 1, 'v': 1, 'c': 6, 's': 4, 'q': 4, 't': 2,
 
 
 def leer_paths(texto_svg):
-    """Devuelve una lista de (d, estilo, transform) de cada <path> del SVG."""
     paths = []
     for etiqueta in re.findall(r'<path\b([^>]*)/?>', texto_svg):
         d = re.search(r'\bd="([^"]*)"', etiqueta)
@@ -32,7 +23,6 @@ def _bezier(puntos, t):
 
 
 def _arco(p0, rx, ry, rot, grande, barrido, p1):
-    """Aproxima un arco SVG (conversión de extremos a centro, apéndice F.6 de la especificación)."""
     if rx == 0 or ry == 0 or p0 == p1:
         return [p1]
     rx, ry = abs(rx), abs(ry)
@@ -74,7 +64,6 @@ def _arco(p0, rx, ry, rot, grande, barrido, p1):
 
 
 def parsear_path(d, pasos_curva=24):
-    """Convierte el atributo d en una lista de subtrazados; cada uno es (puntos, cerrado)."""
     tokens = TOKEN.findall(d)
     i = 0
     subtrazados = []
@@ -110,7 +99,7 @@ def parsear_path(d, pasos_curva=24):
             pos = (args[0] + ox, args[1] + oy)
             inicio = pos
             actual = [pos]
-            cmd = 'l' if rel else 'L'  # los pares siguientes de un M son L implícitos
+            cmd = 'l' if rel else 'L'
         elif minus == 'l':
             pos = (args[0] + ox, args[1] + oy)
             actual.append(pos)
@@ -168,7 +157,6 @@ def _multiplicar(a, b):
 
 
 def matriz_de_transform(texto):
-    """Compone una lista de transformaciones SVG en una matriz (a, b, c, d, e, f)."""
     m = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
     for nombre, args in re.findall(r'(\w+)\s*\(([^)]*)\)', texto or ''):
         v = [float(x) for x in NUMERO.findall(args)]
@@ -196,16 +184,13 @@ def aplicar(m, punto):
 
 
 class Trazado:
-    """Línea central cerrada (en unidades del SVG, eje Y hacia abajo), largada y sentido."""
-
     def __init__(self, puntos, largada, sentido):
-        self.puntos = puntos      # polilínea cerrada, sin repetir el primer punto al final
-        self.largada = largada    # centro de la línea de largada
-        self.sentido = sentido    # vector unitario en que se recorre el circuito en la largada
+        self.puntos = puntos
+        self.largada = largada
+        self.sentido = sentido
 
 
 def resamplear(puntos, paso):
-    """Reparte puntos a distancia pareja a lo largo de una polilínea cerrada."""
     cerrada = puntos + [puntos[0]]
     acumulado = [0.0]
     for a, b in zip(cerrada, cerrada[1:]):
@@ -245,7 +230,6 @@ def leer_trazado(ruta_svg, paso=1.0):
             flecha = [aplicar(m, p) for p in parsear_path(d)[0][0]]
     if centro is None or largada is None or flecha is None:
         raise ValueError('faltan elementos en ' + ruta_svg)
-    # Flecha: el vértice del medio es la punta; los extremos son las alas.
     punta = flecha[len(flecha) // 2]
     alas = ((flecha[0][0] + flecha[-1][0]) / 2, (flecha[0][1] + flecha[-1][1]) / 2)
     vx, vy = punta[0] - alas[0], punta[1] - alas[1]

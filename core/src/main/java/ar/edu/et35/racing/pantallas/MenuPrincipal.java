@@ -8,7 +8,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 
-/** Menú principal: a la izquierda la marca con las luces rojas de largada, a la derecha las opciones. */
 public class MenuPrincipal extends PantallaBase {
     private static final int LUCES = 5;
     private static final float LADO_LUZ = 26f;
@@ -21,10 +20,8 @@ public class MenuPrincipal extends PantallaBase {
         this(juego, null);
     }
 
-    /** @param aviso texto para mostrar bajo las opciones (por ejemplo, por qué se cortó una partida), o null */
     public MenuPrincipal(Main juego, String aviso) {
         super(juego);
-        // En el menú nunca hay una partida en red abierta: si veníamos de una, se cierra acá.
         juego.cerrarSesion();
 
         Table marca = new Table();
